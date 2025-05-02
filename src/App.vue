@@ -1,9 +1,13 @@
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view />
+  <div id="app">
+    <!-- 只有当前路由不是 '/login' 时才显示导航栏 -->
+    <nav v-if="$route.path !== '/login'">
+      <router-link to="/">Home</router-link> |
+      <router-link to="/about">About</router-link>
+    </nav>
+
+    <router-view />
+  </div>
 </template>
 
 <style lang="scss">
@@ -16,7 +20,7 @@
 }
 
 nav {
-  padding: 30px;
+  padding: 0;
 
   a {
     font-weight: bold;

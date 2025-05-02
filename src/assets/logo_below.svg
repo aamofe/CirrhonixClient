@@ -1,0 +1,15 @@
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- 肝脏轮廓 - 放大版 -->
+  <path d="M200 20C224 10 247 20 254 40C261 60 254 86 234 100C214 114 187 107 177 98C167 89 159 74 152 60C145 46 138 40 152 33C166 26 180 29 200 20Z" fill="#A8E6CF" stroke="#1A91C1" stroke-width="3"/>
+  
+  <!-- 放大镜元素 - 放大版 -->
+  <circle cx="207" cy="53" r="15" fill="white" stroke="#1A91C1" stroke-width="2.5"/>
+  <line x1="220" y1="66" x2="233" y2="79" stroke="#1A91C1" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- 装饰性元素 - 放大版 -->
+  <path d="M200 13C207 10 214 9 221 10" stroke="#1A91C1" stroke-width="2" fill="none"/>
+  <path d="M152 43C159 39 166 38 173 39" stroke="#1A91C1" stroke-width="2" fill="none"/>
+  
+  <!-- LiverScholar 文字 - 缩小版 -->
+  <text x="200" y="140" font-family="Montserrat, sans-serif" font-size="22" font-weight="500" fill="#1A91C1" text-anchor="middle">LiverScholar</text>
+</svg>
