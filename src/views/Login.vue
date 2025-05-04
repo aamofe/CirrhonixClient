@@ -23,23 +23,11 @@
         <!-- 登录表单 -->
         <div v-if="!isRegisterMode">
           <form @submit.prevent="login">
-            <form-input
-              id="username"
-              label="用户名/邮箱"
-              type="text"
-              v-model="username"
-              placeholder="请输入您的用户名或邮箱"
-              :required="true"
-            />
+            <form-input id="username" label="用户名" type="text" v-model="username" placeholder="请输入您的用户名"
+              :required="true" />
 
-            <form-input
-              id="password"
-              label="密码"
-              type="password"
-              v-model="password"
-              placeholder="请输入您的密码"
-              :required="true"
-            />
+            <form-input id="password" label="密码" type="password" v-model="password" placeholder="请输入您的密码"
+              :required="true" />
 
             <div class="forgot-password">
               <a href="#">忘记密码？</a>
@@ -48,9 +36,7 @@
             <primary-button type="submit"> 登 录 </primary-button>
 
             <div class="register-link">
-              还没有账号？<a href="#" @click.prevent="isRegisterMode = true"
-                >立即注册</a
-              >
+              还没有账号？<a href="#" @click.prevent="isRegisterMode = true">立即注册</a>
             </div>
           </form>
         </div>
@@ -58,48 +44,21 @@
         <!-- 注册表单 -->
         <div v-else>
           <form @submit.prevent="register">
-            <form-input
-              id="reg-username"
-              label="用户名"
-              type="text"
-              v-model="username"
-              placeholder="请输入用户名"
-              :required="true"
-            />
+            <form-input id="reg-username" label="用户名" type="text" v-model="username" placeholder="请输入用户名"
+              :required="true" />
 
-            <form-input
-              id="email"
-              label="邮箱"
-              type="email"
-              v-model="email"
-              placeholder="请输入您的邮箱"
-              :required="true"
-            />
+            <form-input id="email" label="邮箱" type="email" v-model="email" placeholder="请输入您的邮箱" :required="true" />
 
-            <form-input
-              id="reg-password"
-              label="密码"
-              type="password"
-              v-model="password"
-              placeholder="请输入密码"
-              :required="true"
-            />
+            <form-input id="reg-password" label="密码" type="password" v-model="password" placeholder="请输入密码"
+              :required="true" />
 
-            <form-input
-              id="confirm-password"
-              label="确认密码"
-              type="password"
-              v-model="confirmPassword"
-              placeholder="请再次输入密码"
-              :required="true"
-            />
+            <form-input id="confirm-password" label="确认密码" type="password" v-model="confirmPassword"
+              placeholder="请再次输入密码" :required="true" />
 
             <primary-button type="submit"> 注 册 </primary-button>
 
             <div class="register-link">
-              已有账号？<a href="#" @click.prevent="isRegisterMode = false"
-                >返回登录</a
-              >
+              已有账号？<a href="#" @click.prevent="isRegisterMode = false">返回登录</a>
             </div>
           </form>
         </div>
@@ -109,11 +68,11 @@
 </template>
 
 <script>
-import { mapMutations } from "vuex";
-import service from "@/utils/request";
-import User from "@/api/User";
-import PrimaryButton from "@/components/icons/PrimaryButton.vue";
-import FormInput from "@/components/icons/FormInput.vue";
+import { mapMutations } from "vuex"
+import service from "@/utils/request"
+import User from "@/api/User"
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import FormInput from "@/components/form/FormInput.vue"
 
 export default {
   name: "LoginView",
@@ -130,40 +89,59 @@ export default {
       showPassword: false,
       showConfirmPassword: false,
       isRegisterMode: false,
-    };
+    }
   },
   methods: {
     ...mapMutations(["setIsAdmin", "setUserId"]),
 
     async login() {
+      console.log("==================开始登录")
       if (this.username === "" || this.password === "") {
-        this.$message.error("用户名和密码不得为空");
-        return;
+        this.$message.error("用户名和密码不得为空")
+        return
       }
 
       try {
-        const loginResponse = await User.login(this.username, this.password);
+        console.log("发送登录请求前:", this.username, this.password)
+        const loginResponse = await User.login(this.username, this.password)
+        console.log("登录响应:", loginResponse)
 
-        if (loginResponse.data.code === 200) {
-          const token = loginResponse.data.data.token;
+        if (loginResponse && loginResponse.data && loginResponse.data.code === 200) {
+          const token = loginResponse.data.data.token
           // 可选：将 token 缓存起来
-          localStorage.setItem("token", token);
+          localStorage.setItem("token", token)
+          service.defaults.headers.common["Authorization"] = `Bearer ${token}`
+          try {
+            const profileResponse = await User.profile()
+            console.log("获取用户资料响应:", profileResponse)
 
-          service.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            if (profileResponse && profileResponse.data && profileResponse.data.data) {
+              const userInfo = profileResponse.data.data
 
-          const profileResponse = await User.profile(token);
-          const userInfo = profileResponse.data.data;
+              this.setIsAdmin(userInfo.is_super_user)
+              this.setUserId(userInfo.id)
 
-          this.setIsAdmin(userInfo.is_super_user);
-          this.setUserId(userInfo.id);
+              if (this.$bus && typeof this.$bus.emit === 'function') {
+                this.$bus.emit("update-navigator")
+              }
 
-          this.$bus.emit("update-navigator");
-          this.$router.push("/main");
+              this.$router.push("/main")
+            } else {
+              this.$message.error("获取用户信息失败")
+            }
+          } catch (profileError) {
+            console.error("获取用户资料出错:", profileError)
+            this.$message.error("获取用户资料失败")
+          }
         } else {
-          this.$message.error(loginResponse.data.message || "登录失败");
+          const errorMsg = loginResponse && loginResponse.data ?
+            (loginResponse.data.message || "登录失败") :
+            "登录失败"
+          this.$message.error(errorMsg)
         }
       } catch (error) {
-        this.$message.error("登录请求出错");
+        console.error("登录请求出错:", error)
+        this.$message.error(error?.message || "登录请求出错")
       }
     },
 
@@ -174,13 +152,13 @@ export default {
         !this.confirmPassword ||
         !this.email
       ) {
-        this.$message.error("所有字段均为必填");
-        return;
+        this.$message.error("所有字段均为必填")
+        return
       }
 
       if (this.password !== this.confirmPassword) {
-        this.$message.error("两次密码不一致");
-        return;
+        this.$message.error("两次密码不一致")
+        return
       }
 
       try {
@@ -189,47 +167,47 @@ export default {
           this.email,
           this.password,
           this.confirmPassword
-        );
+        )
 
         if (res.data.code === 201) {
-          this.$message.success("注册成功，请登录");
-          this.isRegisterMode = false;
+          this.$message.success("注册成功，请登录")
+          this.isRegisterMode = false
         } else {
-          this.$message.error(res.data.message || "注册失败");
+          this.$message.error(res.data.message || "注册失败")
         }
       } catch (error) {
-        this.$message.error("注册请求出错");
+        this.$message.error("注册请求出错")
       }
     },
 
     // 登出
     async logout() {
       try {
-        await User.logout();
-        localStorage.removeItem("token");
-        delete service.defaults.headers.common["Authorization"];
-        this.setUserId(null);
-        this.setIsAdmin(false);
-        this.$router.push("/login");
-        this.$message.success("已登出");
+        await User.logout()
+        localStorage.removeItem("token")
+        delete service.defaults.headers.common["Authorization"]
+        this.setUserId(null)
+        this.setIsAdmin(false)
+        this.$router.push("/login")
+        this.$message.success("已登出")
       } catch (error) {
-        this.$message.error("登出失败");
+        this.$message.error("登出失败")
       }
     },
 
     // 获取当前用户信息
     async getProfile() {
       try {
-        const response = await User.profile();
-        const data = response.data.data;
-        this.$message.success(`当前用户：${data.username}`);
+        const response = await User.profile()
+        const data = response.data.data
+        this.$message.success(`当前用户：${data.username}`)
         // 你也可以将 userInfo 存到 Vuex 或组件中
       } catch (error) {
-        this.$message.error("获取用户信息失败");
+        this.$message.error("获取用户信息失败")
       }
     },
   },
-};
+}
 </script>
 
 <style scoped>
@@ -349,11 +327,9 @@ h1 {
   right: -100px;
   width: 600px;
   height: 600px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(168, 230, 207, 0.15) 0%,
-    rgba(168, 230, 207, 0) 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(168, 230, 207, 0.15) 0%,
+      rgba(168, 230, 207, 0) 70%);
   border-radius: 50% 50% 50% 70%;
   transform: rotate(45deg);
   z-index: 0;

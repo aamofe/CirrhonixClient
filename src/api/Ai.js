@@ -1,13 +1,13 @@
 import service from "@/http";
 
 const url = {
-  aiQuery: "/ai_query",
-  summarize: (id) => `/summarize/${id}`,
-  translate: "/translate",
-  recommend: (id) => `/recommend/${id}`,
-  feedback: (id) => `/feedback/${id}`,
-  batchSummarize: "/batch_summarize",
-  semanticSearch: "/semantic_search",
+  aiQuery: "/ai/query",
+  summarize: (id) => `/ai/summarize/${id}`,
+  translate: "/ai/translate",
+  recommend: (id) => `/ai/recommendations/${id}`,
+  feedback: (id) => `/ai/feedback/${id}`,
+  batchSummarize: "/ai/batch_summarize", // 注意：API中未定义此端点
+  semanticSearch: "/ai/semantic_search", // 注意：API中未定义此端点
 };
 
 export default class AI {

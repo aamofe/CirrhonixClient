@@ -1,8 +1,8 @@
 import service from "@/http";
 const url = {
   sourceList: "/crawl/sources",
-  crawlList: "/crawl/sources",
-  crawlDetail: "/crawl/sources",
+  crawlList: "/crawl/tasks",
+  crawlDetail: (taskId) => `/crawl/tasks/${taskId}`,
   createTask: "/crawl/tasks/create",
 };
 

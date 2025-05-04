@@ -1,16 +1,16 @@
 import service from "@/http";
 
 const url = {
-  list: "/list",
-  detail: (id) => `/detail/${id}`,
-  interaction: "/interaction",
-  collections: "/collections",
-  collection: (id) => `/collection/${id}`,
-  authors: "/authors",
-  journals: "/journals",
-  graphData: "/graph_data",
-  litTree: (id) => `/lit_tree/${id}`,
-  conceptNet: "/concept_net",
+  list: "/literature/list",
+  detail: (id) => `/literature/detail/${id}`,
+  interaction: "/literature/interaction",
+  collections: "/literature/collection",
+  collection: (id) => `/literature/collection/${id}`,
+  authors: "/literature/authors",
+  journals: "/literature/journals",
+  graphData: "/literature/graph/data",
+  litTree: (id) => `/literature/graph/literature-tree/${id}`,
+  conceptNet: "/literature/graph/concept-network",
 };
 
 export default class Literature {

@@ -1,14 +1,20 @@
 <template>
   <div id="app">
-    <!-- 只有当前路由不是 '/login' 时才显示导航栏 -->
-    <nav v-if="$route.path !== '/login'">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </nav>
-
+    <!-- 只有当前路由不是 '/login' 时才显示 Header -->
+    <HeaderComponent v-if="$route.path !== '/login'" />
     <router-view />
   </div>
 </template>
+
+<script>
+import HeaderComponent from "@/components/layout/HeaderComponent.vue";
+
+export default {
+  components: {
+    HeaderComponent,
+  },
+};
+</script>
 
 <style lang="scss">
 #app {
