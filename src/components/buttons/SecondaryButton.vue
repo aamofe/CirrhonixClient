@@ -1,7 +1,7 @@
 <!-- src/components/buttons/SecondaryButton.vue -->
 <template>
-  <button 
-    class="secondary-button" 
+  <button
+    class="secondary-button"
     :class="{ 'full-width': fullWidth }"
     @click="$emit('click')"
   >
@@ -11,15 +11,15 @@
 
 <script>
 export default {
-  name: 'SecondaryButton',
+  name: "SecondaryButton",
   props: {
     fullWidth: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
-  emits: ['click']
-}
+  emits: ["click"],
+};
 </script>
 
 <style scoped>

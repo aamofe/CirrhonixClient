@@ -3,14 +3,27 @@
   <div class="input-group">
     <label :for="id">{{ label }}</label>
     <div v-if="type === 'password'" class="password-input">
-      <input :id="id" :type="showPassword ? 'text' : 'password'" :value="modelValue" :placeholder="placeholder"
-        @input="$emit('update:modelValue', $event.target.value)" :required="required" />
+      <input
+        :id="id"
+        :type="showPassword ? 'text' : 'password'"
+        :value="modelValue"
+        :placeholder="placeholder"
+        @input="$emit('update:modelValue', $event.target.value)"
+        :required="required"
+      />
       <span class="password-toggle" @click="togglePassword">
         {{ showPassword ? "隐藏" : "显示" }}
       </span>
     </div>
-    <input v-else :id="id" :type="type" :value="modelValue" :placeholder="placeholder"
-      @input="$emit('update:modelValue', $event.target.value)" :required="required" />
+    <input
+      v-else
+      :id="id"
+      :type="type"
+      :value="modelValue"
+      :placeholder="placeholder"
+      @input="$emit('update:modelValue', $event.target.value)"
+      :required="required"
+    />
   </div>
 </template>
 
@@ -30,7 +43,8 @@ export default {
       type: String,
       default: "text",
     },
-    modelValue: { // 改为modelValue (Vue 3的v-model绑定)
+    modelValue: {
+      // 改为modelValue (Vue 3的v-model绑定)
       type: String,
       default: "",
     },
@@ -43,18 +57,18 @@ export default {
       default: false,
     },
   },
-  emits: ['update:modelValue'], // 明确声明组件会触发的事件
+  emits: ["update:modelValue"], // 明确声明组件会触发的事件
   data() {
     return {
       showPassword: false,
-    }
+    };
   },
   methods: {
     togglePassword() {
-      this.showPassword = !this.showPassword
+      this.showPassword = !this.showPassword;
     },
   },
-}
+};
 </script>
 
 <style scoped>

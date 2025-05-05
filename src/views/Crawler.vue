@@ -1,9 +1,11 @@
 <!-- src/views/CrawlerPage.vue -->
 <template>
   <div class="crawler-page">
-
     <div class="container">
-      <SectionTitle title="文献爬虫管理" subtitle="从学术资源库抓取最新的肝脏研究文献" />
+      <SectionTitle
+        title="文献爬虫管理"
+        subtitle="从学术资源库抓取最新的肝脏研究文献"
+      />
 
       <div class="crawler-content">
         <!-- 手动爬取区域 -->
@@ -11,8 +13,16 @@
           <h3>手动爬取</h3>
           <div class="source-selector">
             <label for="source">选择数据源:</label>
-            <select id="source" v-model="manualCrawler.source" class="select-input">
-              <option v-for="source in availableSources" :key="source.id" :value="source.id">
+            <select
+              id="source"
+              v-model="manualCrawler.source"
+              class="select-input"
+            >
+              <option
+                v-for="source in availableSources"
+                :key="source.id"
+                :value="source.id"
+              >
                 {{ source.name }}
               </option>
             </select>
@@ -21,31 +31,56 @@
           <div class="query-section">
             <div class="form-group">
               <label for="keywords">关键词:</label>
-              <input type="text" id="keywords" v-model="manualCrawler.keywords" class="form-input"
-                placeholder="输入检索关键词，多个关键词用英文逗号分隔" />
+              <input
+                type="text"
+                id="keywords"
+                v-model="manualCrawler.keywords"
+                class="form-input"
+                placeholder="输入检索关键词，多个关键词用英文逗号分隔"
+              />
             </div>
 
             <div class="form-row">
               <div class="form-group flex-1">
                 <label for="start-date">起始日期:</label>
-                <input type="date" id="start-date" v-model="manualCrawler.startDate" class="form-input" />
+                <input
+                  type="date"
+                  id="start-date"
+                  v-model="manualCrawler.startDate"
+                  class="form-input"
+                />
               </div>
 
               <div class="form-group flex-1">
                 <label for="end-date">结束日期:</label>
-                <input type="date" id="end-date" v-model="manualCrawler.endDate" class="form-input" />
+                <input
+                  type="date"
+                  id="end-date"
+                  v-model="manualCrawler.endDate"
+                  class="form-input"
+                />
               </div>
             </div>
 
             <div class="form-group">
               <label for="max-results">最大结果数:</label>
-              <input type="number" id="max-results" v-model="manualCrawler.maxResults" class="form-input" min="1"
-                max="500" />
+              <input
+                type="number"
+                id="max-results"
+                v-model="manualCrawler.maxResults"
+                class="form-input"
+                min="1"
+                max="500"
+              />
             </div>
           </div>
 
           <div class="action-buttons">
-            <PrimaryButton :fullWidth="false" @click="startManualCrawling" :disabled="manualCrawling">
+            <PrimaryButton
+              :fullWidth="false"
+              @click="startManualCrawling"
+              :disabled="manualCrawling"
+            >
               开始爬取
               <template #icon>
                 <SpiderIcon v-if="!manualCrawling" />
@@ -57,7 +92,10 @@
           <!-- 爬取进度 -->
           <div v-if="manualCrawling" class="crawling-progress">
             <div class="progress-bar">
-              <div class="progress-value" :style="{ width: `${manualProgress}%` }"></div>
+              <div
+                class="progress-value"
+                :style="{ width: `${manualProgress}%` }"
+              ></div>
             </div>
             <div class="progress-text">
               {{ manualProgress }}% - 已爬取 {{ crawledCount }} 篇文献
@@ -73,7 +111,11 @@
           </p>
 
           <div class="auto-schedules">
-            <div v-for="(schedule, index) in autoSchedules" :key="index" class="schedule-item">
+            <div
+              v-for="(schedule, index) in autoSchedules"
+              :key="index"
+              class="schedule-item"
+            >
               <div class="schedule-info">
                 <div class="source-name">
                   {{ getSourceName(schedule.source_id) }}
@@ -86,21 +128,33 @@
                     关键词: {{ schedule.keywords }}
                   </div>
                 </div>
-                <div class="schedule-status" :class="schedule.active ? 'active' : 'inactive'">
+                <div
+                  class="schedule-status"
+                  :class="schedule.active ? 'active' : 'inactive'"
+                >
                   {{ schedule.active ? "已启用" : "已禁用" }}
                 </div>
               </div>
 
               <div class="schedule-actions">
-                <button class="action-btn edit-btn" @click="editSchedule(schedule)">
+                <button
+                  class="action-btn edit-btn"
+                  @click="editSchedule(schedule)"
+                >
                   <EditIcon />
                 </button>
-                <button class="action-btn" :class="schedule.active ? 'pause-btn' : 'play-btn'"
-                  @click="toggleSchedule(schedule)">
+                <button
+                  class="action-btn"
+                  :class="schedule.active ? 'pause-btn' : 'play-btn'"
+                  @click="toggleSchedule(schedule)"
+                >
                   <PauseIcon v-if="schedule.active" />
                   <PlayIcon v-else />
                 </button>
-                <button class="action-btn delete-btn" @click="deleteSchedule(schedule)">
+                <button
+                  class="action-btn delete-btn"
+                  @click="deleteSchedule(schedule)"
+                >
                   <DeleteIcon />
                 </button>
               </div>
@@ -126,9 +180,17 @@
           <div class="history-filters">
             <div class="form-group">
               <label for="history-source">数据源:</label>
-              <select id="history-source" v-model="historyFilter.source" class="select-input">
+              <select
+                id="history-source"
+                v-model="historyFilter.source"
+                class="select-input"
+              >
                 <option value="">全部</option>
-                <option v-for="source in availableSources" :key="source.id" :value="source.id">
+                <option
+                  v-for="source in availableSources"
+                  :key="source.id"
+                  :value="source.id"
+                >
                   {{ source.name }}
                 </option>
               </select>
@@ -136,7 +198,11 @@
 
             <div class="form-group">
               <label for="history-type">爬取类型:</label>
-              <select id="history-type" v-model="historyFilter.type" class="select-input">
+              <select
+                id="history-type"
+                v-model="historyFilter.type"
+                class="select-input"
+              >
                 <option value="">全部</option>
                 <option value="manual">手动爬取</option>
                 <option value="auto">自动爬取</option>
@@ -177,11 +243,19 @@
 
           <!-- 分页 -->
           <div v-if="filteredHistory.length" class="pagination">
-            <button class="pagination-btn prev" @click="currentPage > 1 && currentPage--" :disabled="currentPage === 1">
+            <button
+              class="pagination-btn prev"
+              @click="currentPage > 1 && currentPage--"
+              :disabled="currentPage === 1"
+            >
               上一页
             </button>
             <span class="page-info">第 {{ currentPage }} 页</span>
-            <button class="pagination-btn next" @click="hasNextPage && currentPage++" :disabled="!hasNextPage">
+            <button
+              class="pagination-btn next"
+              @click="hasNextPage && currentPage++"
+              :disabled="!hasNextPage"
+            >
               下一页
             </button>
           </div>
@@ -190,12 +264,24 @@
     </div>
 
     <!-- 新建自动爬取任务模态框 -->
-    <ModalComponent v-if="showNewScheduleModal" title="添加自动爬取任务" @close="showNewScheduleModal = false">
+    <ModalComponent
+      v-if="showNewScheduleModal"
+      title="添加自动爬取任务"
+      @close="showNewScheduleModal = false"
+    >
       <div class="schedule-form">
         <div class="form-group">
           <label for="schedule-source">选择数据源:</label>
-          <select id="schedule-source" v-model="newSchedule.source_id" class="form-input">
-            <option v-for="source in availableSources" :key="source.id" :value="source.id">
+          <select
+            id="schedule-source"
+            v-model="newSchedule.source_id"
+            class="form-input"
+          >
+            <option
+              v-for="source in availableSources"
+              :key="source.id"
+              :value="source.id"
+            >
               {{ source.name }}
             </option>
           </select>
@@ -203,7 +289,11 @@
 
         <div class="form-group">
           <label for="schedule-frequency">爬取频率:</label>
-          <select id="schedule-frequency" v-model="newSchedule.frequency" class="form-input">
+          <select
+            id="schedule-frequency"
+            v-model="newSchedule.frequency"
+            class="form-input"
+          >
             <option value="daily">每天</option>
             <option value="weekly">每周</option>
             <option value="monthly">每月</option>
@@ -212,18 +302,33 @@
 
         <div class="form-group">
           <label for="schedule-keywords">关键词 (可选):</label>
-          <input type="text" id="schedule-keywords" v-model="newSchedule.keywords" class="form-input"
-            placeholder="输入检索关键词，多个关键词用英文逗号分隔" />
+          <input
+            type="text"
+            id="schedule-keywords"
+            v-model="newSchedule.keywords"
+            class="form-input"
+            placeholder="输入检索关键词，多个关键词用英文逗号分隔"
+          />
         </div>
 
         <div class="form-group">
           <label for="schedule-max-results">每次最大爬取数量:</label>
-          <input type="number" id="schedule-max-results" v-model="newSchedule.max_results" class="form-input" min="1"
-            max="500" />
+          <input
+            type="number"
+            id="schedule-max-results"
+            v-model="newSchedule.max_results"
+            class="form-input"
+            min="1"
+            max="500"
+          />
         </div>
 
         <div class="form-actions">
-          <button type="button" class="cancel-btn" @click="showNewScheduleModal = false">
+          <button
+            type="button"
+            class="cancel-btn"
+            @click="showNewScheduleModal = false"
+          >
             取消
           </button>
           <PrimaryButton :fullWidth="false" @click="createSchedule">
@@ -238,22 +343,22 @@
 </template>
 
 <script>
-import SiteFooter from "@/components/layout/SiteFooter.vue"
-import SectionTitle from "@/components/common/Sectiontitle.vue"
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import ModalComponent from "@/components/common/ModalComponent.vue"
+import SiteFooter from "@/components/layout/SiteFooter.vue";
+import SectionTitle from "@/components/common/Sectiontitle.vue";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
+import ModalComponent from "@/components/common/ModalComponent.vue";
 
 // 假设的图标组件
-import SpiderIcon from "@/components/icons/SpiderIcon.vue"
-import SpinnerIcon from "@/components/icons/SpinnerIcon.vue"
-import EditIcon from "@/components/icons/EditIcon.vue"
-import DeleteIcon from "@/components/icons/DeleteIcon.vue"
-import PauseIcon from "@/components/icons/PauseIcon.vue"
-import PlayIcon from "@/components/icons/PlayIcon.vue"
-import PlusIcon from "@/components/icons/PlusIcon.vue"
+import SpiderIcon from "@/components/icons/SpiderIcon.vue";
+import SpinnerIcon from "@/components/icons/SpinnerIcon.vue";
+import EditIcon from "@/components/icons/EditIcon.vue";
+import DeleteIcon from "@/components/icons/DeleteIcon.vue";
+import PauseIcon from "@/components/icons/PauseIcon.vue";
+import PlayIcon from "@/components/icons/PlayIcon.vue";
+import PlusIcon from "@/components/icons/PlusIcon.vue";
 
 // 假设我们有一个专门的爬虫API
-import Crawler from "@/api/Crawler"
+import Crawler from "@/api/Crawler";
 
 export default {
   name: "CrawlerView",
@@ -313,30 +418,30 @@ export default {
       currentPage: 1,
       totalPages: 1,
       pageSize: 10,
-    }
+    };
   },
   computed: {
     // 过滤后的历史记录
     filteredHistory() {
-      let filtered = this.crawlerHistory
+      let filtered = this.crawlerHistory;
 
       if (this.historyFilter.source) {
         filtered = filtered.filter(
           (item) => item.source_id === this.historyFilter.source
-        )
+        );
       }
 
       if (this.historyFilter.type) {
         filtered = filtered.filter(
           (item) => item.type === this.historyFilter.type
-        )
+        );
       }
 
       // 分页
-      const start = (this.currentPage - 1) * this.pageSize
-      const end = start + this.pageSize
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = start + this.pageSize;
 
-      return filtered.slice(start, end)
+      return filtered.slice(start, end);
     },
 
     hasNextPage() {
@@ -354,18 +459,17 @@ export default {
       //   return match;
       // }).length;
 
-      return this.currentPage * this.pageSize
+      return this.currentPage * this.pageSize;
     },
-
   },
   methods: {
     async fetchAutoSchedules() {
       try {
-        const response = await Crawler.getSchedules()
-        this.autoSchedules = response.data.items || []
+        const response = await Crawler.getSchedules();
+        this.autoSchedules = response.data.items || [];
       } catch (error) {
-        console.error("获取自动爬取任务失败", error)
-        this.$toast.error("获取自动爬取任务失败")
+        console.error("获取自动爬取任务失败", error);
+        this.$toast.error("获取自动爬取任务失败");
       }
     },
 
@@ -374,25 +478,25 @@ export default {
         const response = await Crawler.getHistory({
           page: this.currentPage,
           size: this.pageSize,
-        })
-        this.crawlerHistory = response.data.items || []
-        this.totalPages = response.data.total_pages || 1
+        });
+        this.crawlerHistory = response.data.items || [];
+        this.totalPages = response.data.total_pages || 1;
       } catch (error) {
-        console.error("获取爬取历史失败", error)
-        this.$toast.error("获取爬取历史失败")
+        console.error("获取爬取历史失败", error);
+        this.$toast.error("获取爬取历史失败");
       }
     },
 
     async startManualCrawling() {
       if (!this.manualCrawler.source) {
-        this.$toast.error("请选择数据源")
-        return
+        this.$toast.error("请选择数据源");
+        return;
       }
 
       try {
-        this.manualCrawling = true
-        this.manualProgress = 0
-        this.crawledCount = 0
+        this.manualCrawling = true;
+        this.manualProgress = 0;
+        this.crawledCount = 0;
 
         // 创建爬取任务
         const response = await Crawler.createCrawlingTask({
@@ -402,65 +506,59 @@ export default {
           end_date: this.manualCrawler.endDate,
           max_results: this.manualCrawler.maxResults,
           type: "manual",
-        })
+        });
 
-        const taskId = response.data.task_id
+        const taskId = response.data.task_id;
 
         // 模拟进度更新 (在实际应用中，您可能需要使用WebSocket或轮询API获取实时进度)
         this.updateProgressInterval = setInterval(() => {
-          this.checkCrawlingProgress(taskId)
-        }, 2000)
+          this.checkCrawlingProgress(taskId);
+        }, 2000);
       } catch (error) {
-        console.error("启动爬取任务失败", error)
-        this.$toast.error("启动爬取任务失败")
-        this.manualCrawling = false
+        console.error("启动爬取任务失败", error);
+        this.$toast.error("启动爬取任务失败");
+        this.manualCrawling = false;
       }
     },
 
     async checkCrawlingProgress(taskId) {
       try {
-        const response = await Crawler.getTaskProgress(taskId)
-        const { progress, document_count, status } = response.data
+        const response = await Crawler.getTaskProgress(taskId);
+        const { progress, document_count, status } = response.data;
 
-        this.manualProgress = progress
-        this.crawledCount = document_count
+        this.manualProgress = progress;
+        this.crawledCount = document_count;
 
-        if (
-          status === "completed" ||
-          status === "failed" ||
-          progress >= 100
-        ) {
-          clearInterval(this.updateProgressInterval)
-          this.manualCrawling = false
+        if (status === "completed" || status === "failed" || progress >= 100) {
+          clearInterval(this.updateProgressInterval);
+          this.manualCrawling = false;
 
           if (status === "completed") {
-            this.$toast.success(
-              `爬取任务完成，共获取${document_count}篇文献`
-            )
+            this.$toast.success(`爬取任务完成，共获取${document_count}篇文献`);
           } else if (status === "failed") {
-            this.$toast.error("爬取任务失败")
+            this.$toast.error("爬取任务失败");
           }
 
           // 刷新历史记录
-          await this.fetchCrawlerHistory()
+          await this.fetchCrawlerHistory();
         }
       } catch (error) {
-        console.error("获取任务进度失败", error)
-        clearInterval(this.updateProgressInterval)
-        this.manualCrawling = false
+        console.error("获取任务进度失败", error);
+        clearInterval(this.updateProgressInterval);
+        this.manualCrawling = false;
       }
     },
 
     async createSchedule() {
       if (!this.newSchedule.source_id) {
-        this.$toast.error("请选择数据源")
-        return
+        this.$toast.error("请选择数据源");
+        return;
       }
 
       try {
-        await Crawler.createSchedule(this.newSchedule)
-        this.showNewScheduleModal = false
-        this.$toast.success("自动爬取任务创建成功")
+        await Crawler.createSchedule(this.newSchedule);
+        this.showNewScheduleModal = false;
+        this.$toast.success("自动爬取任务创建成功");
 
         // 重置表单
         this.newSchedule = {
@@ -469,39 +567,37 @@ export default {
           keywords: "",
           max_results: 100,
           active: true,
-        }
+        };
 
         // 刷新自动任务列表
-        await this.fetchAutoSchedules()
+        await this.fetchAutoSchedules();
       } catch (error) {
-        console.error("创建自动爬取任务失败", error)
-        this.$toast.error("创建自动爬取任务失败")
+        console.error("创建自动爬取任务失败", error);
+        this.$toast.error("创建自动爬取任务失败");
       }
     },
 
     editSchedule(schedule) {
       // 复制任务数据到表单
-      this.newSchedule = { ...schedule }
-      this.showNewScheduleModal = true
+      this.newSchedule = { ...schedule };
+      this.showNewScheduleModal = true;
     },
 
     async toggleSchedule(schedule) {
       try {
-        const updatedStatus = !schedule.active
-        await Crawler.updateSchedule(schedule.id, { active: updatedStatus })
+        const updatedStatus = !schedule.active;
+        await Crawler.updateSchedule(schedule.id, { active: updatedStatus });
 
         // 更新本地数据
-        const index = this.autoSchedules.findIndex(
-          (s) => s.id === schedule.id
-        )
+        const index = this.autoSchedules.findIndex((s) => s.id === schedule.id);
         if (index !== -1) {
-          this.autoSchedules[index].active = updatedStatus
+          this.autoSchedules[index].active = updatedStatus;
         }
 
-        this.$toast.success(`任务已${updatedStatus ? "启用" : "禁用"}`)
+        this.$toast.success(`任务已${updatedStatus ? "启用" : "禁用"}`);
       } catch (error) {
-        console.error("更新任务状态失败", error)
-        this.$toast.error("更新任务状态失败")
+        console.error("更新任务状态失败", error);
+        this.$toast.error("更新任务状态失败");
       }
     },
 
@@ -513,84 +609,84 @@ export default {
           )}"的自动爬取任务吗？`
         )
       )
-        return
+        return;
 
       try {
-        await Crawler.deleteSchedule(schedule.id)
+        await Crawler.deleteSchedule(schedule.id);
 
         // 从列表中移除
         this.autoSchedules = this.autoSchedules.filter(
           (s) => s.id !== schedule.id
-        )
-        this.$toast.success("任务删除成功")
+        );
+        this.$toast.success("任务删除成功");
       } catch (error) {
-        console.error("删除任务失败", error)
-        this.$toast.error("删除任务失败")
+        console.error("删除任务失败", error);
+        this.$toast.error("删除任务失败");
       }
     },
 
     getSourceName(sourceId) {
-      const source = this.availableSources.find((s) => s.id === sourceId)
-      return source ? source.name : sourceId
+      const source = this.availableSources.find((s) => s.id === sourceId);
+      return source ? source.name : sourceId;
     },
 
     formatFrequency(frequency) {
       switch (frequency) {
         case "daily":
-          return "每天"
+          return "每天";
         case "weekly":
-          return "每周"
+          return "每周";
         case "monthly":
-          return "每月"
+          return "每月";
         default:
-          return frequency
+          return frequency;
       }
     },
 
     formatStatus(status) {
       switch (status) {
         case "completed":
-          return "已完成"
+          return "已完成";
         case "running":
-          return "运行中"
+          return "运行中";
         case "failed":
-          return "失败"
+          return "失败";
         case "pending":
-          return "等待中"
+          return "等待中";
         default:
-          return status
+          return status;
       }
     },
 
     formatDate(dateString) {
-      if (!dateString) return ""
+      if (!dateString) return "";
 
-      const date = new Date(dateString)
+      const date = new Date(dateString);
       return date.toLocaleString("zh-CN", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
-      })
+      });
     },
   },
   created() {
-    this.fetchAutoSchedules()
-    this.fetchCrawlerHistory()
+    this.fetchAutoSchedules();
+    this.fetchCrawlerHistory();
 
     // 默认选择第一个数据源
     if (this.availableSources.length > 0) {
-      this.manualCrawler.source = this.availableSources[0].id
+      this.manualCrawler.source = this.availableSources[0].id;
     }
   },
   beforeUnmount() {
     // 清除定时器
     if (this.updateProgressInterval) {
-      clearInterval(this.updateProgressInterval)
+      clearInterval(this.updateProgressInterval);
     }
   },
-}
+};
 </script>
 <style scoped>
 .crawler-page {

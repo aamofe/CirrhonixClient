@@ -6,8 +6,6 @@
         <h3>LiverScholar</h3>
         <ul>
           <li><router-link to="/about">关于我们</router-link></li>
-          <li><router-link to="/contact">联系方式</router-link></li>
-          <li><router-link to="/partner">合作伙伴</router-link></li>
         </ul>
       </div>
 
@@ -15,17 +13,7 @@
         <h3>帮助</h3>
         <ul>
           <li><router-link to="/guide">使用指南</router-link></li>
-          <li><router-link to="/faq">常见问题</router-link></li>
           <li><router-link to="/feedback">反馈建议</router-link></li>
-        </ul>
-      </div>
-
-      <div class="footer-section">
-        <h3>资源</h3>
-        <ul>
-          <li><router-link to="/literature">文献资源</router-link></li>
-          <li><router-link to="/knowledge-graph">知识图谱</router-link></li>
-          <li><router-link to="/expert-consensus">专家共识</router-link></li>
         </ul>
       </div>
 
@@ -33,8 +21,6 @@
         <h3>账户</h3>
         <ul>
           <li><router-link to="/profile">个人中心</router-link></li>
-          <li><router-link to="/settings">账户设置</router-link></li>
-          <li><router-link to="/privacy">隐私政策</router-link></li>
         </ul>
       </div>
     </div>

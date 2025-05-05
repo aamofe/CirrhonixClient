@@ -1,21 +1,25 @@
 <!-- src/components/buttons/CancelButton.vue -->
 <template>
-  <button class="cancel-button" :class="{ 'full-width': fullWidth }" @click="$emit('click')">
+  <button
+    class="cancel-button"
+    :class="{ 'full-width': fullWidth }"
+    @click="$emit('click')"
+  >
     <slot></slot>
   </button>
 </template>
 
 <script>
 export default {
-  name: 'CancelButton',
+  name: "CancelButton",
   props: {
     fullWidth: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
-  emits: ['click']
-}
+  emits: ["click"],
+};
 </script>
 
 <style scoped>

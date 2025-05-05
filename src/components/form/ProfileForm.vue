@@ -7,11 +7,7 @@
         <!-- 左侧头像 -->
         <div class="avatar-section">
           <div class="avatar-container">
-            <img
-              :src="defaultAvatar"
-              alt="用户头像"
-              class="avatar-image"
-            />
+            <img :src="defaultAvatar" alt="用户头像" class="avatar-image" />
             <div class="avatar-overlay" @click="triggerFileInput">
               <span>更换头像</span>
             </div>
@@ -24,41 +20,41 @@
             @change="handleFileChange"
           />
         </div>
-        
+
         <!-- 右侧信息 -->
         <div class="info-content">
           <div class="info-item">
             <div class="info-label">用户名</div>
-            <div class="info-value">{{ user.username || '未设置' }}</div>
+            <div class="info-value">{{ user.username || "未设置" }}</div>
           </div>
-          
+
           <div class="info-item">
             <div class="info-label">邮箱</div>
-            <div class="info-value">{{ user.email || '未设置' }}</div>
+            <div class="info-value">{{ user.email || "未设置" }}</div>
           </div>
-          
+
           <div class="info-item">
             <div class="info-label">所属机构</div>
-            <div class="info-value">{{ user.affiliation || '未设置' }}</div>
+            <div class="info-value">{{ user.affiliation || "未设置" }}</div>
           </div>
-          
+
           <div class="info-item">
             <div class="info-label">个人简介</div>
-            <div class="info-value">{{ user.bio || '暂无个人简介' }}</div>
+            <div class="info-value">{{ user.bio || "暂无个人简介" }}</div>
           </div>
-          
+
           <div class="info-item">
             <div class="info-label">研究方向</div>
-            <div class="info-value">{{ user.research_interests || '暂无研究方向' }}</div>
+            <div class="info-value">
+              {{ user.research_interests || "暂无研究方向" }}
+            </div>
           </div>
         </div>
       </div>
-      
+
       <!-- 底部编辑按钮 -->
       <div class="action-button">
-        <button @click="startEditing" class="edit-button">
-          编辑
-        </button>
+        <button @click="startEditing" class="edit-button">编辑</button>
       </div>
     </div>
 
@@ -78,24 +74,24 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 右侧表单 -->
         <div class="form-content">
           <div class="info-item">
             <div class="info-label">用户名</div>
-            <div class="info-value">{{ user.username || '未设置' }}</div>
+            <div class="info-value">{{ user.username || "未设置" }}</div>
           </div>
-          
+
           <div class="info-item">
             <div class="info-label">邮箱</div>
-            <div class="info-value">{{ user.email || '未设置' }}</div>
+            <div class="info-value">{{ user.email || "未设置" }}</div>
           </div>
-          
+
           <div class="info-item">
             <div class="info-label">所属机构</div>
-            <div class="info-value">{{ user.affiliation || '未设置' }}</div>
+            <div class="info-value">{{ user.affiliation || "未设置" }}</div>
           </div>
-          
+
           <div class="form-group">
             <label for="bio">个人简介</label>
             <textarea
@@ -105,7 +101,7 @@
               rows="4"
             ></textarea>
           </div>
-          
+
           <div class="form-group">
             <label for="research_interests">研究方向</label>
             <textarea
@@ -118,7 +114,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 底部保存和取消按钮 -->
       <div class="form-actions">
         <button type="button" @click="cancelEditing" class="cancel-button">
@@ -132,7 +128,7 @@
 
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import defaultAvatar from '@/assets/female.png';
+import defaultAvatar from "@/assets/female.png";
 
 export default {
   name: "ProfileForm",
@@ -168,7 +164,7 @@ export default {
         bio: this.user.bio || "",
         research_interests: this.user.research_interests || "",
       };
-      
+
       // 设置头像
       if (this.user.avatar_url) {
         this.avatarUrl = this.user.avatar_url;
@@ -188,7 +184,7 @@ export default {
     handleFileChange(event) {
       const file = event.target.files[0];
       if (!file) return;
-      
+
       // 处理文件上传预览
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -200,24 +196,23 @@ export default {
     handleSubmit() {
       // 创建表单数据对象
       const formData = new FormData();
-      formData.append('bio', this.form.bio);
-      formData.append('research_interests', this.form.research_interests);
-      
+      formData.append("bio", this.form.bio);
+      formData.append("research_interests", this.form.research_interests);
+
       // 如果有新头像，添加到表单数据
       if (this.avatarFile) {
-        formData.append('avatar', this.avatarFile);
+        formData.append("avatar", this.avatarFile);
       }
-      
+
       // 发出保存事件，让父组件处理
-      this.$emit('save', formData);
-      
+      this.$emit("save", formData);
+
       // 退出编辑模式
       this.isEditing = false;
-    }
+    },
   },
-}
+};
 </script>
-
 
 <style scoped>
 .profile-form {
@@ -269,7 +264,8 @@ export default {
   opacity: 1;
 }
 
-.info-content, .form-content {
+.info-content,
+.form-content {
   flex: 1;
 }
 

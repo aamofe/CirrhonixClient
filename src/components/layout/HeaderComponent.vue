@@ -9,7 +9,10 @@
       <nav>
         <ul>
           <li v-for="(item, index) in navItems" :key="index">
-            <router-link :to="item.path" :class="{ active: isActive(item.path) }">
+            <router-link
+              :to="item.path"
+              :class="{ active: isActive(item.path) }"
+            >
               {{ item.name }}
             </router-link>
           </li>
@@ -25,7 +28,7 @@
 </template>
 
 <script>
-import User from "@/api/User"
+import User from "@/api/User";
 
 export default {
   name: "HeaderComponent",
@@ -39,67 +42,66 @@ export default {
         { name: "爬虫中心", path: "/crawler" },
         // { name: "个人中心", path: "/profile" },
       ],
-    }
+    };
   },
   computed: {
     getUserInitial() {
-      return this.username ? this.username.charAt(0).toUpperCase() : "U"
+      return this.username ? this.username.charAt(0).toUpperCase() : "U";
     },
   },
   methods: {
     isActive(path) {
       // 检查当前路由是否匹配导航项
-      return this.$route.path === path
+      return this.$route.path === path;
     },
     goToHome() {
-      this.$router.push("/")
+      this.$router.push("/");
     },
     goToProfile() {
       if (!this.username) {
-        this.$router.push("/login")
+        this.$router.push("/login");
       } else {
-        this.$router.push("/profile")
+        this.$router.push("/profile");
       }
     },
     async getProfile() {
       try {
-        const response = await User.profile()
-        const data = response.data.data
-        this.username = data.username
-        this.$message.success(`当前用户：${data.username}`)
+        const response = await User.profile();
+        const data = response.data.data;
+        this.username = data.username;
+        this.$message.success(`当前用户：${data.username}`);
       } catch (error) {
-        console.error(error)
+        console.error(error);
         if (error.response && error.response.status === 401) {
-          this.username = ""
+          this.username = "";
         } else {
-          this.$message.error("获取用户信息失败")
+          this.$message.error("获取用户信息失败");
         }
       }
     },
     updateFromUserInfo(userInfo) {
       if (userInfo && userInfo.username) {
-        this.username = userInfo.username
+        this.username = userInfo.username;
       }
-    }
+    },
   },
   mounted() {
     this.$bus.on("update-navigator", (userInfo) => {
       if (userInfo) {
-        this.updateFromUserInfo(userInfo)
+        this.updateFromUserInfo(userInfo);
       } else {
-        this.getProfile()
+        this.getProfile();
       }
-    })
-    const token = localStorage.getItem("token")
+    });
+    const token = localStorage.getItem("token");
     if (token) {
-      this.getProfile()
+      this.getProfile();
     }
-
   },
   beforeUnmount() {
-    this.$bus.off("update-navigator")
-  }
-}
+    this.$bus.off("update-navigator");
+  },
+};
 </script>
 
 <style scoped>

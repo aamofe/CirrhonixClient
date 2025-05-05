@@ -1,7 +1,6 @@
 <!-- src/views/SearchPage.vue -->
 <template>
   <div class="search-page">
-
     <section class="search-header">
       <h1>文献检索</h1>
       <p>精准查找全球范围内与肝硬化相关的最新研究、临床实践与专家共识</p>
@@ -13,10 +12,16 @@
           {{ showAdvancedSearch ? "收起高级检索" : "展开高级检索" }}
         </div>
         <div class="search-type-selector">
-          <span :class="{ active: searchType === 'basic' }" @click="setSearchType('basic')">
+          <span
+            :class="{ active: searchType === 'basic' }"
+            @click="setSearchType('basic')"
+          >
             基础检索
           </span>
-          <span :class="{ active: searchType === 'semantic' }" @click="setSearchType('semantic')">
+          <span
+            :class="{ active: searchType === 'semantic' }"
+            @click="setSearchType('semantic')"
+          >
             语义检索
           </span>
         </div>
@@ -25,22 +30,38 @@
       <div class="advanced-search-panel" v-if="showAdvancedSearch">
         <div class="form-group">
           <label>标题</label>
-          <input type="text" v-model="advancedFilters.title" placeholder="在标题中包含..." />
+          <input
+            type="text"
+            v-model="advancedFilters.title"
+            placeholder="在标题中包含..."
+          />
         </div>
 
         <div class="form-group">
           <label>摘要</label>
-          <input type="text" v-model="advancedFilters.abstract" placeholder="在摘要中包含..." />
+          <input
+            type="text"
+            v-model="advancedFilters.abstract"
+            placeholder="在摘要中包含..."
+          />
         </div>
 
         <div class="form-group">
           <label>作者</label>
-          <input type="text" v-model="advancedFilters.author" placeholder="作者姓名..." />
+          <input
+            type="text"
+            v-model="advancedFilters.author"
+            placeholder="作者姓名..."
+          />
         </div>
 
         <div class="form-group">
           <label>期刊</label>
-          <input type="text" v-model="advancedFilters.journal" placeholder="期刊名称..." />
+          <input
+            type="text"
+            v-model="advancedFilters.journal"
+            placeholder="期刊名称..."
+          />
         </div>
 
         <div class="form-row">
@@ -90,9 +111,18 @@
 
           <div class="filter-group">
             <h4>文献类型</h4>
-            <div v-for="(count, type) in filters.types" :key="type" class="filter-item">
+            <div
+              v-for="(count, type) in filters.types"
+              :key="type"
+              class="filter-item"
+            >
               <label>
-                <input type="checkbox" :value="type" v-model="selectedFilters.types" @change="applyFilters" />
+                <input
+                  type="checkbox"
+                  :value="type"
+                  v-model="selectedFilters.types"
+                  @change="applyFilters"
+                />
                 {{ type }} ({{ count }})
               </label>
             </div>
@@ -100,9 +130,18 @@
 
           <div class="filter-group">
             <h4>期刊</h4>
-            <div v-for="(count, journal) in filters.journals" :key="journal" class="filter-item">
+            <div
+              v-for="(count, journal) in filters.journals"
+              :key="journal"
+              class="filter-item"
+            >
               <label>
-                <input type="checkbox" :value="journal" v-model="selectedFilters.journals" @change="applyFilters" />
+                <input
+                  type="checkbox"
+                  :value="journal"
+                  v-model="selectedFilters.journals"
+                  @change="applyFilters"
+                />
                 {{ journal }} ({{ count }})
               </label>
             </div>
@@ -110,9 +149,18 @@
 
           <div class="filter-group">
             <h4>出版年份</h4>
-            <div v-for="(count, year) in filters.years" :key="year" class="filter-item">
+            <div
+              v-for="(count, year) in filters.years"
+              :key="year"
+              class="filter-item"
+            >
               <label>
-                <input type="checkbox" :value="year" v-model="selectedFilters.years" @change="applyFilters" />
+                <input
+                  type="checkbox"
+                  :value="year"
+                  v-model="selectedFilters.years"
+                  @change="applyFilters"
+                />
                 {{ year }} ({{ count }})
               </label>
             </div>
@@ -125,13 +173,22 @@
           <span>共找到 {{ totalResults }} 条结果</span>
           <div class="sort-options">
             <span>排序: </span>
-            <span :class="{ active: sortBy === 'relevance' }" @click="setSortBy('relevance')">
+            <span
+              :class="{ active: sortBy === 'relevance' }"
+              @click="setSortBy('relevance')"
+            >
               相关度
             </span>
-            <span :class="{ active: sortBy === 'date' }" @click="setSortBy('date')">
+            <span
+              :class="{ active: sortBy === 'date' }"
+              @click="setSortBy('date')"
+            >
               出版日期
             </span>
-            <span :class="{ active: sortBy === 'citations' }" @click="setSortBy('citations')">
+            <span
+              :class="{ active: sortBy === 'citations' }"
+              @click="setSortBy('citations')"
+            >
               引用次数
             </span>
           </div>
@@ -148,12 +205,25 @@
         </div>
 
         <template v-else>
-          <div v-for="article in results" :key="article.id" class="result-item" @click="viewArticleDetail(article.id)">
+          <literature-item
+            v-for="article in results"
+            :key="article.id"
+            :article="article"
+            @view-detail="viewArticleDetail"
+          />
+
+        <!-- <template v-else>
+          <div
+            v-for="article in results"
+            :key="article.id"
+            class="result-item"
+            @click="viewArticleDetail(article.id)"
+          >
             <h3>{{ article.title }}</h3>
 
             <div class="article-meta">
-              <span>{{ formatAuthors(article.authors) }}</span>
-              <span>{{ article.journal.name }}</span>
+              <span>{{ formatAuthors(article.authors)  }}  {{article.authors.length}}</span>
+              <span>{{ article.source }}</span>
               <span>{{ formatDate(article.publication_date) }}</span>
             </div>
 
@@ -161,7 +231,11 @@
 
             <div class="article-footer">
               <div class="tags">
-                <span class="tag" v-for="(keyword, i) in article.keywords.slice(0, 3)" :key="i">
+                <span
+                  class="tag"
+                  v-for="(keyword, i) in article.keywords.slice(0, 3)"
+                  :key="i"
+                >
                   {{ keyword }}
                 </span>
               </div>
@@ -171,22 +245,34 @@
                 <span class="view-btn">查看全文</span>
               </div>
             </div>
-          </div>
+          </div> -->
 
           <div class="pagination">
-            <span class="page-btn" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
+            <span
+              class="page-btn"
+              :class="{ disabled: currentPage === 1 }"
+              @click="changePage(currentPage - 1)"
+            >
               上一页
             </span>
 
             <template v-for="page in displayedPages" :key="page">
               <span v-if="page === '...'" class="page-ellipsis"> ... </span>
-              <span v-else class="page-number" :class="{ active: page === currentPage }" @click="changePage(page)">
+              <span
+                v-else
+                class="page-number"
+                :class="{ active: page === currentPage }"
+                @click="changePage(page)"
+              >
                 {{ page }}
               </span>
             </template>
 
-            <span class="page-btn" :class="{ disabled: currentPage === totalPages }"
-              @click="changePage(currentPage + 1)">
+            <span
+              class="page-btn"
+              :class="{ disabled: currentPage === totalPages }"
+              @click="changePage(currentPage + 1)"
+            >
               下一页
             </span>
           </div>
@@ -199,10 +285,11 @@
 </template>
 
 <script>
-import SearchBox from "@/components/common/SearchBox.vue"
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import SiteFooter from "@/components/layout/SiteFooter.vue"
-import Search from "@/api/Search"
+import SearchBox from "@/components/common/SearchBox.vue";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
+import SiteFooter from "@/components/layout/SiteFooter.vue";
+import Search from "@/api/Search";
+import LiteratureItem from "@/components/LiteratureItem.vue"; 
 // import Literature from "@/api/Literature"
 
 export default {
@@ -211,6 +298,7 @@ export default {
     SearchBox,
     PrimaryButton,
     SiteFooter,
+    LiteratureItem,
   },
   data() {
     return {
@@ -244,47 +332,47 @@ export default {
         journals: [],
         years: [],
       },
-    }
+    };
   },
   computed: {
     displayedPages() {
-      const pages = []
+      const pages = [];
       if (this.totalPages <= 7) {
         for (let i = 1; i <= this.totalPages; i++) {
-          pages.push(i)
+          pages.push(i);
         }
       } else {
-        pages.push(1)
+        pages.push(1);
 
         if (this.currentPage > 3) {
-          pages.push("...")
+          pages.push("...");
         }
 
-        const start = Math.max(2, this.currentPage - 1)
-        const end = Math.min(this.totalPages - 1, this.currentPage + 1)
+        const start = Math.max(2, this.currentPage - 1);
+        const end = Math.min(this.totalPages - 1, this.currentPage + 1);
 
         for (let i = start; i <= end; i++) {
-          pages.push(i)
+          pages.push(i);
         }
 
         if (this.currentPage < this.totalPages - 2) {
-          pages.push("...")
+          pages.push("...");
         }
 
-        pages.push(this.totalPages)
+        pages.push(this.totalPages);
       }
-      return pages
+      return pages;
     },
   },
   methods: {
     async onSearch(query) {
-      this.searchQuery = query
-      this.currentPage = 1
-      this.loadResults()
+      this.searchQuery = query;
+      this.currentPage = 1;
+      this.loadResults();
     },
     async onAdvancedSearch() {
-      this.currentPage = 1
-      this.loadResults(true)
+      this.currentPage = 1;
+      this.loadResults(true);
     },
     resetAdvancedFilters() {
       this.advancedFilters = {
@@ -296,62 +384,75 @@ export default {
         end_date: "",
         type: "",
         language: "",
-      }
+      };
     },
     toggleAdvancedSearch() {
-      this.showAdvancedSearch = !this.showAdvancedSearch
+      this.showAdvancedSearch = !this.showAdvancedSearch;
     },
     setSearchType(type) {
-      this.searchType = type
+      this.searchType = type;
       if (this.searchQuery) {
-        this.loadResults()
+        this.loadResults();
       }
     },
     setSortBy(sort) {
-      this.sortBy = sort
-      this.loadResults()
+      this.sortBy = sort;
+      this.loadResults();
     },
+    // 修复后的loadResults方法
     async loadResults(isAdvanced = false) {
-      if ((!this.searchQuery && !isAdvanced) || this.isLoading) return
+      if ((!this.searchQuery && !isAdvanced) || this.isLoading) return;
 
-      this.isLoading = true
+      this.isLoading = true;
 
       try {
-        let response
+        let response;
 
         if (isAdvanced) {
           response = await Search.advancedSearch(
             this.advancedFilters,
             this.currentPage,
             this.pageSize
-          )
+          );
         } else if (this.searchType === "semantic") {
           response = await Search.semanticSearch(
             this.searchQuery,
             this.currentPage,
             this.pageSize
-          )
+          );
         } else {
           response = await Search.basicSearch(
             this.searchQuery,
             this.currentPage,
             this.pageSize
-          )
+          );
         }
 
-        this.results = response.data.items || []
-        this.totalResults = response.data.total || 0
-        this.totalPages = Math.ceil(this.totalResults / this.pageSize)
+        console.log("Search response:", response);
 
-        // 处理筛选条件
-        this.processFilters(response.data.filters || {})
+        if (response && response.data) {
+          this.results = response?.data?.data?.items || [];
+          this.totalResults = response?.data?.data?.total || 0;
+          this.totalPages = Math.ceil(this.totalResults / this.pageSize);
+
+          // 处理筛选条件
+          this.processFilters(response?.data?.data?.filters || {});
+          console.log(
+            `解析后的结果: ${this.results.length}条, 总计: ${this.totalResults}`
+          );
+        } else {
+          console.error("Unexpected response format:", response);
+          this.results = [];
+          this.totalResults = 0;
+          this.totalPages = 1;
+        }
       } catch (error) {
-        console.error("Error loading search results:", error)
-        this.results = []
-        this.totalResults = 0
-        this.totalPages = 1
+        console.error("Error loading search results:", error);
+        this.results = [];
+        this.totalResults = 0;
+        this.totalPages = 1;
       } finally {
-        this.isLoading = false
+        this.isLoading = false;
       }
     },
     processFilters(filterData) {
@@ -359,67 +460,67 @@ export default {
         types: filterData.types || {},
         journals: filterData.journals || {},
         years: filterData.years || {},
-      }
+      };
     },
     applyFilters() {
-      this.currentPage = 1
-      this.loadResults()
+      this.currentPage = 1;
+      this.loadResults();
     },
     changePage(page) {
       if (page < 1 || page > this.totalPages || page === this.currentPage) {
-        return
+        return;
       }
 
-      this.currentPage = page
-      this.loadResults()
+      this.currentPage = page;
+      this.loadResults();
     },
     formatAuthors(authors) {
-      if (!authors || authors.length === 0) return "未知作者"
+      if (!authors || authors.length === 0) return "未知作者";
 
-      if (authors.length === 1) return authors[0]
+      if (authors.length === 1) return authors[0];
 
-      if (authors.length === 2) return `${authors[0]} 和 ${authors[1]}`
+      if (authors.length === 2) return `${authors[0]} 和 ${authors[1]}`;
 
-      return `${authors[0]} 等.`
+      return `${authors[0]} 等.`;
     },
     formatDate(dateString) {
-      if (!dateString) return ""
+      if (!dateString) return "";
 
-      const date = new Date(dateString)
-      return date.toLocaleDateString("zh-CN")
+      const date = new Date(dateString);
+      return date.toLocaleDateString("zh-CN");
     },
     viewArticleDetail(id) {
-      this.$router.push(`/literature/${id}`)
+      this.$router.push(`/literature/${id}`);
     },
     parseQueryParams() {
-      const query = this.$route.query
+      const query = this.$route.query;
 
       if (query.q) {
-        this.searchQuery = query.q
-        this.loadResults()
+        this.searchQuery = query.q;
+        this.loadResults();
       }
 
       if (query.page) {
-        const page = parseInt(query.page, 10)
+        const page = parseInt(query.page, 10);
         if (!isNaN(page) && page > 0) {
-          this.currentPage = page
+          this.currentPage = page;
         }
       }
 
       if (query.type) {
-        this.searchType = query.type === "semantic" ? "semantic" : "basic"
+        this.searchType = query.type === "semantic" ? "semantic" : "basic";
       }
     },
   },
   mounted() {
-    this.parseQueryParams()
+    this.parseQueryParams();
   },
   // watch: {
   //   "$route.query"(newQuery) {
   //     this.parseQueryParams();
   //   },
   // },
-}
+};
 </script>
 
 <style scoped>
