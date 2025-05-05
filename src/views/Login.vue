@@ -95,53 +95,36 @@ export default {
     ...mapMutations(["setIsAdmin", "setUserId"]),
 
     async login() {
-      console.log("==================开始登录")
-      if (this.username === "" || this.password === "") {
+      if (!this.username || !this.password) {
         this.$message.error("用户名和密码不得为空")
         return
       }
-
       try {
-        console.log("发送登录请求前:", this.username, this.password)
-        const loginResponse = await User.login(this.username, this.password)
-        console.log("登录响应:", loginResponse)
+        const loginRes = await User.login(this.username, this.password)
 
-        if (loginResponse && loginResponse.data && loginResponse.data.code === 200) {
-          const token = loginResponse.data.data.token
-          // 可选：将 token 缓存起来
-          localStorage.setItem("token", token)
-          service.defaults.headers.common["Authorization"] = `Bearer ${token}`
-          try {
-            const profileResponse = await User.profile()
-            console.log("获取用户资料响应:", profileResponse)
-
-            if (profileResponse && profileResponse.data && profileResponse.data.data) {
-              const userInfo = profileResponse.data.data
-
-              this.setIsAdmin(userInfo.is_super_user)
-              this.setUserId(userInfo.id)
-
-              if (this.$bus && typeof this.$bus.emit === 'function') {
-                this.$bus.emit("update-navigator")
-              }
-
-              this.$router.push("/main")
-            } else {
-              this.$message.error("获取用户信息失败")
-            }
-          } catch (profileError) {
-            console.error("获取用户资料出错:", profileError)
-            this.$message.error("获取用户资料失败")
-          }
-        } else {
-          const errorMsg = loginResponse && loginResponse.data ?
-            (loginResponse.data.message || "登录失败") :
-            "登录失败"
-          this.$message.error(errorMsg)
+        if (!loginRes?.data) {
+          this.$message.error(loginRes?.data?.message || "登录失败")
+          return
         }
-      } catch (error) {
-        console.error("登录请求出错:", error)
-        this.$message.error(error?.message || "登录请求出错")
+        const token = loginRes.data.data.token
+        console.log(token)
+        localStorage.setItem("token", token)
+        try {
+          const profileRes = await User.profile()
+          if (!profileRes?.data?.data) {
+            this.$message.error("获取用户信息失败")
+            return
+          }
+          const userInfo = profileRes.data.data
+          this.setIsAdmin(userInfo.is_super_user)
+          this.setUserId(userInfo.id)
+          if (this.$bus?.emit) this.$bus.emit("update-navigator")
+          this.$router.push("/main")
+        } catch (err) {
+          this.$message.error("获取用户资料失败")
+        }
+      } catch (err) {
+        this.$message.error(err?.response?.data?.message || "登录请求出错")
       }
     },
 
@@ -201,7 +184,6 @@ export default {
         const response = await User.profile()
         const data = response.data.data
         this.$message.success(`当前用户：${data.username}`)
-        // 你也可以将 userInfo 存到 Vuex 或组件中
       } catch (error) {
         this.$message.error("获取用户信息失败")
       }

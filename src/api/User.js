@@ -9,6 +9,9 @@ const url = {
 }
 
 export default class User {
+  static async profile() {
+    return service.get(url.profile)
+  }
   static async register(username, email, pswd1, pswd2) {
     return service.post(url.register, {
       username,
@@ -28,9 +31,5 @@ export default class User {
 
   static async logout() {
     return service.post(url.logout)
-  }
-
-  static async profile() {
-    return service.get(url.profile)
   }
 }
