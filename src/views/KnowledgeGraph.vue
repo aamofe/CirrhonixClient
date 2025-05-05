@@ -1,7 +1,6 @@
 <!-- src/views/KnowledgeGraph.vue -->
 <template>
   <div class="knowledge-graph">
-    <header-component />
 
     <div class="graph-header">
       <h1>肝硬化知识图谱</h1>
@@ -9,32 +8,18 @@
 
       <div class="graph-controls">
         <div class="search-filter">
-          <input
-            type="text"
-            v-model="searchKeyword"
-            placeholder="搜索节点..."
-            @input="filterGraph"
-          />
+          <input type="text" v-model="searchKeyword" placeholder="搜索节点..." @input="filterGraph" />
         </div>
 
         <div class="view-toggles">
           <span>视图:</span>
-          <button
-            :class="['view-btn', currentView === 'concept' ? 'active' : '']"
-            @click="switchView('concept')"
-          >
+          <button :class="['view-btn', currentView === 'concept' ? 'active' : '']" @click="switchView('concept')">
             概念网络
           </button>
-          <button
-            :class="['view-btn', currentView === 'citation' ? 'active' : '']"
-            @click="switchView('citation')"
-          >
+          <button :class="['view-btn', currentView === 'citation' ? 'active' : '']" @click="switchView('citation')">
             引用关系
           </button>
-          <button
-            :class="['view-btn', currentView === 'timeline' ? 'active' : '']"
-            @click="switchView('timeline')"
-          >
+          <button :class="['view-btn', currentView === 'timeline' ? 'active' : '']" @click="switchView('timeline')">
             时间轴
           </button>
         </div>
@@ -44,15 +29,10 @@
         <div class="filter-group">
           <span class="filter-label">节点类型:</span>
           <div class="tag-options">
-            <span
-              v-for="(type, index) in nodeTypes"
-              :key="index"
-              :class="[
-                'filter-tag',
-                selectedNodeTypes.includes(type.value) ? 'active' : '',
-              ]"
-              @click="toggleNodeType(type.value)"
-            >
+            <span v-for="(type, index) in nodeTypes" :key="index" :class="[
+              'filter-tag',
+              selectedNodeTypes.includes(type.value) ? 'active' : '',
+            ]" @click="toggleNodeType(type.value)">
               {{ type.label }}
             </span>
           </div>
@@ -61,15 +41,10 @@
         <div class="filter-group">
           <span class="filter-label">关系类型:</span>
           <div class="tag-options">
-            <span
-              v-for="(type, index) in relationTypes"
-              :key="index"
-              :class="[
-                'filter-tag',
-                selectedRelationTypes.includes(type.value) ? 'active' : '',
-              ]"
-              @click="toggleRelationType(type.value)"
-            >
+            <span v-for="(type, index) in relationTypes" :key="index" :class="[
+              'filter-tag',
+              selectedRelationTypes.includes(type.value) ? 'active' : '',
+            ]" @click="toggleRelationType(type.value)">
               {{ type.label }}
             </span>
           </div>
@@ -106,12 +81,8 @@
         <div class="sidebar-card">
           <h3>热门概念</h3>
           <div class="popular-list">
-            <div
-              v-for="(concept, index) in popularConcepts"
-              :key="index"
-              class="popular-item"
-              @click="focusNode(concept.id)"
-            >
+            <div v-for="(concept, index) in popularConcepts" :key="index" class="popular-item"
+              @click="focusNode(concept.id)">
               <span class="item-name">{{ concept.name }}</span>
               <span class="item-count">{{ concept.count }}</span>
             </div>
@@ -121,12 +92,8 @@
         <div class="sidebar-card">
           <h3>核心文献</h3>
           <div class="popular-list">
-            <div
-              v-for="(paper, index) in keyPapers"
-              :key="index"
-              class="popular-item"
-              @click="viewArticleDetail(paper.id)"
-            >
+            <div v-for="(paper, index) in keyPapers" :key="index" class="popular-item"
+              @click="viewArticleDetail(paper.id)">
               <span class="item-name">{{ paper.title }}</span>
               <span class="item-count">{{ paper.citation_count }}</span>
             </div>
@@ -137,39 +104,19 @@
           <h3>图谱设置</h3>
           <div class="setting-item">
             <span class="setting-label">节点大小:</span>
-            <input
-              type="range"
-              v-model="graphSettings.nodeSize"
-              min="1"
-              max="20"
-              @change="updateGraphSettings"
-            />
+            <input type="range" v-model="graphSettings.nodeSize" min="1" max="20" @change="updateGraphSettings" />
           </div>
           <div class="setting-item">
             <span class="setting-label">边线粗细:</span>
-            <input
-              type="range"
-              v-model="graphSettings.edgeWidth"
-              min="1"
-              max="10"
-              @change="updateGraphSettings"
-            />
+            <input type="range" v-model="graphSettings.edgeWidth" min="1" max="10" @change="updateGraphSettings" />
           </div>
           <div class="setting-item">
             <span class="setting-label">显示标签:</span>
-            <input
-              type="checkbox"
-              v-model="graphSettings.showLabels"
-              @change="updateGraphSettings"
-            />
+            <input type="checkbox" v-model="graphSettings.showLabels" @change="updateGraphSettings" />
           </div>
           <div class="setting-item">
             <span class="setting-label">物理引擎:</span>
-            <input
-              type="checkbox"
-              v-model="graphSettings.physics"
-              @change="updateGraphSettings"
-            />
+            <input type="checkbox" v-model="graphSettings.physics" @change="updateGraphSettings" />
           </div>
           <div class="setting-actions">
             <button @click="resetGraphSettings" class="reset-btn">
@@ -223,27 +170,18 @@
               </p>
             </div>
 
-            <div
-              class="detail-item"
-              v-if="selectedNode.relations && selectedNode.relations.length > 0"
-            >
+            <div class="detail-item" v-if="selectedNode.relations && selectedNode.relations.length > 0">
               <span class="detail-label">关系:</span>
               <ul class="relations-list">
-                <li
-                  v-for="(relation, index) in selectedNode.relations"
-                  :key="index"
-                  @click="focusNode(relation.target_id)"
-                >
+                <li v-for="(relation, index) in selectedNode.relations" :key="index"
+                  @click="focusNode(relation.target_id)">
                   <span class="relation-type">{{ relation.type }}</span>
                   <span class="relation-node">{{ relation.target_name }}</span>
                 </li>
               </ul>
             </div>
 
-            <div
-              class="detail-actions"
-              v-if="selectedNode.type === 'literature'"
-            >
+            <div class="detail-actions" v-if="selectedNode.type === 'literature'">
               <primary-button @click="viewArticleDetail(selectedNode.id)">
                 查看文献详情
               </primary-button>
@@ -258,15 +196,13 @@
 </template>
 
 <script>
-import HeaderComponent from "@/components/layout/HeaderComponent.vue";
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import SiteFooter from "@/components/layout/SiteFooter.vue";
-import Literature from "@/api/Literature";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import SiteFooter from "@/components/layout/SiteFooter.vue"
+import Literature from "@/api/Literature"
 
 export default {
   name: "KnowledgeGraph",
   components: {
-    HeaderComponent,
     PrimaryButton,
     SiteFooter,
   },
@@ -310,11 +246,11 @@ export default {
         showLabels: true,
         physics: true,
       },
-    };
+    }
   },
   methods: {
     async loadGraphData() {
-      this.isLoading = true;
+      this.isLoading = true
 
       try {
         const params = {
@@ -323,23 +259,23 @@ export default {
           keyword: this.searchKeyword,
           view: this.currentView,
           limit: 150, // 限制节点数量以提高性能
-        };
+        }
 
-        const response = await Literature.getGraphData(params);
-        this.graphData = response.data;
+        const response = await Literature.getGraphData(params)
+        this.graphData = response.data
 
         // 更新统计信息
-        this.updateStats();
+        this.updateStats()
 
         // 加载热门概念和核心文献
-        await this.loadSidebarData();
+        await this.loadSidebarData()
 
         // 渲染图谱
-        this.renderGraph();
+        this.renderGraph()
       } catch (error) {
-        console.error("Error loading graph data:", error);
+        console.error("Error loading graph data:", error)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     async loadSidebarData() {
@@ -348,38 +284,38 @@ export default {
         const conceptsResponse = await Literature.getConceptNet({
           sort: "-weight",
           limit: 10,
-        });
-        this.popularConcepts = conceptsResponse.data.items || [];
+        })
+        this.popularConcepts = conceptsResponse.data.items || []
 
         // 获取引用次数最多的文献
         const papersResponse = await Literature.list({
           sort: "-citation_count",
           page: 1,
           size: 10,
-        });
-        this.keyPapers = papersResponse.data.items || [];
+        })
+        this.keyPapers = papersResponse.data.items || []
       } catch (error) {
-        console.error("Error loading sidebar data:", error);
+        console.error("Error loading sidebar data:", error)
       }
     },
     updateStats() {
       // 计算图谱统计信息
-      const nodes = this.graphData.nodes || [];
-      const edges = this.graphData.edges || [];
+      const nodes = this.graphData.nodes || []
+      const edges = this.graphData.edges || []
 
-      this.graphStats.totalNodes = nodes.length;
-      this.graphStats.totalRelations = edges.length;
+      this.graphStats.totalNodes = nodes.length
+      this.graphStats.totalRelations = edges.length
 
       // 统计不同类型的节点数量
       this.graphStats.literatureCount = nodes.filter(
         (node) => node.type === "literature"
-      ).length;
+      ).length
       this.graphStats.conceptCount = nodes.filter(
         (node) => node.type === "concept"
-      ).length;
+      ).length
       this.graphStats.authorCount = nodes.filter(
         (node) => node.type === "author"
-      ).length;
+      ).length
     },
     renderGraph() {
       // 这里需要使用图形可视化库（如vis.js）渲染图谱
@@ -418,56 +354,56 @@ export default {
         // this.graphNetwork.on('click', this.onNodeClick)
 
         // 由于我们不能在这里实际渲染vis.js，所以这只是一个示例
-        console.log("Graph would be rendered here with data:", this.graphData);
+        console.log("Graph would be rendered here with data:", this.graphData)
       } else {
         // 更新现有网络
         // this.graphNetwork.setData(this.graphData)
-        console.log("Graph would be updated here with data:", this.graphData);
+        console.log("Graph would be updated here with data:", this.graphData)
       }
     },
     switchView(view) {
-      if (this.currentView === view) return;
+      if (this.currentView === view) return
 
-      this.currentView = view;
-      this.loadGraphData();
+      this.currentView = view
+      this.loadGraphData()
     },
     toggleNodeType(type) {
-      const index = this.selectedNodeTypes.indexOf(type);
+      const index = this.selectedNodeTypes.indexOf(type)
 
       if (index === -1) {
-        this.selectedNodeTypes.push(type);
+        this.selectedNodeTypes.push(type)
       } else {
-        this.selectedNodeTypes.splice(index, 1);
+        this.selectedNodeTypes.splice(index, 1)
       }
 
       // 确保至少选择一种节点类型
       if (this.selectedNodeTypes.length === 0) {
-        this.selectedNodeTypes.push(type);
-        return;
+        this.selectedNodeTypes.push(type)
+        return
       }
 
-      this.loadGraphData();
+      this.loadGraphData()
     },
     toggleRelationType(type) {
-      const index = this.selectedRelationTypes.indexOf(type);
+      const index = this.selectedRelationTypes.indexOf(type)
 
       if (index === -1) {
-        this.selectedRelationTypes.push(type);
+        this.selectedRelationTypes.push(type)
       } else {
-        this.selectedRelationTypes.splice(index, 1);
+        this.selectedRelationTypes.splice(index, 1)
       }
 
-      this.loadGraphData();
+      this.loadGraphData()
     },
     filterGraph() {
       // 延迟执行，避免频繁请求
       if (this.filterTimeout) {
-        clearTimeout(this.filterTimeout);
+        clearTimeout(this.filterTimeout)
       }
 
       this.filterTimeout = setTimeout(() => {
-        this.loadGraphData();
-      }, 500);
+        this.loadGraphData()
+      }, 500)
     },
     onNodeClick(event) {
       // 当用户点击节点时触发
@@ -475,14 +411,14 @@ export default {
 
       // 假设event.nodes包含被点击节点的ID
       if (event.nodes && event.nodes.length > 0) {
-        const nodeId = event.nodes[0];
-        const node = this.graphData.nodes.find((n) => n.id === nodeId);
+        const nodeId = event.nodes[0]
+        const node = this.graphData.nodes.find((n) => n.id === nodeId)
 
         if (node) {
-          this.selectedNode = node;
+          this.selectedNode = node
         }
       } else {
-        this.selectedNode = null;
+        this.selectedNode = null
       }
     },
     focusNode(nodeId) {
@@ -490,10 +426,10 @@ export default {
       // 在实际实现中，这将使用图形库的API
 
       // 查找节点
-      const node = this.graphData.nodes.find((n) => n.id === nodeId);
+      const node = this.graphData.nodes.find((n) => n.id === nodeId)
 
       if (node) {
-        this.selectedNode = node;
+        this.selectedNode = node
 
         // 如果使用vis.js，可以这样聚焦节点
         // this.graphNetwork.focus(nodeId, {
@@ -504,11 +440,11 @@ export default {
         //   }
         // })
 
-        console.log("Would focus on node:", nodeId);
+        console.log("Would focus on node:", nodeId)
       }
     },
     closeNodeDetail() {
-      this.selectedNode = null;
+      this.selectedNode = null
     },
     updateGraphSettings() {
       // 更新图谱设置
@@ -520,7 +456,7 @@ export default {
         //   physics: { enabled: this.graphSettings.physics }
         // })
 
-        console.log("Graph settings updated:", this.graphSettings);
+        console.log("Graph settings updated:", this.graphSettings)
       }
     },
     resetGraphSettings() {
@@ -529,23 +465,23 @@ export default {
         edgeWidth: 2,
         showLabels: true,
         physics: true,
-      };
+      }
 
-      this.updateGraphSettings();
+      this.updateGraphSettings()
     },
     getNodeTypeName(type) {
-      const nodeType = this.nodeTypes.find((t) => t.value === type);
-      return nodeType ? nodeType.label : type;
+      const nodeType = this.nodeTypes.find((t) => t.value === type)
+      return nodeType ? nodeType.label : type
     },
     formatDate(dateString) {
-      if (!dateString) return "N/A";
+      if (!dateString) return "N/A"
 
-      const date = new Date(dateString);
-      return date.toLocaleDateString("zh-CN");
+      const date = new Date(dateString)
+      return date.toLocaleDateString("zh-CN")
     },
     viewArticleDetail(id) {
       if (id) {
-        this.$router.push(`/literature/${id}`);
+        this.$router.push(`/literature/${id}`)
       }
     },
   },
@@ -558,16 +494,16 @@ export default {
     // })
 
     // 由于我们不能实际导入库，所以直接加载数据
-    this.loadGraphData();
+    this.loadGraphData()
   },
   beforeUnmount() {
     // 清理网络实例
     if (this.graphNetwork) {
       // this.graphNetwork.destroy()
-      console.log("Graph would be destroyed here");
+      console.log("Graph would be destroyed here")
     }
   },
-};
+}
 </script>
 
 <style scoped>

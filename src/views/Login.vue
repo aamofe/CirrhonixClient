@@ -118,8 +118,11 @@ export default {
           const userInfo = profileRes.data.data
           this.setIsAdmin(userInfo.is_super_user)
           this.setUserId(userInfo.id)
-          if (this.$bus?.emit) this.$bus.emit("update-navigator")
-          this.$router.push("/main")
+
+          // 发送事件通知，并传递用户信息
+          this.$bus.emit("update-navigator", userInfo)
+
+          this.$router.push("/")
         } catch (err) {
           this.$message.error("获取用户资料失败")
         }

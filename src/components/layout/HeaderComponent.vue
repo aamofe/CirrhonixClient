@@ -36,14 +36,14 @@ export default {
         { name: "首页", path: "/" },
         { name: "文献检索", path: "/search" },
         { name: "知识图谱", path: "/knowledge-graph" },
-        { name: "专家共识", path: "/expert-consensus" },
-        { name: "个人中心", path: "/profile" },
+        { name: "爬虫中心", path: "/crawler" },
+        // { name: "个人中心", path: "/profile" },
       ],
     }
   },
   computed: {
     getUserInitial() {
-      return this.username ? this.username.charAt(0) : "U"
+      return this.username ? this.username.charAt(0).toUpperCase() : "U"
     },
   },
   methods: {
@@ -76,10 +76,29 @@ export default {
         }
       }
     },
+    updateFromUserInfo(userInfo) {
+      if (userInfo && userInfo.username) {
+        this.username = userInfo.username
+      }
+    }
   },
   mounted() {
-    this.getProfile()
+    this.$bus.on("update-navigator", (userInfo) => {
+      if (userInfo) {
+        this.updateFromUserInfo(userInfo)
+      } else {
+        this.getProfile()
+      }
+    })
+    const token = localStorage.getItem("token")
+    if (token) {
+      this.getProfile()
+    }
+
   },
+  beforeUnmount() {
+    this.$bus.off("update-navigator")
+  }
 }
 </script>
 

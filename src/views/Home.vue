@@ -1,7 +1,6 @@
 <!-- src/views/home.vue -->
 <template>
   <div class="home-page">
-    <!-- <header-component /> -->
 
     <section class="search-container">
       <h1>肝硬化文献智能检索系统</h1>
@@ -20,16 +19,11 @@
           <h2>{{ featuredArticle.title }}</h2>
           <div class="featured-meta">
             <span>来源：{{ featuredArticle.journal }}</span>
-            <span
-              >发表日期：{{ formatDate(featuredArticle.publicationDate) }}</span
-            >
+            <span>发表日期：{{ formatDate(featuredArticle.publicationDate) }}</span>
             <span>引用：{{ featuredArticle.citations }}</span>
           </div>
           <p>{{ featuredArticle.abstract }}</p>
-          <primary-button
-            @click="viewArticle(featuredArticle.id)"
-            :fullWidth="false"
-          >
+          <primary-button @click="viewArticle(featuredArticle.id)" :fullWidth="false">
             阅读全文
           </primary-button>
         </div>
@@ -47,23 +41,15 @@
       <section-title title="最新文献" url="/literature" linkText="查看全部" />
 
       <div class="card-grid">
-        <literature-card
-          v-for="article in recentArticles"
-          :key="article.id"
-          :article="article"
-          @click="viewArticle(article.id)"
-        />
+        <literature-card v-for="article in recentArticles" :key="article.id" :article="article"
+          @click="viewArticle(article.id)" />
       </div>
 
       <section-title title="热门作者" url="/authors" linkText="查看更多" />
 
       <div class="card-grid">
-        <author-card
-          v-for="author in popularAuthors"
-          :key="author.id"
-          :author="author"
-          @click="viewAuthorProfile(author.id)"
-        />
+        <author-card v-for="author in popularAuthors" :key="author.id" :author="author"
+          @click="viewAuthorProfile(author.id)" />
       </div>
     </div>
 
@@ -72,20 +58,18 @@
 </template>
 
 <script>
-// import HeaderComponent from "@/components/layout/HeaderComponent.vue"
-import SearchBox from "@/components/common/SearchBox.vue";
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import SectionTitle from "@/components/common/Sectiontitle.vue";
-import LiteratureCard from "@/components/cards/LiteratureCard.vue";
-import AuthorCard from "@/components/cards/AuthorCard.vue";
-import SiteFooter from "@/components/layout/SiteFooter.vue";
-import Literature from "@/api/Literature";
-import Search from "@/api/Search";
+import SearchBox from "@/components/common/SearchBox.vue"
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import SectionTitle from "@/components/common/Sectiontitle.vue"
+import LiteratureCard from "@/components/cards/LiteratureCard.vue"
+import AuthorCard from "@/components/cards/AuthorCard.vue"
+import SiteFooter from "@/components/layout/SiteFooter.vue"
+import Literature from "@/api/Literature"
+import Search from "@/api/Search"
 
 export default {
   name: "HomeView",
   components: {
-    // HeaderComponent,
     SearchBox,
     PrimaryButton,
     SectionTitle,
@@ -108,42 +92,42 @@ export default {
       popularAuthors: [],
       trendingTopics: [],
       isLoading: false,
-    };
+    }
   },
   methods: {
     formatDate(dateString) {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      return date.toLocaleDateString("zh-CN");
+      if (!dateString) return ""
+      const date = new Date(dateString)
+      return date.toLocaleDateString("zh-CN")
     },
     async loadRecentArticles() {
       try {
-        this.isLoading = true;
+        this.isLoading = true
         const response = await Literature.list({
           sort: "-publication_date",
           page: 1,
           size: 6,
-        });
-        this.recentArticles = response.data.items || [];
+        })
+        this.recentArticles = response.data.items || []
       } catch (error) {
-        console.error("Failed to load recent articles", error);
+        console.error("Failed to load recent articles", error)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     async loadPopularAuthors() {
       try {
-        this.isLoading = true;
+        this.isLoading = true
         const response = await Literature.getAuthors({
           sort: "publications",
           page: 1,
           size: 6,
-        });
-        this.popularAuthors = response.data.items || [];
+        })
+        this.popularAuthors = response.data.items || []
       } catch (error) {
-        console.error("Failed to load popular authors", error);
+        console.error("Failed to load popular authors", error)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     async loadFeaturedArticle() {
@@ -153,10 +137,10 @@ export default {
           sort: "-citations",
           page: 1,
           size: 1,
-        });
+        })
 
         if (response.data.items && response.data.items.length > 0) {
-          const article = response.data.items[0];
+          const article = response.data.items[0]
           this.featuredArticle = {
             id: article.id,
             title: article.title,
@@ -164,10 +148,10 @@ export default {
             publicationDate: article.publication_date,
             citations: article.citation_count || 0,
             abstract: article.abstract || "暂无摘要",
-          };
+          }
         }
       } catch (error) {
-        console.error("Failed to load featured article", error);
+        console.error("Failed to load featured article", error)
       }
     },
     async loadTrendingTopics() {
@@ -176,15 +160,15 @@ export default {
           sort: "-weight",
           page: 1,
           size: 10,
-        });
-        this.trendingTopics = response.data.items || [];
+        })
+        this.trendingTopics = response.data.items || []
 
         // 如果有趋势数据，在这里初始化图表
         if (this.trendingTopics.length > 0) {
-          this.initTrendChart();
+          this.initTrendChart()
         }
       } catch (error) {
-        console.error("Failed to load trending topics", error);
+        console.error("Failed to load trending topics", error)
       }
     },
     initTrendChart() {
@@ -192,18 +176,18 @@ export default {
       // 如果需要，可以创建一个专门的图表组件
     },
     onSearch(query) {
-      this.$router.push({ path: "/search", query: { q: query } });
+      this.$router.push({ path: "/search", query: { q: query } })
     },
     goToAdvancedSearch() {
-      this.$router.push("/search/advanced");
+      this.$router.push("/search/advanced")
     },
     viewArticle(id) {
       if (id) {
-        this.$router.push(`/literature/${id}`);
+        this.$router.push(`/literature/${id}`)
       }
     },
     viewAuthorProfile(id) {
-      this.$router.push(`/authors/${id}`);
+      this.$router.push(`/authors/${id}`)
     },
   },
   async mounted() {
@@ -214,12 +198,12 @@ export default {
         this.loadPopularAuthors(),
         this.loadFeaturedArticle(),
         this.loadTrendingTopics(),
-      ]);
+      ])
     } catch (error) {
-      console.error("Error initializing home page", error);
+      console.error("Error initializing home page", error)
     }
   },
-};
+}
 </script>
 
 <style scoped>
@@ -243,11 +227,9 @@ export default {
   right: -50px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(255, 255, 255, 0) 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
 }
 
@@ -258,11 +240,9 @@ export default {
   left: 10%;
   width: 150px;
   height: 150px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 255, 255, 0.15) 0%,
-    rgba(255, 255, 255, 0) 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
 }
 
@@ -354,11 +334,9 @@ export default {
 .chart-container {
   height: 300px;
   margin-top: 20px;
-  background: linear-gradient(
-    180deg,
-    rgba(26, 145, 193, 0.1) 0%,
-    rgba(168, 230, 207, 0.1) 100%
-  );
+  background: linear-gradient(180deg,
+      rgba(26, 145, 193, 0.1) 0%,
+      rgba(168, 230, 207, 0.1) 100%);
   border-radius: 8px;
   position: relative;
   overflow: hidden;

@@ -1,7 +1,6 @@
 <!-- src/views/CrawlerPage.vue -->
 <template>
   <div class="crawler-page">
-    <HeaderComponent />
 
     <div class="container">
       <SectionTitle title="文献爬虫管理" subtitle="从学术资源库抓取最新的肝脏研究文献" />
@@ -239,7 +238,6 @@
 </template>
 
 <script>
-import HeaderComponent from "@/components/layout/HeaderComponent.vue"
 import SiteFooter from "@/components/layout/SiteFooter.vue"
 import SectionTitle from "@/components/common/Sectiontitle.vue"
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
@@ -260,7 +258,6 @@ import Crawler from "@/api/Crawler"
 export default {
   name: "CrawlerView",
   components: {
-    HeaderComponent,
     SiteFooter,
     SectionTitle,
     PrimaryButton,
@@ -359,222 +356,223 @@ export default {
 
       return this.currentPage * this.pageSize
     },
-    methods: {
-      async fetchAutoSchedules() {
-        try {
-          const response = await Crawler.getSchedules()
-          this.autoSchedules = response.data.items || []
-        } catch (error) {
-          console.error("获取自动爬取任务失败", error)
-          this.$toast.error("获取自动爬取任务失败")
-        }
-      },
 
-      async fetchCrawlerHistory() {
-        try {
-          const response = await Crawler.getHistory({
-            page: this.currentPage,
-            size: this.pageSize,
-          })
-          this.crawlerHistory = response.data.items || []
-          this.totalPages = response.data.total_pages || 1
-        } catch (error) {
-          console.error("获取爬取历史失败", error)
-          this.$toast.error("获取爬取历史失败")
-        }
-      },
+  },
+  methods: {
+    async fetchAutoSchedules() {
+      try {
+        const response = await Crawler.getSchedules()
+        this.autoSchedules = response.data.items || []
+      } catch (error) {
+        console.error("获取自动爬取任务失败", error)
+        this.$toast.error("获取自动爬取任务失败")
+      }
+    },
 
-      async startManualCrawling() {
-        if (!this.manualCrawler.source) {
-          this.$toast.error("请选择数据源")
-          return
-        }
+    async fetchCrawlerHistory() {
+      try {
+        const response = await Crawler.getHistory({
+          page: this.currentPage,
+          size: this.pageSize,
+        })
+        this.crawlerHistory = response.data.items || []
+        this.totalPages = response.data.total_pages || 1
+      } catch (error) {
+        console.error("获取爬取历史失败", error)
+        this.$toast.error("获取爬取历史失败")
+      }
+    },
 
-        try {
-          this.manualCrawling = true
-          this.manualProgress = 0
-          this.crawledCount = 0
+    async startManualCrawling() {
+      if (!this.manualCrawler.source) {
+        this.$toast.error("请选择数据源")
+        return
+      }
 
-          // 创建爬取任务
-          const response = await Crawler.createCrawlingTask({
-            source_id: this.manualCrawler.source,
-            keywords: this.manualCrawler.keywords,
-            start_date: this.manualCrawler.startDate,
-            end_date: this.manualCrawler.endDate,
-            max_results: this.manualCrawler.maxResults,
-            type: "manual",
-          })
+      try {
+        this.manualCrawling = true
+        this.manualProgress = 0
+        this.crawledCount = 0
 
-          const taskId = response.data.task_id
+        // 创建爬取任务
+        const response = await Crawler.createCrawlingTask({
+          source_id: this.manualCrawler.source,
+          keywords: this.manualCrawler.keywords,
+          start_date: this.manualCrawler.startDate,
+          end_date: this.manualCrawler.endDate,
+          max_results: this.manualCrawler.maxResults,
+          type: "manual",
+        })
 
-          // 模拟进度更新 (在实际应用中，您可能需要使用WebSocket或轮询API获取实时进度)
-          this.updateProgressInterval = setInterval(() => {
-            this.checkCrawlingProgress(taskId)
-          }, 2000)
-        } catch (error) {
-          console.error("启动爬取任务失败", error)
-          this.$toast.error("启动爬取任务失败")
-          this.manualCrawling = false
-        }
-      },
+        const taskId = response.data.task_id
 
-      async checkCrawlingProgress(taskId) {
-        try {
-          const response = await Crawler.getTaskProgress(taskId)
-          const { progress, document_count, status } = response.data
+        // 模拟进度更新 (在实际应用中，您可能需要使用WebSocket或轮询API获取实时进度)
+        this.updateProgressInterval = setInterval(() => {
+          this.checkCrawlingProgress(taskId)
+        }, 2000)
+      } catch (error) {
+        console.error("启动爬取任务失败", error)
+        this.$toast.error("启动爬取任务失败")
+        this.manualCrawling = false
+      }
+    },
 
-          this.manualProgress = progress
-          this.crawledCount = document_count
+    async checkCrawlingProgress(taskId) {
+      try {
+        const response = await Crawler.getTaskProgress(taskId)
+        const { progress, document_count, status } = response.data
 
-          if (
-            status === "completed" ||
-            status === "failed" ||
-            progress >= 100
-          ) {
-            clearInterval(this.updateProgressInterval)
-            this.manualCrawling = false
+        this.manualProgress = progress
+        this.crawledCount = document_count
 
-            if (status === "completed") {
-              this.$toast.success(
-                `爬取任务完成，共获取${document_count}篇文献`
-              )
-            } else if (status === "failed") {
-              this.$toast.error("爬取任务失败")
-            }
-
-            // 刷新历史记录
-            await this.fetchCrawlerHistory()
-          }
-        } catch (error) {
-          console.error("获取任务进度失败", error)
+        if (
+          status === "completed" ||
+          status === "failed" ||
+          progress >= 100
+        ) {
           clearInterval(this.updateProgressInterval)
           this.manualCrawling = false
-        }
-      },
 
-      async createSchedule() {
-        if (!this.newSchedule.source_id) {
-          this.$toast.error("请选择数据源")
-          return
-        }
-
-        try {
-          await Crawler.createSchedule(this.newSchedule)
-          this.showNewScheduleModal = false
-          this.$toast.success("自动爬取任务创建成功")
-
-          // 重置表单
-          this.newSchedule = {
-            source_id: "",
-            frequency: "weekly",
-            keywords: "",
-            max_results: 100,
-            active: true,
+          if (status === "completed") {
+            this.$toast.success(
+              `爬取任务完成，共获取${document_count}篇文献`
+            )
+          } else if (status === "failed") {
+            this.$toast.error("爬取任务失败")
           }
 
-          // 刷新自动任务列表
-          await this.fetchAutoSchedules()
-        } catch (error) {
-          console.error("创建自动爬取任务失败", error)
-          this.$toast.error("创建自动爬取任务失败")
+          // 刷新历史记录
+          await this.fetchCrawlerHistory()
         }
-      },
+      } catch (error) {
+        console.error("获取任务进度失败", error)
+        clearInterval(this.updateProgressInterval)
+        this.manualCrawling = false
+      }
+    },
 
-      editSchedule(schedule) {
-        // 复制任务数据到表单
-        this.newSchedule = { ...schedule }
-        this.showNewScheduleModal = true
-      },
+    async createSchedule() {
+      if (!this.newSchedule.source_id) {
+        this.$toast.error("请选择数据源")
+        return
+      }
 
-      async toggleSchedule(schedule) {
-        try {
-          const updatedStatus = !schedule.active
-          await Crawler.updateSchedule(schedule.id, { active: updatedStatus })
+      try {
+        await Crawler.createSchedule(this.newSchedule)
+        this.showNewScheduleModal = false
+        this.$toast.success("自动爬取任务创建成功")
 
-          // 更新本地数据
-          const index = this.autoSchedules.findIndex(
-            (s) => s.id === schedule.id
-          )
-          if (index !== -1) {
-            this.autoSchedules[index].active = updatedStatus
-          }
-
-          this.$toast.success(`任务已${updatedStatus ? "启用" : "禁用"}`)
-        } catch (error) {
-          console.error("更新任务状态失败", error)
-          this.$toast.error("更新任务状态失败")
+        // 重置表单
+        this.newSchedule = {
+          source_id: "",
+          frequency: "weekly",
+          keywords: "",
+          max_results: 100,
+          active: true,
         }
-      },
 
-      async deleteSchedule(schedule) {
-        if (
-          !confirm(
-            `确定要删除"${this.getSourceName(
-              schedule.source_id
-            )}"的自动爬取任务吗？`
-          )
+        // 刷新自动任务列表
+        await this.fetchAutoSchedules()
+      } catch (error) {
+        console.error("创建自动爬取任务失败", error)
+        this.$toast.error("创建自动爬取任务失败")
+      }
+    },
+
+    editSchedule(schedule) {
+      // 复制任务数据到表单
+      this.newSchedule = { ...schedule }
+      this.showNewScheduleModal = true
+    },
+
+    async toggleSchedule(schedule) {
+      try {
+        const updatedStatus = !schedule.active
+        await Crawler.updateSchedule(schedule.id, { active: updatedStatus })
+
+        // 更新本地数据
+        const index = this.autoSchedules.findIndex(
+          (s) => s.id === schedule.id
         )
-          return
-
-        try {
-          await Crawler.deleteSchedule(schedule.id)
-
-          // 从列表中移除
-          this.autoSchedules = this.autoSchedules.filter(
-            (s) => s.id !== schedule.id
-          )
-          this.$toast.success("任务删除成功")
-        } catch (error) {
-          console.error("删除任务失败", error)
-          this.$toast.error("删除任务失败")
+        if (index !== -1) {
+          this.autoSchedules[index].active = updatedStatus
         }
-      },
 
-      getSourceName(sourceId) {
-        const source = this.availableSources.find((s) => s.id === sourceId)
-        return source ? source.name : sourceId
-      },
+        this.$toast.success(`任务已${updatedStatus ? "启用" : "禁用"}`)
+      } catch (error) {
+        console.error("更新任务状态失败", error)
+        this.$toast.error("更新任务状态失败")
+      }
+    },
 
-      formatFrequency(frequency) {
-        switch (frequency) {
-          case "daily":
-            return "每天"
-          case "weekly":
-            return "每周"
-          case "monthly":
-            return "每月"
-          default:
-            return frequency
-        }
-      },
+    async deleteSchedule(schedule) {
+      if (
+        !confirm(
+          `确定要删除"${this.getSourceName(
+            schedule.source_id
+          )}"的自动爬取任务吗？`
+        )
+      )
+        return
 
-      formatStatus(status) {
-        switch (status) {
-          case "completed":
-            return "已完成"
-          case "running":
-            return "运行中"
-          case "failed":
-            return "失败"
-          case "pending":
-            return "等待中"
-          default:
-            return status
-        }
-      },
+      try {
+        await Crawler.deleteSchedule(schedule.id)
 
-      formatDate(dateString) {
-        if (!dateString) return ""
+        // 从列表中移除
+        this.autoSchedules = this.autoSchedules.filter(
+          (s) => s.id !== schedule.id
+        )
+        this.$toast.success("任务删除成功")
+      } catch (error) {
+        console.error("删除任务失败", error)
+        this.$toast.error("删除任务失败")
+      }
+    },
 
-        const date = new Date(dateString)
-        return date.toLocaleString("zh-CN", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      },
+    getSourceName(sourceId) {
+      const source = this.availableSources.find((s) => s.id === sourceId)
+      return source ? source.name : sourceId
+    },
+
+    formatFrequency(frequency) {
+      switch (frequency) {
+        case "daily":
+          return "每天"
+        case "weekly":
+          return "每周"
+        case "monthly":
+          return "每月"
+        default:
+          return frequency
+      }
+    },
+
+    formatStatus(status) {
+      switch (status) {
+        case "completed":
+          return "已完成"
+        case "running":
+          return "运行中"
+        case "failed":
+          return "失败"
+        case "pending":
+          return "等待中"
+        default:
+          return status
+      }
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return ""
+
+      const date = new Date(dateString)
+      return date.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     },
   },
   created() {

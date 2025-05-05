@@ -1,7 +1,6 @@
 <!-- src/views/PersonalProfilePage.vue -->
 <template>
   <div class="profile-page">
-    <HeaderComponent />
 
     <div class="container">
       <SectionTitle title="个人信息" subtitle="管理您的账户信息和偏好设置" />
@@ -10,12 +9,8 @@
         <!-- 左侧导航 -->
         <div class="profile-sidebar">
           <nav>
-            <div
-              v-for="(item, index) in navItems"
-              :key="index"
-              @click="activeSection = item.id"
-              :class="['nav-item', activeSection === item.id ? 'active' : '']"
-            >
+            <div v-for="(item, index) in navItems" :key="index" @click="activeSection = item.id"
+              :class="['nav-item', activeSection === item.id ? 'active' : '']">
               <span class="nav-icon">
                 <component :is="item.icon" />
               </span>
@@ -29,11 +24,7 @@
           <!-- 基本信息 -->
           <div v-if="activeSection === 'basic'" class="profile-section">
             <h3>基本信息</h3>
-            <ProfileForm
-              v-if="!loading"
-              :user="userInfo"
-              @update="updateUserInfo"
-            />
+            <ProfileForm v-if="!loading" :user="userInfo" @update="updateUserInfo" />
             <div v-else class="loading">加载中...</div>
           </div>
 
@@ -42,74 +33,37 @@
             <h3>我的收藏夹</h3>
             <div class="collections-header">
               <div class="search-filter">
-                <input
-                  type="text"
-                  v-model="collectionFilter"
-                  placeholder="搜索收藏夹..."
-                  class="search-input"
-                />
+                <input type="text" v-model="collectionFilter" placeholder="搜索收藏夹..." class="search-input" />
               </div>
-              <PrimaryButton
-                :fullWidth="false"
-                @click="showNewCollectionModal = true"
-              >
+              <PrimaryButton :fullWidth="false" @click="showNewCollectionModal = true">
                 创建收藏夹
               </PrimaryButton>
             </div>
 
-            <div
-              v-if="!collectionsLoading && filteredCollections.length"
-              class="collections-grid"
-            >
-              <CollectionCard
-                v-for="collection in filteredCollections"
-                :key="collection.id"
-                :collection="collection"
-                @edit="editCollection"
-                @delete="deleteCollection"
-              />
+            <div v-if="!collectionsLoading && filteredCollections.length" class="collections-grid">
+              <CollectionCard v-for="collection in filteredCollections" :key="collection.id" :collection="collection"
+                @edit="editCollection" @delete="deleteCollection" />
             </div>
             <div v-else-if="collectionsLoading" class="loading">加载中...</div>
             <div v-else class="empty-state">您还没有创建任何收藏夹</div>
 
             <!-- 创建收藏夹模态框 -->
-            <ModalComponent
-              v-if="showNewCollectionModal"
-              title="创建新收藏夹"
-              @close="showNewCollectionModal = false"
-            >
+            <ModalComponent v-if="showNewCollectionModal" title="创建新收藏夹" @close="showNewCollectionModal = false">
               <CollectionForm @submit="createCollection" />
             </ModalComponent>
 
             <!-- 编辑收藏夹模态框 -->
-            <ModalComponent
-              v-if="showEditCollectionModal"
-              title="编辑收藏夹"
-              @close="showEditCollectionModal = false"
-            >
-              <CollectionForm
-                v-if="selectedCollection"
-                :collection="selectedCollection"
-                @submit="updateCollection"
-              />
+            <ModalComponent v-if="showEditCollectionModal" title="编辑收藏夹" @close="showEditCollectionModal = false">
+              <CollectionForm v-if="selectedCollection" :collection="selectedCollection" @submit="updateCollection" />
             </ModalComponent>
           </div>
 
           <!-- 阅读历史 -->
           <div v-if="activeSection === 'history'" class="profile-section">
             <h3>阅读历史</h3>
-            <div
-              v-if="!historyLoading && readingHistory.length"
-              class="reading-history"
-            >
-              <LiteratureCard
-                v-for="item in readingHistory"
-                :key="item.id"
-                :literature="item.literature"
-                :compact="true"
-                :showReadDate="true"
-                :readDate="item.read_date"
-              />
+            <div v-if="!historyLoading && readingHistory.length" class="reading-history">
+              <LiteratureCard v-for="item in readingHistory" :key="item.id" :literature="item.literature"
+                :compact="true" :showReadDate="true" :readDate="item.read_date" />
             </div>
             <div v-else-if="historyLoading" class="loading">加载中...</div>
             <div v-else class="empty-state">您还没有阅读记录</div>
@@ -118,19 +72,10 @@
           <!-- 搜索历史 -->
           <div v-if="activeSection === 'searches'" class="profile-section">
             <h3>搜索历史</h3>
-            <div
-              v-if="!searchHistoryLoading && searchHistory.length"
-              class="search-history"
-            >
-              <div
-                v-for="(search, index) in searchHistory"
-                :key="index"
-                class="search-history-item"
-              >
+            <div v-if="!searchHistoryLoading && searchHistory.length" class="search-history">
+              <div v-for="(search, index) in searchHistory" :key="index" class="search-history-item">
                 <div class="search-query">
-                  <router-link
-                    :to="{ name: 'search', query: { q: search.query } }"
-                  >
+                  <router-link :to="{ name: 'search', query: { q: search.query } }">
                     {{ search.query }}
                   </router-link>
                 </div>
@@ -138,9 +83,7 @@
                   <span class="search-date">{{
                     formatDate(search.search_date)
                   }}</span>
-                  <span class="search-results"
-                    >{{ search.result_count }} 条结果</span
-                  >
+                  <span class="search-results">{{ search.result_count }} 条结果</span>
                 </div>
               </div>
             </div>
@@ -158,10 +101,7 @@
                 <h4>通知设置</h4>
                 <div class="setting-item">
                   <label class="switch">
-                    <input
-                      type="checkbox"
-                      v-model="settings.emailNotifications"
-                    />
+                    <input type="checkbox" v-model="settings.emailNotifications" />
                     <span class="slider"></span>
                   </label>
                   <div class="setting-text">
@@ -174,10 +114,7 @@
               <div class="setting-group">
                 <h4>安全设置</h4>
                 <div class="setting-item">
-                  <PrimaryButton
-                    :fullWidth="false"
-                    @click="showChangePasswordModal = true"
-                  >
+                  <PrimaryButton :fullWidth="false" @click="showChangePasswordModal = true">
                     修改密码
                   </PrimaryButton>
                 </div>
@@ -189,11 +126,7 @@
             </div>
 
             <!-- 修改密码模态框 -->
-            <ModalComponent
-              v-if="showChangePasswordModal"
-              title="修改密码"
-              @close="showChangePasswordModal = false"
-            >
+            <ModalComponent v-if="showChangePasswordModal" title="修改密码" @close="showChangePasswordModal = false">
               <PasswordForm @submit="updatePassword" />
             </ModalComponent>
           </div>
@@ -201,37 +134,35 @@
       </div>
     </div>
 
-    <SiteFooter />
+    <!-- <SiteFooter /> -->
   </div>
 </template>
 
 <script>
-import HeaderComponent from "@/components/layout/HeaderComponent.vue";
-import SiteFooter from "@/components/layout/SiteFooter.vue";
-import SectionTitle from "@/components/common/Sectiontitle.vue";
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import LiteratureCard from "@/components/cards/LiteratureCard.vue";
-import ModalComponent from "@/components/common/ModalComponent.vue";
-import ProfileForm from "@/components/form/ProfileForm.vue";
-import CollectionForm from "@/components/form/CollectionForm.vue";
-import CollectionCard from "@/components/cards/CollectionCard.vue";
-import PasswordForm from "@/components/form/PasswordForm.vue";
-import Literature from "@/api/Literature";
-import Search from "@/api/Search";
-import User from "@/api/User"; // 假设您有一个User API类
+// import SiteFooter from "@/components/layout/SiteFooter.vue"
+import SectionTitle from "@/components/common/Sectiontitle.vue"
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import LiteratureCard from "@/components/cards/LiteratureCard.vue"
+import ModalComponent from "@/components/common/ModalComponent.vue"
+import ProfileForm from "@/components/form/ProfileForm.vue"
+import CollectionForm from "@/components/form/CollectionForm.vue"
+import CollectionCard from "@/components/cards/CollectionCard.vue"
+import PasswordForm from "@/components/form/PasswordForm.vue"
+import Literature from "@/api/Literature"
+import Search from "@/api/Search"
+import User from "@/api/User" // 假设您有一个User API类
 
 // 图标组件
-import UserIcon from "@/components/icons/UserIcon.vue";
-import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
-import HistoryIcon from "@/components/icons/HistoryIcon.vue";
-import SearchIcon from "@/components/icons/SearchIcon.vue";
-import SettingsIcon from "@/components/icons/SettingsIcon.vue";
+import UserIcon from "@/components/icons/UserIcon.vue"
+import BookmarkIcon from "@/components/icons/BookmarkIcon.vue"
+import HistoryIcon from "@/components/icons/HistoryIcon.vue"
+import SearchIcon from "@/components/icons/SearchIcon.vue"
+import SettingsIcon from "@/components/icons/SettingsIcon.vue"
 
 export default {
   name: "ProfileView",
   components: {
-    HeaderComponent,
-    SiteFooter,
+    // SiteFooter,
     SectionTitle,
     PrimaryButton,
     LiteratureCard,
@@ -272,184 +203,183 @@ export default {
         { id: "searches", label: "搜索历史", icon: "SearchIcon" },
         { id: "settings", label: "账号设置", icon: "SettingsIcon" },
       ],
-    };
+    }
   },
   computed: {
     filteredCollections() {
-      if (!this.collectionFilter) return this.collections;
+      if (!this.collectionFilter) return this.collections
 
-      const filter = this.collectionFilter.toLowerCase();
+      const filter = this.collectionFilter.toLowerCase()
       return this.collections.filter(
         (collection) =>
           collection.name.toLowerCase().includes(filter) ||
           (collection.description &&
             collection.description.toLowerCase().includes(filter))
-      );
+      )
     },
   },
   methods: {
     async fetchUserInfo() {
-      this.loading = true;
+      this.loading = true
       try {
-        // 假设您有一个获取用户信息的API
-        const response = await User.getUserInfo();
-        this.userInfo = response.data;
+        const response = await User.profile()
+        this.userInfo = response.data
       } catch (error) {
-        console.error("获取用户信息失败", error);
+        console.error("获取用户信息失败", error)
         // 处理错误
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
     async fetchCollections() {
-      this.collectionsLoading = true;
+      this.collectionsLoading = true
       try {
-        const response = await Literature.getCollections();
-        this.collections = response.data.items || [];
+        const response = await Literature.getCollections()
+        this.collections = response.data.items || []
       } catch (error) {
-        console.error("获取收藏夹失败", error);
+        console.error("获取收藏夹失败", error)
       } finally {
-        this.collectionsLoading = false;
+        this.collectionsLoading = false
       }
     },
 
     async fetchReadingHistory() {
-      this.historyLoading = true;
+      this.historyLoading = true
       try {
         const response = await Literature.getInteractions({
           is_read: true,
           sort: "-updated_at",
-        });
-        this.readingHistory = response.data.items || [];
+        })
+        this.readingHistory = response.data.items || []
       } catch (error) {
-        console.error("获取阅读历史失败", error);
+        console.error("获取阅读历史失败", error)
       } finally {
-        this.historyLoading = false;
+        this.historyLoading = false
       }
     },
 
     async fetchSearchHistory() {
-      this.searchHistoryLoading = true;
+      this.searchHistoryLoading = true
       try {
-        const response = await Search.getSearchHistory();
-        this.searchHistory = response.data.items || [];
+        const response = await Search.getSearchHistory()
+        this.searchHistory = response.data.items || []
       } catch (error) {
-        console.error("获取搜索历史失败", error);
+        console.error("获取搜索历史失败", error)
       } finally {
-        this.searchHistoryLoading = false;
+        this.searchHistoryLoading = false
       }
     },
 
     async updateUserInfo(data) {
       try {
         // 假设您有一个更新用户信息的API
-        await User.updateUserInfo(data);
-        this.userInfo = { ...this.userInfo, ...data };
-        this.$toast.success("个人信息更新成功");
+        await User.updateUserInfo(data)
+        this.userInfo = { ...this.userInfo, ...data }
+        this.$toast.success("个人信息更新成功")
       } catch (error) {
-        console.error("更新用户信息失败", error);
-        this.$toast.error("个人信息更新失败");
+        console.error("更新用户信息失败", error)
+        this.$toast.error("个人信息更新失败")
       }
     },
 
     async createCollection(data) {
       try {
-        const response = await Literature.createCollection(data);
-        this.collections.unshift(response.data);
-        this.showNewCollectionModal = false;
-        this.$toast.success("收藏夹创建成功");
+        const response = await Literature.createCollection(data)
+        this.collections.unshift(response.data)
+        this.showNewCollectionModal = false
+        this.$toast.success("收藏夹创建成功")
       } catch (error) {
-        console.error("创建收藏夹失败", error);
-        this.$toast.error("创建收藏夹失败");
+        console.error("创建收藏夹失败", error)
+        this.$toast.error("创建收藏夹失败")
       }
     },
 
     editCollection(collection) {
-      this.selectedCollection = collection;
-      this.showEditCollectionModal = true;
+      this.selectedCollection = collection
+      this.showEditCollectionModal = true
     },
 
     async updateCollection(data) {
       try {
-        await Literature.updateCollection(this.selectedCollection.id, data);
+        await Literature.updateCollection(this.selectedCollection.id, data)
 
         // 更新本地集合数据
         const index = this.collections.findIndex(
           (c) => c.id === this.selectedCollection.id
-        );
+        )
         if (index !== -1) {
           this.collections[index] = {
             ...this.collections[index],
             ...data,
-          };
+          }
         }
 
-        this.showEditCollectionModal = false;
-        this.selectedCollection = null;
-        this.$toast.success("收藏夹更新成功");
+        this.showEditCollectionModal = false
+        this.selectedCollection = null
+        this.$toast.success("收藏夹更新成功")
       } catch (error) {
-        console.error("更新收藏夹失败", error);
-        this.$toast.error("更新收藏夹失败");
+        console.error("更新收藏夹失败", error)
+        this.$toast.error("更新收藏夹失败")
       }
     },
 
     async deleteCollection(collection) {
-      if (!confirm(`确定要删除收藏夹"${collection.name}"吗？`)) return;
+      if (!confirm(`确定要删除收藏夹"${collection.name}"吗？`)) return
 
       try {
-        await Literature.deleteCollection(collection.id);
+        await Literature.deleteCollection(collection.id)
         this.collections = this.collections.filter(
           (c) => c.id !== collection.id
-        );
-        this.$toast.success("收藏夹删除成功");
+        )
+        this.$toast.success("收藏夹删除成功")
       } catch (error) {
-        console.error("删除收藏夹失败", error);
-        this.$toast.error("删除收藏夹失败");
+        console.error("删除收藏夹失败", error)
+        this.$toast.error("删除收藏夹失败")
       }
     },
 
     async updatePassword(data) {
       try {
         // 假设您有一个更新密码的API
-        await User.updatePassword(data);
-        this.showChangePasswordModal = false;
-        this.$toast.success("密码修改成功");
+        await User.updatePassword(data)
+        this.showChangePasswordModal = false
+        this.$toast.success("密码修改成功")
       } catch (error) {
-        console.error("密码修改失败", error);
-        this.$toast.error("密码修改失败");
+        console.error("密码修改失败", error)
+        this.$toast.error("密码修改失败")
       }
     },
 
     async saveSettings() {
       try {
         // 假设您有一个保存设置的API
-        await User.updateSettings(this.settings);
-        this.$toast.success("设置保存成功");
+        await User.updateSettings(this.settings)
+        this.$toast.success("设置保存成功")
       } catch (error) {
-        console.error("保存设置失败", error);
-        this.$toast.error("保存设置失败");
+        console.error("保存设置失败", error)
+        this.$toast.error("保存设置失败")
       }
     },
 
     formatDate(dateString) {
-      const date = new Date(dateString);
+      const date = new Date(dateString)
       return date.toLocaleString("zh-CN", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
-      });
+      })
     },
   },
   created() {
-    this.fetchUserInfo();
-    this.fetchCollections();
-    this.fetchReadingHistory();
-    this.fetchSearchHistory();
+    this.fetchUserInfo()
+    this.fetchCollections()
+    this.fetchReadingHistory()
+    this.fetchSearchHistory()
   },
-};
+}
 </script>
 
 <style scoped>
@@ -640,11 +570,11 @@ export default {
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: #1a91c1;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(24px);
 }
 

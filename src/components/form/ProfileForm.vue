@@ -1,99 +1,138 @@
 <!-- src/components/profile/ProfileForm.vue -->
 <template>
-  <form @submit.prevent="handleSubmit" class="profile-form">
-    <div class="form-group">
-      <div class="avatar-section">
-        <div class="avatar-container">
-          <img
-            :src="avatarUrl || defaultAvatar"
-            alt="用户头像"
-            class="avatar-image"
+  <div class="profile-form">
+    <!-- 非编辑状态：显示信息 -->
+    <div v-if="!isEditing" class="profile-info">
+      <div class="profile-layout">
+        <!-- 左侧头像 -->
+        <div class="avatar-section">
+          <div class="avatar-container">
+            <img
+              :src="defaultAvatar"
+              alt="用户头像"
+              class="avatar-image"
+            />
+            <div class="avatar-overlay" @click="triggerFileInput">
+              <span>更换头像</span>
+            </div>
+          </div>
+          <input
+            type="file"
+            ref="fileInput"
+            accept="image/*"
+            style="display: none"
+            @change="handleFileChange"
           />
-          <div class="avatar-overlay" @click="triggerFileInput">
-            <span>更换头像</span>
+        </div>
+        
+        <!-- 右侧信息 -->
+        <div class="info-content">
+          <div class="info-item">
+            <div class="info-label">用户名</div>
+            <div class="info-value">{{ user.username || '未设置' }}</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">邮箱</div>
+            <div class="info-value">{{ user.email || '未设置' }}</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">所属机构</div>
+            <div class="info-value">{{ user.affiliation || '未设置' }}</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">个人简介</div>
+            <div class="info-value">{{ user.bio || '暂无个人简介' }}</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">研究方向</div>
+            <div class="info-value">{{ user.research_interests || '暂无研究方向' }}</div>
           </div>
         </div>
-        <input
-          type="file"
-          ref="fileInput"
-          accept="image/*"
-          style="display: none"
-          @change="handleFileChange"
-        />
+      </div>
+      
+      <!-- 底部编辑按钮 -->
+      <div class="action-button">
+        <button @click="startEditing" class="edit-button">
+          编辑
+        </button>
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="username">用户名</label>
-      <input
-        type="text"
-        id="username"
-        v-model="form.username"
-        class="form-input"
-        required
-      />
-    </div>
-
-    <div class="form-group">
-      <label for="email">邮箱</label>
-      <input
-        type="email"
-        id="email"
-        v-model="form.email"
-        class="form-input"
-        required
-      />
-    </div>
-
-    <div class="form-group">
-      <label for="name">真实姓名</label>
-      <input type="text" id="name" v-model="form.name" class="form-input" />
-    </div>
-
-    <div class="form-group">
-      <label for="affiliation">所属机构</label>
-      <input
-        type="text"
-        id="affiliation"
-        v-model="form.affiliation"
-        class="form-input"
-      />
-    </div>
-
-    <div class="form-group">
-      <label for="title">职称/职位</label>
-      <input type="text" id="title" v-model="form.title" class="form-input" />
-    </div>
-
-    <div class="form-group">
-      <label for="bio">个人简介</label>
-      <textarea
-        id="bio"
-        v-model="form.bio"
-        class="form-textarea"
-        rows="4"
-      ></textarea>
-    </div>
-
-    <div class="form-group">
-      <label for="research_interests">研究方向</label>
-      <textarea
-        id="research_interests"
-        v-model="form.research_interests"
-        class="form-textarea"
-        rows="3"
-        placeholder="多个研究方向请用逗号分隔"
-      ></textarea>
-    </div>
-
-    <div class="form-actions">
-      <PrimaryButton type="submit" :fullWidth="false">保存修改</PrimaryButton>
-    </div>
-  </form>
+    <!-- 编辑状态：表单 -->
+    <form v-else @submit.prevent="handleSubmit" class="profile-form-edit">
+      <div class="profile-layout">
+        <!-- 左侧头像 -->
+        <div class="avatar-section">
+          <div class="avatar-container">
+            <img
+              :src="avatarUrl || defaultAvatar"
+              alt="用户头像"
+              class="avatar-image"
+            />
+            <div class="avatar-overlay" @click="triggerFileInput">
+              <span>更换头像</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 右侧表单 -->
+        <div class="form-content">
+          <div class="info-item">
+            <div class="info-label">用户名</div>
+            <div class="info-value">{{ user.username || '未设置' }}</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">邮箱</div>
+            <div class="info-value">{{ user.email || '未设置' }}</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">所属机构</div>
+            <div class="info-value">{{ user.affiliation || '未设置' }}</div>
+          </div>
+          
+          <div class="form-group">
+            <label for="bio">个人简介</label>
+            <textarea
+              id="bio"
+              v-model="form.bio"
+              class="form-textarea"
+              rows="4"
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="research_interests">研究方向</label>
+            <textarea
+              id="research_interests"
+              v-model="form.research_interests"
+              class="form-textarea"
+              rows="3"
+              placeholder="多个研究方向请用逗号分隔"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 底部保存和取消按钮 -->
+      <div class="form-actions">
+        <button type="button" @click="cancelEditing" class="cancel-button">
+          取消
+        </button>
+        <PrimaryButton type="submit" :fullWidth="false">保存</PrimaryButton>
+      </div>
+    </form>
+  </div>
 </template>
 
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
+import defaultAvatar from '@/assets/female.png';
 
 export default {
   name: "ProfileForm",
@@ -108,18 +147,14 @@ export default {
   },
   data() {
     return {
+      isEditing: false,
       form: {
-        username: "",
-        email: "",
-        name: "",
-        affiliation: "",
-        title: "",
         bio: "",
         research_interests: "",
       },
       avatarUrl: null,
       avatarFile: null,
-      defaultAvatar: "/img/default-avatar.png",
+      defaultAvatar,
     };
   },
   created() {
@@ -128,21 +163,24 @@ export default {
   },
   methods: {
     initForm() {
-      // 获取用户数据填充表单
+      // 只保留需要编辑的字段
       this.form = {
-        username: this.user.username || "",
-        email: this.user.email || "",
-        name: this.user.name || "",
-        affiliation: this.user.affiliation || "",
-        title: this.user.title || "",
         bio: this.user.bio || "",
         research_interests: this.user.research_interests || "",
       };
-
+      
       // 设置头像
       if (this.user.avatar_url) {
         this.avatarUrl = this.user.avatar_url;
       }
+    },
+    startEditing() {
+      this.isEditing = true;
+      this.initForm(); // 重新初始化表单，确保最新数据
+    },
+    cancelEditing() {
+      this.isEditing = false;
+      this.initForm(); // 重置表单数据
     },
     triggerFileInput() {
       this.$refs.fileInput.click();
@@ -150,59 +188,51 @@ export default {
     handleFileChange(event) {
       const file = event.target.files[0];
       if (!file) return;
+      
+      // 处理文件上传预览
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.avatarUrl = e.target.result;
+        this.avatarFile = file;
+      };
+      reader.readAsDataURL(file);
     },
+    handleSubmit() {
+      // 创建表单数据对象
+      const formData = new FormData();
+      formData.append('bio', this.form.bio);
+      formData.append('research_interests', this.form.research_interests);
+      
+      // 如果有新头像，添加到表单数据
+      if (this.avatarFile) {
+        formData.append('avatar', this.avatarFile);
+      }
+      
+      // 发出保存事件，让父组件处理
+      this.$emit('save', formData);
+      
+      // 退出编辑模式
+      this.isEditing = false;
+    }
   },
-};
+}
 </script>
+
 
 <style scoped>
 .profile-form {
-  max-width: 600px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #444;
-}
-
-.form-input,
-.form-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-}
-
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: #a8e6cf;
-  box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.2);
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.form-actions {
-  margin-top: 2rem;
+.profile-layout {
   display: flex;
-  justify-content: flex-end;
+  margin-bottom: 2rem;
 }
 
 .avatar-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1.5rem;
+  flex: 0 0 150px;
+  margin-right: 2rem;
 }
 
 .avatar-container {
@@ -211,7 +241,6 @@ export default {
   height: 120px;
   border-radius: 50%;
   overflow: hidden;
-  cursor: pointer;
 }
 
 .avatar-image {
@@ -233,9 +262,96 @@ export default {
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s;
+  cursor: pointer;
 }
 
 .avatar-container:hover .avatar-overlay {
   opacity: 1;
+}
+
+.info-content, .form-content {
+  flex: 1;
+}
+
+.info-item {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #333;
+  min-width: 80px;
+  text-align: left;
+}
+
+.info-value {
+  color: #666;
+  text-align: left;
+}
+
+.action-button {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.edit-button {
+  padding: 0.5rem 1.5rem;
+  background-color: transparent;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-button:hover {
+  background-color: #f5f5f5;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 1.5rem;
+  gap: 1rem;
+}
+
+.cancel-button {
+  padding: 0.5rem 1.5rem;
+  background-color: transparent;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cancel-button:hover {
+  background-color: #f5f5f5;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+  width: 100%;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  text-align: left;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  resize: vertical;
 }
 </style>
