@@ -46,7 +46,7 @@
 
           <div class="meta-row">
             <span class="meta-label">期刊:</span>
-            <span class="meta-value">{{ article.journal.name }}</span>
+            <span class="meta-value">{{ article.source }}</span>
           </div>
 
           <div class="meta-row">
@@ -106,7 +106,7 @@
               {{
                 showTranslation && article.translated_content
                   ? article.translated_content
-                  : article.content || "全文内容将在此显示"
+                  : article.full_text || "全文内容将在此显示"
               }}
             </div>
           </div>
@@ -151,13 +151,13 @@
             </div>
             <div class="info-item">
               <span class="info-label">文献类型:</span>
-              <span class="info-value">{{ article.type || "研究文章" }}</span>
+              <span class="info-value">{{ article.publication_type || "研究文章" }}</span>
             </div>
-            <div class="info-item">
+            <div class="info-item" v-if="article.publisher">
               <span class="info-label">出版商:</span>
               <span class="info-value">{{ article.publisher || "N/A" }}</span>
             </div>
-            <div class="info-item">
+            <div class="info-item" v-if="article.journal">
               <span class="info-label">影响因子:</span>
               <span class="info-value">{{
                 article.journal.impact_factor || "N/A"
@@ -290,16 +290,16 @@ export default {
   methods: {
     async loadArticleDetail() {
       this.isLoading = true;
-
       try {
         if (!this.articleId) {
           this.articleId = this.$route.params.id;
         }
 
         const response = await Literature.detail(this.articleId);
-        this.article = response.data;
+        console.log("文献详情",response)
+        this.article = response.data.data;
 
-        // 加载用户与文献的交互信息
+        // console.log(this.article.title)
         await this.loadUserInteraction();
 
         // 加载相关文献

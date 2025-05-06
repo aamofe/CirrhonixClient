@@ -1,30 +1,48 @@
-<!-- src/components/LiteratureItem.vue -->
 <template>
-  <div class="result-item" @click="handleClick">
-    <h3>{{ article.title }}</h3>
-
-    <div class="article-meta">
-      <span>{{ formatAuthors }}</span>
-      <span>{{ article.source }}</span>
-      <span>{{ formattedDate }}</span>
+  <div class="literature-item" @click="handleClick">
+    <h3 class="title">{{ article.title }}</h3>
+    
+    <div class="meta-info">
+      <span class="authors">{{ formatAuthors }}</span>
+      <span class="divider" v-if="article.authors?.length && article.source">|</span>
+      <span class="source">{{ article.source }}</span>
+      <span class="divider" v-if="(article.authors?.length || article.source) && formattedDate">|</span>
+      <span class="date">{{ formattedDate }}</span>
+      <span class="divider" v-if="article.publication_type && formattedDate">|</span>
+      <span class="type" v-if="article.publication_type">{{ formatPublicationType }}</span>
     </div>
-
-    <p class="article-abstract">{{ article.abstract }}</p>
-
-    <div class="article-footer">
-      <div class="tags">
-        <span
-          class="tag"
-          v-for="(keyword, i) in limitedKeywords"
-          :key="i"
-        >
-          {{ keyword }}
-        </span>
+    
+    <p class="abstract" v-if="article.abstract">{{ article.abstract }}</p>
+    
+    <div class="footer">
+      <div class="left">
+        <div class="tags" v-if="limitedKeywords.length > 0">
+          <span class="tag-label">关键词:</span>
+          <span class="tag" v-for="(keyword, i) in limitedKeywords" :key="i">
+            {{ keyword }}
+            <span v-if="i < limitedKeywords.length - 1">;</span>
+          </span>
+        </div>
+        
+        <div class="info">
+          <span v-if="article.citation_count !== undefined" class="info-item">
+            被引: {{ article.citation_count }}
+          </span>
+          <span class="divider" v-if="article.citation_count !== undefined && article.language">|</span>
+          <span v-if="article.language" class="info-item">
+            {{ getLanguageName(article.language) }}
+          </span>
+          <span class="divider" v-if="article.language && article.doi">|</span>
+          <span v-if="article.doi" class="info-item">
+            DOI: {{ article.doi }}
+          </span>
+        </div>
       </div>
-
-      <div class="article-stats">
-        <span>引用: {{ article.citation_count }}</span>
-        <span class="view-btn">查看全文</span>
+      
+      <div class="view-btn-container">
+        <button class="view-btn" @click.stop="viewFullText">
+          查看全文
+        </button>
       </div>
     </div>
   </div>
@@ -43,9 +61,9 @@ export default {
     formatAuthors() {
       const authors = this.article.authors || []
       if (authors.length === 0) return "未知作者"
-      if (authors.length === 1) return authors[0]
-      if (authors.length === 2) return `${authors[0]} 和 ${authors[1]}`
-      return `${authors[0]} 等.`
+      if (authors.length === 1) return authors[0].name
+      if (authors.length === 2) return `${authors[0].name} 和 ${authors[1].name}`
+      return `${authors[0].name} 等.`
     },
     formattedDate() {
       if (!this.article.publication_date) return ""
@@ -54,96 +72,186 @@ export default {
     },
     limitedKeywords() {
       return this.article.keywords?.slice(0, 3) || []
+    },
+    formatPublicationType() {
+      const types = {
+        "article": "期刊文章",
+        "review": "综述",
+        "conference": "会议论文",
+        "book": "书籍",
+        "thesis": "学位论文"
+      }
+      return types[this.article.publication_type] || this.article.publication_type
     }
   },
   methods: {
     handleClick() {
       this.$emit('view-detail', this.article.id)
+    },
+    viewFullText(e) {
+      e.stopPropagation()
+      if (this.article.url) {
+        window.open(this.article.url, '_blank')
+      } else {
+        this.$emit('view-detail', this.article.id)
+      }
+    },
+    getLanguageName(code) {
+      const languages = {
+        "en": "英文",
+        "zh": "中文",
+        "ja": "日文",
+        "fr": "法文",
+        "de": "德文",
+        "es": "西班牙文",
+        "ru": "俄文"
+      }
+      return languages[code] || code
     }
   }
 }
 </script>
 
 <style scoped>
-.result-item {
+.literature-item {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+  border: 1px solid #e8e8e8;
+  padding: 16px 20px;
   cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
 }
 
-.result-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+.literature-item:hover {
+  background: #F5FBFF;
+  border-color: #A8E6CF;
 }
 
-h3 {
-  color: #1a91c1;
-  font-size: 18px;
-  margin-bottom: 10px;
+.title {
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  line-height: 1.4;
+  text-align: left;
 }
 
-.article-meta {
+.literature-item:hover .title {
+  color: #1A91C1;
+}
+
+.meta-info {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  align-items: center;
+}
+
+.divider {
+  margin: 0 8px;
+  color: #ddd;
+}
+
+.authors {
+  font-weight: 500;
+}
+
+.source {
+  color: #1A91C1;
+}
+
+.type {
   color: #666;
-  font-size: 14px;
-  margin-bottom: 15px;
 }
 
-.article-abstract {
-  color: #444;
-  margin-bottom: 15px;
+.abstract {
+  color: #555;
   line-height: 1.5;
+  margin-bottom: 16px;
+  font-size: 14px;
+  text-align: justify;
 }
 
-.article-footer {
+.footer {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
+}
+
+.left {
+  flex: 1;
 }
 
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.tag-label {
+  margin-right: 5px;
+  color: #999;
 }
 
 .tag {
-  background: #e9f7f2;
-  color: #66bb6a;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  color: #1A91C1;
 }
 
-.article-stats {
+.info {
+  font-size: 12px;
+  color: #999;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 15px;
-  color: #666;
-  font-size: 14px;
+  line-height: 1.5;
+}
+
+.info-item {
+  margin-right: 12px;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+}
+
+.view-btn-container {
+  margin-left: 15px;
 }
 
 .view-btn {
-  color: #1a91c1;
-  font-weight: 500;
+  background: #1A91C1;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 3px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.view-btn:hover {
+  background: #0e7ca6;
 }
 
 @media (max-width: 768px) {
-  .article-footer {
+  .footer {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
   }
-
-  .article-stats {
-    width: 100%;
-    justify-content: space-between;
+  
+  .view-btn-container {
+    margin-left: 0;
+    margin-top: 10px;
+    align-self: flex-end;
+  }
+  
+  .info {
+    margin-bottom: 10px;
   }
 }
 </style>
