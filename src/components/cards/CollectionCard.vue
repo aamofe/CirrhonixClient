@@ -1,21 +1,31 @@
-<!-- src/components/profile/CollectionCard.vue -->
+<!-- src/components/cards/CollectionCard.vue -->
 <template>
   <div class="collection-card">
     <div class="collection-header">
-      <router-link :to="{ name: 'collection', params: { id: collection.id } }">
-        <h4 class="collection-title">{{ collection.name }}</h4>
-      </router-link>
-      <div class="collection-actions">
-        <button class="action-btn edit-btn" @click="$emit('edit', collection)">
-          <EditIcon />
+      <h4 class="collection-title" @click="$emit('view', collection)">{{ collection.name }}</h4>
+      
+      <!-- 三点式下拉菜单 -->
+      <!-- 修改后的三点式下拉菜单部分 -->
+      <el-dropdown trigger="click" size="small">
+        <button class="action-btn more-btn">
+          <el-icon><MoreFilled /></el-icon>
         </button>
-        <button
-          class="action-btn delete-btn"
-          @click="$emit('delete', collection)"
-        >
-          <DeleteIcon />
-        </button>
-      </div>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item @click="$emit('edit', collection)">
+              <el-icon><EditPen /></el-icon>
+              <span>编辑信息</span>
+            </el-dropdown-item>
+            
+            <!-- 修改后的删除选项 -->
+            <el-dropdown-item @click="confirmDelete">
+              <el-icon><Delete /></el-icon>
+              <span>删除收藏夹</span>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+
     </div>
 
     <p v-if="collection.description" class="collection-description">
@@ -24,38 +34,32 @@
 
     <div class="collection-meta">
       <div class="meta-item">
-        <BookIcon />
+        <el-icon><Document /></el-icon>
         <span>{{ collection.literature_count || 0 }} 篇文献</span>
       </div>
       <div class="meta-item">
-        <CalendarIcon />
+        <el-icon><Calendar /></el-icon>
         <span>{{ formatDate(collection.updated_at) }}</span>
       </div>
     </div>
 
-    <router-link
-      :to="{ name: 'collection', params: { id: collection.id } }"
-      class="view-collection"
-    >
+    <button class="view-collection" @click="$emit('view', collection)">
       查看收藏夹
-    </router-link>
+    </button>
   </div>
 </template>
 
 <script>
-// 假设的图标组件
-import EditIcon from "@/components/icons/EditIcon.vue";
-import DeleteIcon from "@/components/icons/DeleteIcon.vue";
-import BookIcon from "@/components/icons/BookIcon.vue";
-import CalendarIcon from "@/components/icons/CalendarIcon.vue";
-
+import { Document, Calendar, MoreFilled, EditPen, Delete } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
 export default {
   name: "CollectionCard",
   components: {
-    EditIcon,
-    DeleteIcon,
-    BookIcon,
-    CalendarIcon,
+    Document,
+    Calendar,
+    MoreFilled,
+    EditPen,
+    Delete
   },
   props: {
     collection: {
@@ -65,17 +69,26 @@ export default {
   },
   methods: {
     formatDate(dateString) {
-      if (!dateString) return "";
+      if (!dateString) return ""
 
-      const date = new Date(dateString);
+      const date = new Date(dateString)
       return date.toLocaleDateString("zh-CN", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
-      });
+      })
     },
+    confirmDelete() {
+      ElMessageBox.confirm('确定要删除该收藏夹吗？', '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }).then(() => {
+        this.$emit('delete', this.collection)
+      }).catch(() => {})
+    }
   },
-};
+}
 </script>
 
 <style scoped>
@@ -107,20 +120,11 @@ export default {
   font-size: 1.1rem;
   font-weight: 600;
   color: #333;
+  cursor: pointer;
 }
 
-.collection-title a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.collection-title a:hover {
+.collection-title:hover {
   color: #1a91c1;
-}
-
-.collection-actions {
-  display: flex;
-  gap: 0.5rem;
 }
 
 .action-btn {
@@ -134,14 +138,9 @@ export default {
   transition: all 0.2s;
 }
 
-.edit-btn:hover {
+.more-btn:hover {
   color: #1a91c1;
   background-color: rgba(26, 145, 193, 0.1);
-}
-
-.delete-btn:hover {
-  color: #ff6b6b;
-  background-color: rgba(255, 107, 107, 0.1);
 }
 
 .collection-description {
@@ -174,6 +173,10 @@ export default {
   font-weight: 500;
   font-size: 14px;
   transition: color 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
 }
 
 .view-collection:hover {

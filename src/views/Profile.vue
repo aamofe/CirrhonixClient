@@ -126,6 +126,13 @@ export default {
     setActiveSection(sectionId) {
       this.activeSection = sectionId
       sessionStorage.setItem('profileActiveSection', sectionId)
+
+      // 如果正在查看收藏夹详情，需要移除URL中的collectionId参数
+      if (sectionId !== 'collections' && this.$route.query.collectionId) {
+        const query = { ...this.$route.query }
+        delete query.collectionId
+        this.$router.replace({ query })
+      }
     },
 
     // 从sessionStorage获取上次保存的标签ID
@@ -142,6 +149,11 @@ export default {
     const sectionParam = urlParams.get('section')
     if (sectionParam && this.navItems.some(item => item.id === sectionParam)) {
       this.setActiveSection(sectionParam)
+    }
+
+    // 如果URL中有collectionId参数，确保激活收藏夹部分
+    if (urlParams.get('collectionId')) {
+      this.setActiveSection('collections')
     }
   },
 }

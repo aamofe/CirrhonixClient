@@ -5,7 +5,8 @@
       <div class="article-header">
         <div class="article-actions">
           <router-link to="/search" class="back-link">
-            <span class="back-icon">←</span> 返回检索结果
+            <ArrowLeftIcon /> 返回检索结果
+            <!-- <span class="back-icon">←</span>  -->
           </router-link>
 
           <div class="action-buttons">
@@ -248,12 +249,14 @@
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
 import SiteFooter from "@/components/layout/SiteFooter.vue";
 import Literature from "@/api/Literature";
+import ArrowLeftIcon from "@/components/icons/ArrowLeftIcon.vue"
 
 export default {
   name: "LiteratureDetail",
   components: {
     PrimaryButton,
     SiteFooter,
+    ArrowLeftIcon
   },
   data() {
     return {
