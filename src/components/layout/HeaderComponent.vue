@@ -3,7 +3,7 @@
   <header>
     <div class="header-container">
       <div class="logo-container" @click="goToHome">
-        <img :src="require('@/assets/logo_below.svg')" alt="Logo Below" />
+        <img src="@/assets/logo_below.svg" alt="Logo Below" class="logo" />
       </div>
 
       <nav>
@@ -20,8 +20,10 @@
       </nav>
 
       <div class="user-area" @click="goToProfile">
-        <div class="avatar">{{ getUserInitial }}</div>
-        <span class="username">{{ username }}</span>
+        <div class="avatar-container">
+          <img :src="defaultAvatar" alt="用户头像" class="avatar-image" />
+        </div>
+        <span class="username">{{ username || '登录' }}</span>
       </div>
     </div>
   </header>
@@ -29,7 +31,7 @@
 
 <script>
 import User from "@/api/User";
-
+import defaultAvatar from "@/assets/female.png"
 export default {
   name: "HeaderComponent",
   data() {
@@ -42,12 +44,8 @@ export default {
         { name: "爬虫中心", path: "/crawler" },
         // { name: "个人中心", path: "/profile" },
       ],
+      defaultAvatar,
     };
-  },
-  computed: {
-    getUserInitial() {
-      return this.username ? this.username.charAt(0).toUpperCase() : "U";
-    },
   },
   methods: {
     isActive(path) {
@@ -69,7 +67,6 @@ export default {
         const response = await User.profile();
         const data = response.data.data;
         this.username = data.username;
-        this.$message.success(`当前用户：${data.username}`);
       } catch (error) {
         console.error(error);
         if (error.response && error.response.status === 401) {
@@ -79,20 +76,12 @@ export default {
         }
       }
     },
-    // updateFromUserInfo(userInfo) {
-    //   if (userInfo && userInfo.username) {
-    //     this.username = userInfo.username;
-    //   }
-    // },
   },
   mounted() {
     const token = localStorage.getItem("token");
     if (token) {
       this.getProfile();
     }
-  },
-  beforeUnmount() {
-    // this.$bus.off("update-navigator");
   },
 };
 </script>
@@ -117,61 +106,88 @@ header {
 
 .logo-container {
   cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 .logo {
-  height: 40px;
+  height: 45px;
+  width: auto;
+}
+
+nav {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
 }
 
 nav ul {
   display: flex;
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 nav ul li {
-  margin-left: 25px;
+  margin: 0 15px;
 }
 
 nav ul li a {
   text-decoration: none;
   color: #555;
-  font-weight: 500;
-  font-size: 15px;
-  transition: color 0.3s;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s;
+  padding: 8px 12px;
+  border-radius: 4px;
 }
 
 nav ul li a:hover {
   color: #1a91c1;
+  background-color: rgba(26, 145, 193, 0.1);
 }
 
 nav ul li a.active {
   color: #1a91c1;
-  border-bottom: 2px solid #1a91c1;
-  padding-bottom: 3px;
+  border-bottom: 3px solid #1a91c1;
+  padding-bottom: 5px;
+  font-weight: 700;
 }
 
 .user-area {
   display: flex;
   align-items: center;
   cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: background-color 0.3s;
 }
 
-.user-area .avatar {
-  width: 35px;
-  height: 35px;
+.user-area:hover {
+  background-color: #f5f5f5;
+}
+
+.avatar-container {
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background-color: #a8e6cf;
+  overflow: hidden;
   margin-right: 10px;
+  border: 2px solid #1a91c1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: bold;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .user-area .username {
-  margin-right: 20px;
   color: #555;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {
@@ -180,19 +196,22 @@ nav ul li a.active {
     align-items: flex-start;
   }
 
+  nav {
+    width: 100%;
+    margin: 15px 0;
+  }
+
   nav ul {
-    margin-top: 15px;
     flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
   }
 
   nav ul li {
-    margin-left: 0;
-    margin-right: 15px;
-    margin-bottom: 10px;
+    margin: 5px 10px;
   }
 
   .user-area {
-    margin-top: 15px;
     align-self: flex-end;
   }
 }
