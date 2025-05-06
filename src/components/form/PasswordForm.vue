@@ -1,85 +1,99 @@
-<!-- src/components/profile/CollectionForm.vue -->
+<!-- src/components/profile/PasswordForm.vue -->
 <template>
-  <form @submit.prevent="handleSubmit" class="collection-form">
+  <form @submit.prevent="handleSubmit" class="password-form">
     <div class="form-group">
-      <label for="name">收藏夹名称</label>
-      <input
-        type="text"
-        id="name"
-        v-model="form.name"
-        class="form-input"
-        required
-        placeholder="输入收藏夹名称"
-      />
+      <label for="oldPassword">旧密码</label>
+      <input type="password" id="oldPassword" v-model="form.oldPassword" class="form-input" required
+        placeholder="输入当前密码" />
     </div>
 
     <div class="form-group">
-      <label for="description">收藏夹描述 (可选)</label>
-      <textarea
-        id="description"
-        v-model="form.description"
-        class="form-textarea"
-        rows="4"
-        placeholder="简短描述这个收藏夹的内容或用途"
-      ></textarea>
+      <label for="newPassword">新密码</label>
+      <input type="password" id="newPassword" v-model="form.newPassword" class="form-input" required placeholder="输入新密码"
+        minlength="8" />
+      <small class="form-hint">密码长度至少8位，建议包含字母、数字和特殊字符</small>
+    </div>
+
+    <div class="form-group">
+      <label for="confirmPassword">确认新密码</label>
+      <input type="password" id="confirmPassword" v-model="form.confirmPassword" class="form-input" required
+        placeholder="再次输入新密码" />
+      <small v-if="passwordMismatch" class="form-error">两次输入的密码不一致</small>
     </div>
 
     <div class="form-actions">
       <button type="button" class="cancel-btn" @click="$emit('cancel')">
         取消
       </button>
-      <PrimaryButton type="submit" :fullWidth="false">{{
-        isEdit ? "保存修改" : "创建收藏夹"
-      }}</PrimaryButton>
+      <PrimaryButton type="submit" :fullWidth="false" :disabled="isSubmitting || passwordMismatch">
+        {{ isSubmitting ? "提交中..." : "确认修改" }}
+      </PrimaryButton>
     </div>
   </form>
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
 
 export default {
-  name: "CollectionForm",
+  name: "PasswordForm",
   components: {
     PrimaryButton,
-  },
-  props: {
-    collection: {
-      type: Object,
-      default: null,
-    },
   },
   data() {
     return {
       form: {
-        name: "",
-        description: "",
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: ""
       },
-    };
+      isSubmitting: false
+    }
   },
   computed: {
-    isEdit() {
-      return !!this.collection;
-    },
-  },
-  created() {
-    // 如果是编辑模式，填充表单数据
-    if (this.collection) {
-      this.form.name = this.collection.name || "";
-      this.form.description = this.collection.description || "";
+    passwordMismatch() {
+      return this.form.newPassword &&
+        this.form.confirmPassword &&
+        this.form.newPassword !== this.form.confirmPassword
     }
   },
   methods: {
-    handleSubmit() {
-      // 发送表单数据给父组件
-      this.$emit("submit", { ...this.form });
+    async handleSubmit() {
+      if (this.passwordMismatch) {
+        return
+      }
+
+      this.isSubmitting = true
+
+      try {
+        // 发送表单数据给父组件
+        this.$emit("submit", {
+          oldPassword: this.form.oldPassword,
+          newPassword: this.form.newPassword
+        })
+
+        // 清空表单
+        this.resetForm()
+      } catch (error) {
+        console.error("密码修改表单提交失败:", error)
+      } finally {
+        this.isSubmitting = false
+      }
     },
-  },
-};
+
+    resetForm() {
+      this.form = {
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      }
+    }
+  }
+}
 </script>
 
 <style scoped>
-.collection-form {
+.password-form {
   width: 100%;
 }
 
@@ -94,8 +108,7 @@ export default {
   color: #444;
 }
 
-.form-input,
-.form-textarea {
+.form-input {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
@@ -104,16 +117,24 @@ export default {
   transition: border-color 0.3s;
 }
 
-.form-input:focus,
-.form-textarea:focus {
+.form-input:focus {
   outline: none;
   border-color: #a8e6cf;
   box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.2);
 }
 
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
+.form-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 12px;
+  color: #777;
+}
+
+.form-error {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 12px;
+  color: #e74c3c;
 }
 
 .form-actions {

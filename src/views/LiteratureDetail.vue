@@ -151,7 +151,9 @@
             </div>
             <div class="info-item">
               <span class="info-label">文献类型:</span>
-              <span class="info-value">{{ article.publication_type || "研究文章" }}</span>
+              <span class="info-value">{{
+                article.publication_type || "研究文章"
+              }}</span>
             </div>
             <div class="info-item" v-if="article.publisher">
               <span class="info-label">出版商:</span>
@@ -296,7 +298,7 @@ export default {
         }
 
         const response = await Literature.detail(this.articleId);
-        console.log("文献详情",response)
+        console.log("文献详情", response);
         this.article = response.data.data;
 
         // console.log(this.article.title)

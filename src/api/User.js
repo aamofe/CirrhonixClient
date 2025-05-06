@@ -32,4 +32,21 @@ export default class User {
   static async logout() {
     return service.post(url.logout);
   }
+  static async preference(data) {
+    if (data.avatar instanceof File) {
+      const formData = new FormData();
+      formData.append("avatar", data.avatar);
+      for (const key in data) {
+        if (key !== "avatar" && data[key] !== undefined) {
+          formData.append(key, data[key]);
+        }
+      }
+      return service.post(url.preference, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+    }
+    return service.post(url.preference, data);
+  }
 }

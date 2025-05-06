@@ -254,7 +254,7 @@ import SearchBox from "@/components/common/SearchBox.vue";
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
 import SiteFooter from "@/components/layout/SiteFooter.vue";
 import Search from "@/api/Search";
-import LiteratureItem from "@/components/LiteratureItem.vue"; 
+import LiteratureItem from "@/components/LiteratureItem.vue";
 
 export default {
   name: "SearchView",
@@ -297,7 +297,7 @@ export default {
         years: [],
       },
       // 添加一个标志来追踪是否有保存的搜索状态
-      hasSearchState: false
+      hasSearchState: false,
     };
   },
   computed: {
@@ -338,7 +338,11 @@ export default {
     // 保存搜索状态到 sessionStorage
     saveSearchState() {
       // 只有在有实际搜索结果时才保存状态
-      if (this.results.length > 0 || this.searchQuery || Object.values(this.advancedFilters).some(val => val)) {
+      if (
+        this.results.length > 0 ||
+        this.searchQuery ||
+        Object.values(this.advancedFilters).some((val) => val)
+      ) {
         const searchState = {
           searchQuery: this.searchQuery,
           searchType: this.searchType,
@@ -350,35 +354,44 @@ export default {
           sortBy: this.sortBy,
           filters: this.filters,
           selectedFilters: this.selectedFilters,
-          showAdvancedSearch: this.showAdvancedSearch
+          showAdvancedSearch: this.showAdvancedSearch,
         };
-        
-        sessionStorage.setItem('searchState', JSON.stringify(searchState));
+
+        sessionStorage.setItem("searchState", JSON.stringify(searchState));
         this.hasSearchState = true;
       }
     },
-    
+
     // 从 sessionStorage 恢复搜索状态
     restoreSearchState() {
-      const savedState = sessionStorage.getItem('searchState');
-      
+      const savedState = sessionStorage.getItem("searchState");
+
       if (savedState) {
         try {
           const state = JSON.parse(savedState);
-          
+
           // 恢复搜索状态
           this.searchQuery = state.searchQuery || "";
           this.searchType = state.searchType || "basic";
-          this.advancedFilters = state.advancedFilters || this.getDefaultAdvancedFilters();
+          this.advancedFilters =
+            state.advancedFilters || this.getDefaultAdvancedFilters();
           this.results = state.results || [];
           this.totalResults = state.totalResults || 0;
           this.currentPage = state.currentPage || 1;
           this.totalPages = state.totalPages || 1;
           this.sortBy = state.sortBy || "relevance";
-          this.filters = state.filters || { types: {}, journals: {}, years: {} };
-          this.selectedFilters = state.selectedFilters || { types: [], journals: [], years: [] };
+          this.filters = state.filters || {
+            types: {},
+            journals: {},
+            years: {},
+          };
+          this.selectedFilters = state.selectedFilters || {
+            types: [],
+            journals: [],
+            years: [],
+          };
           this.showAdvancedSearch = state.showAdvancedSearch || false;
-          
+
           this.hasSearchState = true;
         } catch (error) {
           console.error("Error restoring search state:", error);
@@ -388,7 +401,7 @@ export default {
         this.hasSearchState = false;
       }
     },
-    
+
     // 获取默认的高级筛选器状态
     getDefaultAdvancedFilters() {
       return {
@@ -402,29 +415,29 @@ export default {
         language: "",
       };
     },
-    
+
     async onSearch(query) {
       this.searchQuery = query;
       this.currentPage = 1;
       await this.loadResults();
       this.saveSearchState();
     },
-    
+
     async onAdvancedSearch() {
       this.currentPage = 1;
       await this.loadResults(true);
       this.saveSearchState();
     },
-    
+
     resetAdvancedFilters() {
       this.advancedFilters = this.getDefaultAdvancedFilters();
     },
-    
+
     toggleAdvancedSearch() {
       this.showAdvancedSearch = !this.showAdvancedSearch;
       this.saveSearchState();
     },
-    
+
     async setSearchType(type) {
       this.searchType = type;
       if (this.searchQuery) {
@@ -432,13 +445,13 @@ export default {
         this.saveSearchState();
       }
     },
-    
+
     async setSortBy(sort) {
       this.sortBy = sort;
       await this.loadResults();
       this.saveSearchState();
     },
-    
+
     async loadResults(isAdvanced = false) {
       if ((!this.searchQuery && !isAdvanced) || this.isLoading) return;
 
@@ -491,7 +504,7 @@ export default {
         this.isLoading = false;
       }
     },
-    
+
     processFilters(filterData) {
       this.filters = {
         types: filterData.types || {},
@@ -499,13 +512,13 @@ export default {
         years: filterData.years || {},
       };
     },
-    
+
     async applyFilters() {
       this.currentPage = 1;
       await this.loadResults();
       this.saveSearchState();
     },
-    
+
     async changePage(page) {
       if (page < 1 || page > this.totalPages || page === this.currentPage) {
         return;
@@ -515,13 +528,13 @@ export default {
       await this.loadResults();
       this.saveSearchState();
     },
-    
+
     viewArticleDetail(id) {
       // 保存当前搜索状态，然后导航到详情页
       this.saveSearchState();
       this.$router.push(`/literature/${id}`);
     },
-    
+
     parseQueryParams() {
       const query = this.$route.query;
 
@@ -564,7 +577,7 @@ export default {
   beforeUnmount() {
     // 在组件卸载前保存状态
     this.saveSearchState();
-  }
+  },
 };
 </script>
 

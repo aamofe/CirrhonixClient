@@ -1,19 +1,29 @@
 <template>
   <div class="literature-item" @click="handleClick">
     <h3 class="title">{{ article.title }}</h3>
-    
+
     <div class="meta-info">
       <span class="authors">{{ formatAuthors }}</span>
-      <span class="divider" v-if="article.authors?.length && article.source">|</span>
+      <span class="divider" v-if="article.authors?.length && article.source"
+        >|</span
+      >
       <span class="source">{{ article.source }}</span>
-      <span class="divider" v-if="(article.authors?.length || article.source) && formattedDate">|</span>
+      <span
+        class="divider"
+        v-if="(article.authors?.length || article.source) && formattedDate"
+        >|</span
+      >
       <span class="date">{{ formattedDate }}</span>
-      <span class="divider" v-if="article.publication_type && formattedDate">|</span>
-      <span class="type" v-if="article.publication_type">{{ formatPublicationType }}</span>
+      <span class="divider" v-if="article.publication_type && formattedDate"
+        >|</span
+      >
+      <span class="type" v-if="article.publication_type">{{
+        formatPublicationType
+      }}</span>
     </div>
-    
+
     <p class="abstract" v-if="article.abstract">{{ article.abstract }}</p>
-    
+
     <div class="footer">
       <div class="left">
         <div class="tags" v-if="limitedKeywords.length > 0">
@@ -23,12 +33,16 @@
             <span v-if="i < limitedKeywords.length - 1">;</span>
           </span>
         </div>
-        
+
         <div class="info">
           <span v-if="article.citation_count !== undefined" class="info-item">
             被引: {{ article.citation_count }}
           </span>
-          <span class="divider" v-if="article.citation_count !== undefined && article.language">|</span>
+          <span
+            class="divider"
+            v-if="article.citation_count !== undefined && article.language"
+            >|</span
+          >
           <span v-if="article.language" class="info-item">
             {{ getLanguageName(article.language) }}
           </span>
@@ -38,11 +52,9 @@
           </span>
         </div>
       </div>
-      
+
       <div class="view-btn-container">
-        <button class="view-btn" @click.stop="viewFullText">
-          查看全文
-        </button>
+        <button class="view-btn" @click.stop="viewFullText">查看全文</button>
       </div>
     </div>
   </div>
@@ -50,66 +62,69 @@
 
 <script>
 export default {
-  name: 'LiteratureItem',
+  name: "LiteratureItem",
   props: {
     article: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
   computed: {
     formatAuthors() {
-      const authors = this.article.authors || []
-      if (authors.length === 0) return "未知作者"
-      if (authors.length === 1) return authors[0].name
-      if (authors.length === 2) return `${authors[0].name} 和 ${authors[1].name}`
-      return `${authors[0].name} 等.`
+      const authors = this.article.authors || [];
+      if (authors.length === 0) return "未知作者";
+      if (authors.length === 1) return authors[0].name;
+      if (authors.length === 2)
+        return `${authors[0].name} 和 ${authors[1].name}`;
+      return `${authors[0].name} 等.`;
     },
     formattedDate() {
-      if (!this.article.publication_date) return ""
-      const date = new Date(this.article.publication_date)
-      return date.toLocaleDateString("zh-CN")
+      if (!this.article.publication_date) return "";
+      const date = new Date(this.article.publication_date);
+      return date.toLocaleDateString("zh-CN");
     },
     limitedKeywords() {
-      return this.article.keywords?.slice(0, 3) || []
+      return this.article.keywords?.slice(0, 3) || [];
     },
     formatPublicationType() {
       const types = {
-        "article": "期刊文章",
-        "review": "综述",
-        "conference": "会议论文",
-        "book": "书籍",
-        "thesis": "学位论文"
-      }
-      return types[this.article.publication_type] || this.article.publication_type
-    }
+        article: "期刊文章",
+        review: "综述",
+        conference: "会议论文",
+        book: "书籍",
+        thesis: "学位论文",
+      };
+      return (
+        types[this.article.publication_type] || this.article.publication_type
+      );
+    },
   },
   methods: {
     handleClick() {
-      this.$emit('view-detail', this.article.id)
+      this.$emit("view-detail", this.article.id);
     },
     viewFullText(e) {
-      e.stopPropagation()
+      e.stopPropagation();
       if (this.article.url) {
-        window.open(this.article.url, '_blank')
+        window.open(this.article.url, "_blank");
       } else {
-        this.$emit('view-detail', this.article.id)
+        this.$emit("view-detail", this.article.id);
       }
     },
     getLanguageName(code) {
       const languages = {
-        "en": "英文",
-        "zh": "中文",
-        "ja": "日文",
-        "fr": "法文",
-        "de": "德文",
-        "es": "西班牙文",
-        "ru": "俄文"
-      }
-      return languages[code] || code
-    }
-  }
-}
+        en: "英文",
+        zh: "中文",
+        ja: "日文",
+        fr: "法文",
+        de: "德文",
+        es: "西班牙文",
+        ru: "俄文",
+      };
+      return languages[code] || code;
+    },
+  },
+};
 </script>
 
 <style scoped>
@@ -125,8 +140,8 @@ export default {
 }
 
 .literature-item:hover {
-  background: #F5FBFF;
-  border-color: #A8E6CF;
+  background: #f5fbff;
+  border-color: #a8e6cf;
 }
 
 .title {
@@ -139,7 +154,7 @@ export default {
 }
 
 .literature-item:hover .title {
-  color: #1A91C1;
+  color: #1a91c1;
 }
 
 .meta-info {
@@ -161,7 +176,7 @@ export default {
 }
 
 .source {
-  color: #1A91C1;
+  color: #1a91c1;
 }
 
 .type {
@@ -200,7 +215,7 @@ export default {
 }
 
 .tag {
-  color: #1A91C1;
+  color: #1a91c1;
 }
 
 .info {
@@ -224,7 +239,7 @@ export default {
 }
 
 .view-btn {
-  background: #1A91C1;
+  background: #1a91c1;
   color: white;
   border: none;
   padding: 6px 14px;
@@ -243,13 +258,13 @@ export default {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .view-btn-container {
     margin-left: 0;
     margin-top: 10px;
     align-self: flex-end;
   }
-  
+
   .info {
     margin-bottom: 10px;
   }

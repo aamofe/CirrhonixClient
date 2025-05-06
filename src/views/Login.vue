@@ -147,26 +147,12 @@ export default {
           this.$message.error(loginRes?.data?.message || "登录失败");
           return;
         }
-        const token = loginRes.data.data.token;
-        console.log(token);
-        localStorage.setItem("token", token);
-        try {
-          const profileRes = await User.profile();
-          if (!profileRes?.data?.data) {
-            this.$message.error("获取用户信息失败");
-            return;
-          }
-          const userInfo = profileRes.data.data;
-          this.setIsAdmin(userInfo.is_super_user);
-          this.setUserId(userInfo.id);
+        const userInfo = loginRes.data.data;
+        localStorage.setItem("token", userInfo.token);
 
-          // 发送事件通知，并传递用户信息
-          this.$bus.emit("update-navigator", userInfo);
-
-          this.$router.push("/");
-        } catch (err) {
-          this.$message.error("获取用户资料失败");
-        }
+        this.setIsAdmin(userInfo.is_super_user);
+        this.setUserId(userInfo.id);
+        this.$router.push("/");
       } catch (err) {
         this.$message.error(err?.response?.data?.message || "登录请求出错");
       }

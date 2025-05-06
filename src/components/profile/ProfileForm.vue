@@ -12,13 +12,7 @@
               <span>更换头像</span>
             </div>
           </div>
-          <input
-            type="file"
-            ref="fileInput"
-            accept="image/*"
-            style="display: none"
-            @change="handleFileChange"
-          />
+          <input type="file" ref="fileInput" accept="image/*" style="display: none" @change="handleFileChange" />
         </div>
 
         <!-- 右侧信息 -->
@@ -40,13 +34,13 @@
 
           <div class="info-item">
             <div class="info-label">个人简介</div>
-            <div class="info-value">{{ user.bio || "暂无个人简介" }}</div>
+            <div class="info-value">{{ user.introduction || "暂无个人简介" }}</div>
           </div>
 
           <div class="info-item">
             <div class="info-label">研究方向</div>
             <div class="info-value">
-              {{ user.research_interests || "暂无研究方向" }}
+              {{ user.interest || "暂无研究方向" }}
             </div>
           </div>
         </div>
@@ -64,11 +58,7 @@
         <!-- 左侧头像 -->
         <div class="avatar-section">
           <div class="avatar-container">
-            <img
-              :src="avatarUrl || defaultAvatar"
-              alt="用户头像"
-              class="avatar-image"
-            />
+            <img :src="avatarUrl || defaultAvatar" alt="用户头像" class="avatar-image" />
             <div class="avatar-overlay" @click="triggerFileInput">
               <span>更换头像</span>
             </div>
@@ -93,24 +83,14 @@
           </div>
 
           <div class="form-group">
-            <label for="bio">个人简介</label>
-            <textarea
-              id="bio"
-              v-model="form.bio"
-              class="form-textarea"
-              rows="4"
-            ></textarea>
+            <label for="introduction">个人简介</label>
+            <textarea id="introduction" v-model="form.introduction" class="form-textarea" rows="4"></textarea>
           </div>
 
           <div class="form-group">
-            <label for="research_interests">研究方向</label>
-            <textarea
-              id="research_interests"
-              v-model="form.research_interests"
-              class="form-textarea"
-              rows="3"
-              placeholder="多个研究方向请用逗号分隔"
-            ></textarea>
+            <label for="interest">研究方向</label>
+            <textarea id="interest" v-model="form.interest" class="form-textarea" rows="3"
+              placeholder="多个研究方向请用逗号分隔"></textarea>
           </div>
         </div>
       </div>
@@ -127,8 +107,9 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import defaultAvatar from "@/assets/female.png";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import defaultAvatar from "@/assets/female.png"
+import User from "@/api/User"
 
 export default {
   name: "ProfileForm",
@@ -145,73 +126,86 @@ export default {
     return {
       isEditing: false,
       form: {
-        bio: "",
-        research_interests: "",
+        introduction: "",
+        interest: "",
       },
       avatarUrl: null,
       avatarFile: null,
       defaultAvatar,
-    };
+      loading: false,
+    }
   },
   created() {
     // 初始化表单数据
-    this.initForm();
+    this.initForm()
   },
   methods: {
     initForm() {
       // 只保留需要编辑的字段
       this.form = {
-        bio: this.user.bio || "",
-        research_interests: this.user.research_interests || "",
-      };
+        introduction: this.user.introduction || "",
+        interest: this.user.interest || "",
+      }
 
       // 设置头像
       if (this.user.avatar_url) {
-        this.avatarUrl = this.user.avatar_url;
+        this.avatarUrl = this.user.avatar_url
       }
     },
     startEditing() {
-      this.isEditing = true;
-      this.initForm(); // 重新初始化表单，确保最新数据
+      this.isEditing = true
+      this.initForm() // 重新初始化表单，确保最新数据
     },
     cancelEditing() {
-      this.isEditing = false;
-      this.initForm(); // 重置表单数据
+      this.isEditing = false
+      this.initForm() // 重置表单数据
     },
     triggerFileInput() {
-      this.$refs.fileInput.click();
+      this.$refs.fileInput.click()
     },
     handleFileChange(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+      const file = event.target.files[0]
+      if (!file) return
 
       // 处理文件上传预览
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = (e) => {
-        this.avatarUrl = e.target.result;
-        this.avatarFile = file;
-      };
-      reader.readAsDataURL(file);
-    },
-    handleSubmit() {
-      // 创建表单数据对象
-      const formData = new FormData();
-      formData.append("bio", this.form.bio);
-      formData.append("research_interests", this.form.research_interests);
-
-      // 如果有新头像，添加到表单数据
-      if (this.avatarFile) {
-        formData.append("avatar", this.avatarFile);
+        this.avatarUrl = e.target.result
+        this.avatarFile = file
       }
+      reader.readAsDataURL(file)
+    },
+    async handleSubmit() {
+      this.loading = true
+      try {
+        const formData = new FormData()
+        formData.append("introduction", this.form.introduction)
+        formData.append("interest", this.form.interest)
 
-      // 发出保存事件，让父组件处理
-      this.$emit("save", formData);
+        if (this.avatarFile) {
+          formData.append("avatar", this.avatarFile)
+        }
 
-      // 退出编辑模式
-      this.isEditing = false;
+        await User.preference(formData)
+        this.$emit("profileUpdated", {
+          ...this.user,
+          introduction: this.form.introduction,
+          interest: this.form.interest,
+          ...(this.avatarUrl && { avatar_url: this.avatarUrl }),
+        })
+
+        this.$message.success("个人信息更新成功")
+        this.isEditing = false
+      } catch (error) {
+
+        console.error("更新用户信息失败", error)
+        this.$message.error("个人信息更新失败")
+      } finally {
+        this.loading = false
+      }
     },
   },
-};
+}
 </script>
 
 <style scoped>

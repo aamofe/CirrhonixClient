@@ -79,27 +79,20 @@ export default {
         }
       }
     },
-    updateFromUserInfo(userInfo) {
-      if (userInfo && userInfo.username) {
-        this.username = userInfo.username;
-      }
-    },
+    // updateFromUserInfo(userInfo) {
+    //   if (userInfo && userInfo.username) {
+    //     this.username = userInfo.username;
+    //   }
+    // },
   },
   mounted() {
-    this.$bus.on("update-navigator", (userInfo) => {
-      if (userInfo) {
-        this.updateFromUserInfo(userInfo);
-      } else {
-        this.getProfile();
-      }
-    });
     const token = localStorage.getItem("token");
     if (token) {
       this.getProfile();
     }
   },
   beforeUnmount() {
-    this.$bus.off("update-navigator");
+    // this.$bus.off("update-navigator");
   },
 };
 </script>
