@@ -22,7 +22,7 @@
     </div>
 
     <div class="form-actions">
-      <button type="button" class="cancel-btn" @click="$emit('cancel')">
+      <button type="button" class="cancel-btn" @click="handleCancel">
         取消
       </button>
       <PrimaryButton type="submit" :fullWidth="false" :disabled="isSubmitting || passwordMismatch">
@@ -34,6 +34,7 @@
 
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import User from "@/api/User"
 
 export default {
   name: "PasswordForm",
@@ -66,19 +67,27 @@ export default {
       this.isSubmitting = true
 
       try {
-        // 发送表单数据给父组件
-        this.$emit("submit", {
+        // 直接调用API修改密码
+        await User.updatePassword({
           oldPassword: this.form.oldPassword,
           newPassword: this.form.newPassword
         })
 
-        // 清空表单
+        this.$message.success("密码修改成功")
         this.resetForm()
+        this.$emit("cancel") // 关闭模态框
       } catch (error) {
-        console.error("密码修改表单提交失败:", error)
+        console.error("密码修改失败:", error)
+        this.$message.error("密码修改失败，请检查旧密码是否正确")
       } finally {
         this.isSubmitting = false
       }
+    },
+
+    handleCancel() {
+      // 明确触发取消事件
+      this.$emit("cancel")
+      this.resetForm()
     },
 
     resetForm() {

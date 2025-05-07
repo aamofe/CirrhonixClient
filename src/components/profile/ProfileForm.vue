@@ -46,9 +46,20 @@
         </div>
       </div>
 
-      <!-- 底部编辑按钮 -->
-      <div class="action-button">
-        <button @click="startEditing" class="edit-button">编辑</button>
+      <!-- 底部按钮区域 -->
+      <div class="action-buttons">
+        <button @click="startEditing" class="edit-button">
+          <EditIcon class="button-icon" />
+          编辑资料
+        </button>
+        <button @click="$emit('showPasswordModal')" class="password-button">
+          <LockIcon class="button-icon" />
+          修改密码
+        </button>
+        <button @click="$emit('logout')" class="logout-button">
+          <LogoutIcon class="button-icon" />
+          退出登录
+        </button>
       </div>
     </div>
 
@@ -108,6 +119,9 @@
 
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import EditIcon from "@/components/buttons/EditIcon.vue"
+import LockIcon from "@/components/icons/LockIcon.vue"
+import LogoutIcon from "@/components/icons/LogoutIcon.vue"
 import defaultAvatar from "@/assets/female.png"
 import User from "@/api/User"
 
@@ -115,6 +129,9 @@ export default {
   name: "ProfileForm",
   components: {
     PrimaryButton,
+    EditIcon,
+    LockIcon,
+    LogoutIcon
   },
   props: {
     user: {
@@ -197,7 +214,6 @@ export default {
         this.$message.success("个人信息更新成功")
         this.isEditing = false
       } catch (error) {
-
         console.error("更新用户信息失败", error)
         this.$message.error("个人信息更新失败")
       } finally {
@@ -284,23 +300,64 @@ export default {
   text-align: left;
 }
 
-.action-button {
+.action-buttons {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.edit-button,
+.password-button,
+.logout-button {
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.button-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .edit-button {
-  padding: 0.5rem 1.5rem;
   background-color: transparent;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
+  border-color: #ddd;
+  color: #555;
 }
 
 .edit-button:hover {
   background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.password-button {
+  background-color: rgba(168, 230, 207, 0.2);
+  color: #27ae60;
+  border-color: rgba(39, 174, 96, 0.3);
+}
+
+.password-button:hover {
+  background-color: rgba(168, 230, 207, 0.3);
+  border-color: rgba(39, 174, 96, 0.5);
+}
+
+.logout-button {
+  background-color: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  border-color: rgba(231, 76, 60, 0.3);
+}
+
+.logout-button:hover {
+  background-color: rgba(231, 76, 60, 0.2);
+  border-color: rgba(231, 76, 60, 0.5);
 }
 
 .form-actions {

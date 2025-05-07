@@ -8,61 +8,101 @@
       </p>
 
       <search-box @search="onSearch" />
-
-      <div class="advanced-search" @click="goToAdvancedSearch">高级检索</div>
     </section>
 
     <div class="main-content">
+      <!-- 精选文献 -->
       <section class="featured-article">
         <div class="featured-content">
           <h2>{{ featuredArticle.title }}</h2>
           <div class="featured-meta">
             <span>来源：{{ featuredArticle.journal }}</span>
-            <span
-              >发表日期：{{ formatDate(featuredArticle.publicationDate) }}</span
-            >
+            <span>发表日期：{{ formatDate(featuredArticle.publicationDate) }}</span>
             <span>引用：{{ featuredArticle.citations }}</span>
           </div>
           <p>{{ featuredArticle.abstract }}</p>
-          <primary-button
-            @click="viewArticle(featuredArticle.id)"
-            :fullWidth="false"
-          >
+          <primary-button @click="viewArticle(featuredArticle.id)" :fullWidth="false">
             阅读全文
           </primary-button>
         </div>
-        <div class="featured-image">肝硬化研究图片</div>
-      </section>
-      <AiAssistant />
-      <section-title title="研究热点趋势" url="/trends" linkText="查看更多" />
-
-      <section class="chart-section">
-        <div class="chart-container">
-          <!-- 研究趋势图表将在mounted中初始化 -->
+        <div class="featured-image">
+          <img src="@/assets/cover.avif" alt="肝硬化研究图片" />
         </div>
       </section>
 
-      <section-title title="最新文献" url="/literature" linkText="查看全部" />
+      <!-- AI助手 -->
+      <AiAssistant />
 
-      <div class="card-grid">
-        <literature-card
-          v-for="article in recentArticles"
-          :key="article.id"
-          :article="article"
-          @click="viewArticle(article.id)"
-        />
+      <!-- 研究热点 -->
+      <section class="hot-topics">
+        <h2 class="section-header">肝硬化研究热点</h2>
+        <div class="topics-grid">
+          <div v-for="(topic, index) in researchTopics" :key="index" class="topic-card"
+            @click="onSearch(topic.keyword)">
+            <div class="topic-icon">
+              <i :class="topic.icon"></i>
+            </div>
+            <h3>{{ topic.title }}</h3>
+            <p>{{ topic.description }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 研究统计 -->
+      <section class="research-stats">
+        <h2 class="section-header">肝硬化研究统计</h2>
+        <div class="stats-container">
+          <div class="stat-item">
+            <div class="stat-number">{{ researchStats.totalArticles }}</div>
+            <div class="stat-label">收录文献</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ researchStats.totalAuthors }}</div>
+            <div class="stat-label">研究作者</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ researchStats.totalJournals }}</div>
+            <div class="stat-label">期刊来源</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ researchStats.lastUpdate }}</div>
+            <div class="stat-label">最近更新</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 最新文献 -->
+      <div class="content-sections">
+        <section class="section-card">
+          <h2 class="section-header">最新文献</h2>
+          <div class="card-list">
+            <literature-card v-for="article in recentArticles" :key="article.id" :article="article"
+              @click="viewArticle(article.id)" />
+          </div>
+        </section>
+
+        <!-- 知名专家 -->
+        <section class="section-card">
+          <h2 class="section-header">领域专家</h2>
+          <div class="card-list">
+            <author-card v-for="author in popularAuthors" :key="author.id" :author="author"
+              @click="viewAuthorProfile(author.id)" />
+          </div>
+        </section>
       </div>
 
-      <section-title title="热门作者" url="/authors" linkText="查看更多" />
-
-      <div class="card-grid">
-        <author-card
-          v-for="author in popularAuthors"
-          :key="author.id"
-          :author="author"
-          @click="viewAuthorProfile(author.id)"
-        />
-      </div>
+      <!-- 语义分析 -->
+      <section class="semantic-analysis">
+        <h2 class="section-header">热门研究概念网络</h2>
+        <div class="concept-network">
+          <div class="network-placeholder">
+            <p>肝硬化相关概念图谱</p>
+            <primary-button @click="onSearch('肝硬化概念网络')" :fullWidth="false">
+              查看详情
+            </primary-button>
+          </div>
+        </div>
+      </section>
     </div>
 
     <site-footer />
@@ -70,22 +110,20 @@
 </template>
 
 <script>
-import SearchBox from "@/components/common/SearchBox.vue";
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import SectionTitle from "@/components/common/Sectiontitle.vue";
-import LiteratureCard from "@/components/cards/LiteratureCard.vue";
-import AuthorCard from "@/components/cards/AuthorCard.vue";
-import AiAssistant from "@/components/AiAssistant.vue";
-import SiteFooter from "@/components/layout/SiteFooter.vue";
-import Literature from "@/api/Literature";
-import Search from "@/api/Search";
+import SearchBox from "@/components/common/SearchBox.vue"
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import LiteratureCard from "@/components/cards/LiteratureCard.vue"
+import AuthorCard from "@/components/cards/AuthorCard.vue"
+import AiAssistant from "@/components/AiAssistant.vue"
+import SiteFooter from "@/components/layout/SiteFooter.vue"
+import Literature from "@/api/Literature"
+import Search from "@/api/Search"
 
 export default {
   name: "HomeView",
   components: {
     SearchBox,
     PrimaryButton,
-    SectionTitle,
     LiteratureCard,
     AuthorCard,
     AiAssistant,
@@ -104,57 +142,88 @@ export default {
       },
       recentArticles: [],
       popularAuthors: [],
-      trendingTopics: [],
       isLoading: false,
-    };
+      keywords: [],
+      researchTopics: [
+        {
+          title: "非酒精性脂肪性肝病",
+          keyword: "非酒精性脂肪性肝病 肝硬化",
+          description: "NAFLD向肝硬化进展的机制与诊断",
+          icon: "icon-liver"
+        },
+        {
+          title: "病毒性肝炎",
+          keyword: "病毒性肝炎 肝硬化",
+          description: "乙肝、丙肝病毒感染导致的肝硬化研究",
+          icon: "icon-virus"
+        },
+        {
+          title: "肝硬化并发症",
+          keyword: "肝硬化 并发症",
+          description: "门静脉高压、腹水、肝性脑病研究",
+          icon: "icon-complication"
+        },
+        {
+          title: "治疗进展",
+          keyword: "肝硬化 治疗",
+          description: "逆转肝纤维化的治疗策略研究",
+          icon: "icon-treatment"
+        }
+      ],
+      researchStats: {
+        totalArticles: "3,582",
+        totalAuthors: "1,245",
+        totalJournals: "87",
+        lastUpdate: "2025-05-06"
+      }
+    }
   },
   methods: {
     formatDate(dateString) {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      return date.toLocaleDateString("zh-CN");
+      if (!dateString) return ""
+      const date = new Date(dateString)
+      return date.toLocaleDateString("zh-CN")
     },
     async loadRecentArticles() {
       try {
-        this.isLoading = true;
+        this.isLoading = true
         const response = await Literature.list({
           sort: "-publication_date",
           page: 1,
-          size: 6,
-        });
-        this.recentArticles = response.data.items || [];
+          size: 4,
+        })
+        this.recentArticles = response.data.items || []
       } catch (error) {
-        console.error("Failed to load recent articles", error);
+        console.error("Failed to load recent articles", error)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     async loadPopularAuthors() {
       try {
-        this.isLoading = true;
+        this.isLoading = true
         const response = await Literature.getAuthors({
           sort: "publications",
           page: 1,
-          size: 6,
-        });
-        this.popularAuthors = response.data.items || [];
+          size: 4,
+        })
+        this.popularAuthors = response.data.items || []
       } catch (error) {
-        console.error("Failed to load popular authors", error);
+        console.error("Failed to load popular authors", error)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     async loadFeaturedArticle() {
       try {
-        // 这里可以通过特定接口获取精选文章，或者从最新文章中选择第一篇
         const response = await Literature.list({
-          sort: "-citations",
+          sort: "-citation_count",
           page: 1,
           size: 1,
-        });
+        })
 
         if (response.data.items && response.data.items.length > 0) {
-          const article = response.data.items[0];
+          const article = response.data.items[0]
           this.featuredArticle = {
             id: article.id,
             title: article.title,
@@ -162,62 +231,46 @@ export default {
             publicationDate: article.publication_date,
             citations: article.citation_count || 0,
             abstract: article.abstract || "暂无摘要",
-          };
+          }
         }
       } catch (error) {
-        console.error("Failed to load featured article", error);
+        console.error("Failed to load featured article", error)
       }
     },
-    async loadTrendingTopics() {
+    async loadKeywords() {
       try {
-        const response = await Search.getKeywords({
-          sort: "-weight",
-          page: 1,
-          size: 10,
-        });
-        this.trendingTopics = response.data.items || [];
-
-        // 如果有趋势数据，在这里初始化图表
-        if (this.trendingTopics.length > 0) {
-          this.initTrendChart();
-        }
+        const response = await Search.getKeywords({ sort: "-weight", size: 10 })
+        this.keywords = response.data.items || []
       } catch (error) {
-        console.error("Failed to load trending topics", error);
+        console.error("Failed to load keywords", error)
       }
-    },
-    initTrendChart() {
-      // 这里可以使用 Chart.js 或其他图表库初始化研究趋势图表
-      // 如果需要，可以创建一个专门的图表组件
     },
     onSearch(query) {
-      this.$router.push({ path: "/search", query: { q: query } });
-    },
-    goToAdvancedSearch() {
-      this.$router.push("/search/advanced");
+      this.$router.push({ path: "/search", query: { q: query } })
     },
     viewArticle(id) {
       if (id) {
-        this.$router.push(`/literature/${id}`);
+        this.$router.push(`/literature/${id}`)
       }
     },
     viewAuthorProfile(id) {
-      this.$router.push(`/authors/${id}`);
+      this.$router.push(`/authors/${id}`)
     },
   },
   async mounted() {
     try {
-      // 并行加载所有数据
+      // 并行加载数据
       await Promise.all([
         this.loadRecentArticles(),
         this.loadPopularAuthors(),
         this.loadFeaturedArticle(),
-        this.loadTrendingTopics(),
-      ]);
+        this.loadKeywords(),
+      ])
     } catch (error) {
-      console.error("Error initializing home page", error);
+      console.error("Error initializing home page", error)
     }
   },
-};
+}
 </script>
 
 <style scoped>
@@ -241,11 +294,9 @@ export default {
   right: -50px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(255, 255, 255, 0) 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
 }
 
@@ -256,11 +307,9 @@ export default {
   left: 10%;
   width: 150px;
   height: 150px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 255, 255, 0.15) 0%,
-    rgba(255, 255, 255, 0) 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
 }
 
@@ -276,13 +325,6 @@ export default {
   max-width: 700px;
   margin-left: auto;
   margin-right: auto;
-}
-
-.advanced-search {
-  color: white;
-  margin-top: 15px;
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 .main-content {
@@ -308,13 +350,19 @@ export default {
 .featured-image {
   width: 250px;
   height: 180px;
-  background-color: #f5fbff;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1a91c1;
-  font-weight: 500;
+  overflow: hidden;
+}
+
+.featured-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.featured-image:hover img {
+  transform: scale(1.05);
 }
 
 .featured-article h2 {
@@ -330,6 +378,7 @@ export default {
 
 .featured-meta {
   display: flex;
+  flex-wrap: wrap;
   color: #888;
   font-size: 14px;
   margin-bottom: 20px;
@@ -337,11 +386,32 @@ export default {
 
 .featured-meta span {
   margin-right: 20px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
 }
 
-.chart-section {
+.section-header {
+  color: #1a91c1;
+  font-size: 22px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5f1f8;
+  position: relative;
+}
+
+.section-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 80px;
+  height: 3px;
+  background-color: #1a91c1;
+}
+
+/* 研究热点样式 */
+.hot-topics {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -349,35 +419,144 @@ export default {
   margin-bottom: 40px;
 }
 
-.chart-container {
-  height: 300px;
-  margin-top: 20px;
-  background: linear-gradient(
-    180deg,
-    rgba(26, 145, 193, 0.1) 0%,
-    rgba(168, 230, 207, 0.1) 100%
-  );
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
-.chart-container::before {
-  content: "研究趋势图表";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #1a91c1;
-  font-size: 18px;
-  opacity: 0.7;
-}
-
-.card-grid {
+.topics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
+}
+
+.topic-card {
+  background-color: #f5fbff;
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.topic-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(26, 145, 193, 0.1);
+}
+
+.topic-icon {
+  color: #1a91c1;
+  font-size: 24px;
+  margin-bottom: 15px;
+}
+
+.topic-card h3 {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.topic-card p {
+  color: #666;
+  font-size: 14px;
+}
+
+/* 研究统计样式 */
+.research-stats {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 25px;
   margin-bottom: 40px;
+}
+
+.stats-container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 20px;
+  flex-basis: calc(25% - 20px);
+  min-width: 120px;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: bold;
+  color: #1a91c1;
+  margin-bottom: 10px;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 14px;
+}
+
+/* 内容区域 */
+.content-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.section-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 25px;
+  height: 100%;
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* 语义分析区域 */
+.semantic-analysis {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 25px;
+  margin-bottom: 40px;
+}
+
+.concept-network {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.network-placeholder {
+  text-align: center;
+  padding: 20px;
+  background-color: #f5fbff;
+  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.network-placeholder p {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+@media (max-width: 980px) {
+  .content-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-container {
+    justify-content: center;
+  }
+
+  .stat-item {
+    flex-basis: calc(50% - 20px);
+  }
 }
 
 @media (max-width: 768px) {
@@ -392,6 +571,16 @@ export default {
   .featured-image {
     width: 100%;
     margin-bottom: 20px;
+  }
+
+  .topics-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-item {
+    flex-basis: 100%;
   }
 }
 </style>

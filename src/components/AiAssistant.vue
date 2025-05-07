@@ -2,11 +2,7 @@
 <template>
   <div class="ai-assistant-container" :class="{ 'is-expanded': isExpanded }">
     <!-- 收起状态的浮动按钮 -->
-    <div
-      v-if="!isExpanded"
-      class="ai-assistant-button"
-      @click="toggleAssistant"
-    >
+    <div v-if="!isExpanded" class="ai-assistant-button" @click="toggleAssistant">
       <div class="assistant-avatar">
         <img src="@/assets/assistant-avatar.png" alt="AI助手" />
       </div>
@@ -18,11 +14,7 @@
       <!-- 聊天头部 -->
       <div class="assistant-header">
         <div class="assistant-info">
-          <img
-            src="@/assets/assistant-avatar.png"
-            alt="AI助手"
-            class="assistant-avatar-sm"
-          />
+          <img src="@/assets/assistant-avatar.png" alt="AI助手" class="assistant-avatar-sm" />
           <div class="assistant-title">
             <h3>智能助手</h3>
             <span class="assistant-status">在线</span>
@@ -49,17 +41,15 @@
         </div>
 
         <!-- 聊天消息 -->
-        <div
-          v-for="(message, index) in messages"
-          :key="index"
-          class="message-item"
-          :class="{
-            'message-user': message.isUser,
-            'message-ai': !message.isUser,
-          }"
-        >
+        <div v-for="(message, index) in messages" :key="index" class="message-item" :class="{
+          'message-user': message.isUser,
+          'message-ai': !message.isUser,
+        }">
           <div class="message-content">
-            <p v-html="formatMessage(message.content)"></p>
+            <!-- 使用MarkdownDisplayer组件显示AI的消息 -->
+            <MarkdownDisplayer v-if="!message.isUser" :content="message.content" />
+            <!-- 用户的消息仍然使用普通格式 -->
+            <p v-else>{{ message.content }}</p>
           </div>
           <div class="message-time">{{ formatTime(message.timestamp) }}</div>
         </div>
@@ -76,18 +66,9 @@
 
       <!-- 输入区域 -->
       <div class="assistant-input">
-        <textarea
-          v-model="userInput"
-          placeholder="输入您的问题..."
-          @keydown.enter.prevent="sendMessage"
-          rows="1"
-          ref="inputArea"
-        ></textarea>
-        <button
-          :disabled="!userInput.trim() || isLoading"
-          @click="sendMessage"
-          class="send-button"
-        >
+        <textarea v-model="userInput" placeholder="输入您的问题..." @keydown.enter.prevent="sendMessage" rows="1"
+          ref="inputArea"></textarea>
+        <button :disabled="!userInput.trim() || isLoading" @click="sendMessage" class="send-button">
           发送
         </button>
       </div>
@@ -96,10 +77,17 @@
 </template>
 
 <script>
-import AI from "@/api/Ai"; // 假设您的AI类导入路径
+import AI from "@/api/Ai" // 假设您的AI类导入路径
+import MarkdownDisplayer from "@/components/markdown/MarkdownDisplayer.vue"
+
+const STORAGE_KEY = 'aiAssistantMessages'
+const CONTEXT_KEY = 'aiAssistantContext'
 
 export default {
   name: "AiAssistant",
+  components: {
+    MarkdownDisplayer
+  },
   data() {
     return {
       isExpanded: false,
@@ -107,56 +95,58 @@ export default {
       userInput: "",
       isLoading: false,
       currentContext: [],
-    };
+    }
+  },
+  created() {
+    this.loadChatHistory()
   },
   methods: {
     toggleAssistant() {
-      this.isExpanded = !this.isExpanded;
+      this.isExpanded = !this.isExpanded
       if (this.isExpanded) {
         this.$nextTick(() => {
-          this.$refs.inputArea.focus();
-        });
+          this.$refs.inputArea.focus()
+          this.scrollToBottom()
+        })
       }
     },
 
     async sendMessage(e) {
-      if (e.shiftKey && e.key === "Enter") return; // 允许shift+enter换行
+      if (e.shiftKey && e.key === "Enter") return // 允许shift+enter换行
 
-      const message = this.userInput.trim();
-      if (!message || this.isLoading) return;
+      const message = this.userInput.trim()
+      if (!message || this.isLoading) return
 
       // 添加用户消息到聊天
-      this.addMessage(message, true);
-      this.userInput = "";
-      this.isLoading = true;
+      this.addMessage(message, true)
+      this.userInput = ""
+      this.isLoading = true
 
       try {
-        // 调用AI API
         const response = await AI.query({
           query: message,
           context_literature_ids: this.currentContext,
           system_message: `您是LiverScholar肝硬化文献智能检索系统的AI助手，请基于专业医学知识解答用户的问题。`,
           temperature: 0.7,
-        });
+        })
 
-        // 添加AI回复到聊天
-        if (response.data && response.data.response) {
-          this.addMessage(response.data.response, false);
-
+        if (response.data && response.data.data.response) {
+          this.addMessage(response.data.data.response, false)
           if (response.data.related_literature_ids) {
-            this.currentContext = response.data.related_literature_ids;
+            this.currentContext = response.data.related_literature_ids
+            // 保存上下文到sessionStorage
+            this.saveChatContext()
           }
         }
       } catch (error) {
-        console.error("AI查询失败:", error);
-        this.$message.error(error?.response?.data?.message);
-        this.addMessage("抱歉，我暂时无法回答您的问题。请稍后再试。", false);
+        this.$message.error(error?.response?.data?.message)
+        this.addMessage("抱歉，我暂时无法回答您的问题。请稍后再试。", false)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
         // 滚动到最新消息
         this.$nextTick(() => {
-          this.scrollToBottom();
-        });
+          this.scrollToBottom()
+        })
       }
     },
 
@@ -165,38 +155,72 @@ export default {
         content,
         isUser,
         timestamp: new Date(),
-      });
+      })
+
+      // 保存消息历史到sessionStorage
+      this.saveChatHistory()
 
       // 如果是用户发送的消息，立即滚动
       if (isUser) {
         this.$nextTick(() => {
-          this.scrollToBottom();
-        });
+          this.scrollToBottom()
+        })
       }
     },
 
     scrollToBottom() {
-      const container = this.$refs.messagesContainer;
+      const container = this.$refs.messagesContainer
       if (container) {
-        container.scrollTop = container.scrollHeight;
+        container.scrollTop = container.scrollHeight
       }
     },
 
     formatTime(date) {
+      if (typeof date === 'string') {
+        date = new Date(date)
+      }
       return new Intl.DateTimeFormat("zh-CN", {
         hour: "2-digit",
         minute: "2-digit",
-      }).format(date);
+      }).format(date)
     },
 
-    formatMessage(text) {
-      // 简单处理换行和URL
-      return text
-        .replace(/\n/g, "<br>")
-        .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+    // 保存聊天历史到sessionStorage
+    saveChatHistory() {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.messages))
+      } catch (error) {
+        console.error('保存聊天历史失败', error)
+      }
+    },
+
+    // 保存上下文到sessionStorage
+    saveChatContext() {
+      try {
+        sessionStorage.setItem(CONTEXT_KEY, JSON.stringify(this.currentContext))
+      } catch (error) {
+        console.error('保存上下文失败', error)
+      }
+    },
+
+    // 从sessionStorage加载聊天历史
+    loadChatHistory() {
+      try {
+        const savedMessages = sessionStorage.getItem(STORAGE_KEY)
+        if (savedMessages) {
+          this.messages = JSON.parse(savedMessages)
+        }
+
+        const savedContext = sessionStorage.getItem(CONTEXT_KEY)
+        if (savedContext) {
+          this.currentContext = JSON.parse(savedContext)
+        }
+      } catch (error) {
+        console.error('加载聊天历史失败', error)
+      }
     },
   },
-};
+}
 </script>
 
 <style scoped>
@@ -381,6 +405,34 @@ export default {
   border-top-left-radius: 4px;
 }
 
+.message-ai .message-content :deep(.mavon-editor) {
+  min-height: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+.message-ai .message-content :deep(.v-note-wrapper) {
+  min-height: 0;
+  border: none;
+  box-shadow: none !important;
+}
+
+.message-ai .message-content :deep(.v-note-panel) {
+  border: none;
+}
+
+.message-ai .message-content :deep(.v-note-navigation-wrapper) {
+  display: none;
+}
+
+.message-ai .message-content :deep(.v-note-show) {
+  padding: 0;
+  background: transparent;
+}
+
 .message-time {
   font-size: 11px;
   color: #6c757d;
@@ -412,11 +464,13 @@ export default {
 }
 
 @keyframes bounce {
+
   0%,
   80%,
   100% {
     transform: scale(0);
   }
+
   40% {
     transform: scale(1);
   }
@@ -467,9 +521,11 @@ export default {
   color: #6c757d;
   cursor: not-allowed;
 }
+
 .welcome-message {
   list-style: none;
-  padding-left: 0; /* 可选，让内容更贴边 */
+  padding-left: 0;
+  /* 可选，让内容更贴边 */
   margin: 0;
 }
 </style>

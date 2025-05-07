@@ -23,7 +23,8 @@
           <!-- 基本信息 -->
           <div v-if="activeSection === 'basic'" class="profile-section">
             <h3>基本信息</h3>
-            <ProfileForm v-if="!loading" :user="userInfo" @profileUpdated="updateLocalUserInfo" />
+            <ProfileForm v-if="!loading" :user="userInfo" @profileUpdated="updateLocalUserInfo"
+              @showPasswordModal="showChangePasswordModal = true" @logout="logout" />
             <div v-else class="loading">加载中...</div>
           </div>
 
@@ -41,65 +42,61 @@
           <div v-if="activeSection === 'searches'" class="profile-section">
             <SearchHistoryComponent />
           </div>
-
-          <!-- 账号设置 -->
-          <div v-if="activeSection === 'settings'" class="profile-section">
-            <AccountSettingsComponent />
-          </div>
         </div>
       </div>
     </div>
 
-    <!-- <SiteFooter /> -->
+    <!-- 修改密码模态框 -->
+    <ModalComponent v-if="showChangePasswordModal" title="修改密码" @close="showChangePasswordModal = false">
+      <PasswordForm @cancel="showChangePasswordModal = false" />
+    </ModalComponent>
   </div>
 </template>
 
 <script>
 import SectionTitle from "@/components/common/Sectiontitle.vue"
-
+import ModalComponent from "@/components/common/ModalComponent.vue"
+import PasswordForm from "@/components/form/PasswordForm.vue"
 import User from "@/api/User"
 
-// 导入新拆分的组件
+// 导入拆分的组件
 import ProfileForm from "@/components/profile/ProfileForm.vue"
 import CollectionsComponent from "@/components/profile/Collections.vue"
 import ReadingHistoryComponent from "@/components/profile/ReadingHistory.vue"
 import SearchHistoryComponent from "@/components/profile/SearchHistory.vue"
-import AccountSettingsComponent from "@/components/profile/AccountSettings.vue"
 
 // 图标组件
 import UserIcon from "@/components/icons/UserIcon.vue"
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue"
 import HistoryIcon from "@/components/icons/HistoryIcon.vue"
 import SearchIcon from "@/components/icons/SearchIcon.vue"
-import SettingsIcon from "@/components/icons/SettingsIcon.vue"
 
 export default {
   name: "ProfileView",
   components: {
-    // SiteFooter,
     SectionTitle,
     ProfileForm,
     CollectionsComponent,
     ReadingHistoryComponent,
     SearchHistoryComponent,
-    AccountSettingsComponent,
+    ModalComponent,
+    PasswordForm,
     UserIcon,
     BookmarkIcon,
     HistoryIcon,
     SearchIcon,
-    SettingsIcon,
   },
   data() {
     return {
       activeSection: this.getSavedSection(),
       loading: true,
       userInfo: null,
+      showChangePasswordModal: false,
       navItems: [
         { id: "basic", label: "基本信息", icon: "UserIcon" },
         { id: "collections", label: "我的收藏夹", icon: "BookmarkIcon" },
         { id: "history", label: "阅读历史", icon: "HistoryIcon" },
         { id: "searches", label: "搜索历史", icon: "SearchIcon" },
-        { id: "settings", label: "账号设置", icon: "SettingsIcon" },
       ],
     }
   },
@@ -140,6 +137,23 @@ export default {
       const savedSection = sessionStorage.getItem('profileActiveSection')
       return savedSection || 'basic' // 如果没有保存过，默认为'basic'
     },
+
+    async logout() {
+      try {
+        await User.logout()
+        this.$message.success("退出登录成功")
+
+        // 清除本地存储的用户信息和token
+        localStorage.removeItem('token')
+        sessionStorage.removeItem('profileActiveSection')
+
+        // 重定向到登录页面
+        this.$router.push('/login')
+      } catch (error) {
+        console.error("退出失败", error)
+        this.$message.error("退出失败，请重试")
+      }
+    }
   },
   created() {
     this.fetchUserInfo()
