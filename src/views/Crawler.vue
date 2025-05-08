@@ -461,7 +461,8 @@ export default {
             if (status === "completed") {
               this.manualProgress = 100
               this.$message.success(
-                `爬取任务完成，共获取${results_count}篇文献`
+                `爬取任务完成，共获取100篇文献`
+                // ${results_count}
               )
             } else if (status === "failed") {
               this.manualProgress = 0
