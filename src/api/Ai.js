@@ -1,14 +1,14 @@
-import service from '@/http'
+import service from "@/http";
 
 const url = {
-  aiQuery: '/ai/query',
+  aiQuery: "/ai/query",
   summarize: (id) => `/ai/summarize/${id}`,
-  translate: '/ai/translate',
+  translate: "/ai/translate",
   recommend: (id) => `/ai/recommendations/${id}`,
   feedback: (id) => `/ai/feedback/${id}`,
   // batchSummarize: "/ai/batch_summarize", // 注意：API中未定义此端点
   // semanticSearch: "/ai/semantic_search", // 注意：API中未定义此端点
-}
+};
 
 export default class AI {
   /**
@@ -21,7 +21,7 @@ export default class AI {
    * @returns {Promise} API响应
    */
   static async query(data) {
-    return service.post(url.aiQuery, data)
+    return service.post(url.aiQuery, data);
   }
 
   /**
@@ -39,7 +39,7 @@ export default class AI {
         ...params,
         regenerate: true,
       },
-    })
+    });
   }
 
   /**
@@ -52,7 +52,7 @@ export default class AI {
    * @returns {Promise} API响应
    */
   static async translate(data) {
-    return service.post(url.translate, data)
+    return service.post(url.translate, data);
   }
 
   /**
@@ -63,7 +63,7 @@ export default class AI {
    * @returns {Promise} API响应
    */
   static async recommend(literatureId, params = {}) {
-    return service.get(url.recommend(literatureId), { params })
+    return service.get(url.recommend(literatureId), { params });
   }
 
   /**
@@ -75,7 +75,7 @@ export default class AI {
    * @returns {Promise} API响应
    */
   static async feedback(queryId, data) {
-    return service.post(url.feedback(queryId), data)
+    return service.post(url.feedback(queryId), data);
   }
 
   /**
@@ -86,7 +86,7 @@ export default class AI {
    * @returns {Promise} API响应
    */
   static async batchSummarize(data) {
-    return service.post(url.batchSummarize, data)
+    return service.post(url.batchSummarize, data);
   }
 
   /**
@@ -98,6 +98,6 @@ export default class AI {
    * @returns {Promise} API响应
    */
   static async semanticSearch(data) {
-    return service.post(url.semanticSearch, data)
+    return service.post(url.semanticSearch, data);
   }
 }

@@ -1,78 +1,89 @@
-import { createRouter, createWebHistory } from "vue-router";
-import HomeView from "../views/Home.vue";
-import LoginView from "@/views/Login.vue";
-import ProfileView from "@/views/Profile.vue";
-import CrawlerView from "@/views/Crawler.vue";
-import KnowledgeGraph from "@/views/KnowledgeGraph.vue";
-import LiteratureDetail from "@/views/LiteratureDetail.vue";
-import SearchView from "@/views/Search.vue";
-import AboutPage from "@/views/AboutPage.vue";
-import AuthorsPage from "@/views/AuthorsPage.vue";
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/Home.vue'
+import LoginView from '@/views/Login.vue'
+import ProfileView from '@/views/Profile.vue'
+import CrawlerView from '@/views/Crawler.vue'
+import KnowledgeGraph from '@/views/KnowledgeGraph.vue'
+import LiteratureDetail from '@/views/LiteratureDetail.vue'
+import LiteratureListPage from '@/views/LiteratureListPage.vue'
+import AboutPage from '@/views/AboutPage.vue'
+import AuthorsPage from '@/views/AuthorsPage.vue'
+
 const routes = [
   {
-    path: "/",
-    name: "home",
+    path: '/',
+    name: 'home',
     component: HomeView,
   },
   {
-    path: "/about",
-    name: "About",
+    path: '/about',
+    name: 'about',
     component: AboutPage,
   },
   {
-    path: "/guide",
-    redirect: "/about#user-guide",
+    path: '/guide',
+    redirect: '/about#user-guide',
   },
   {
-    path: "/feedback",
-    redirect: "/about#feedback",
+    path: '/feedback',
+    redirect: '/about#feedback',
   },
   {
-    path: "/login",
-    name: "login",
+    path: '/login',
+    name: 'login',
     component: LoginView,
   },
   {
-    path: "/profile",
-    name: "profile",
+    path: '/profile',
+    name: 'profile',
     component: ProfileView,
   },
   {
-    path: "/crawler",
-    name: "crawler",
+    path: '/crawler',
+    name: 'crawler',
     component: CrawlerView,
   },
   {
-    path: "/knowledge-graph",
-    name: "knowledge-graph",
+    path: '/knowledge-graph',
+    name: 'knowledge-graph',
     component: KnowledgeGraph,
   },
   {
-    path: "/literature/:id",
-    name: "literature-detail",
+    path: '/literature/:id',
+    name: 'literature-detail',
     component: LiteratureDetail,
     props: true,
   },
   {
-    path: "/search",
-    name: "search",
-    component: SearchView,
+    path: '/literature',
+    name: 'literature-list',
+    component: LiteratureListPage,
   },
+  // {
+  //   path: '/search',
+  //   redirect: '/literature', // 将旧的搜索路径重定向到文献列表页
+  // },
   {
-    path: "/authors",
-    name: "authors",
+    path: '/authors',
+    name: 'authors',
     component: AuthorsPage,
   },
-];
+  // {
+  //   path: "/authors/:id",
+  //   name: "authors-detail",
+  //   component: () => import("@/views/AuthorDetail.vue"),
+  //   props: true,
+  // },
+]
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes,
-});
+})
 // router.beforeEach((to, from, next) => {
 //   if (VueCookies.get("jwt") && to.path === "/login") {
 //     next("/login");
 //   }
 // });
 
-export default router;
+export default router

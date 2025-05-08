@@ -1,4 +1,4 @@
-<!-- src/views/SearchPage.vue -->
+<!-- src/views/SearchPage.vue
 <template>
   <div class="search-page">
     <section class="search-header">
@@ -963,4 +963,4 @@ export default {
     justify-content: space-between;
   }
 }
-</style>
+</style> -->

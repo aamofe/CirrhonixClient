@@ -39,7 +39,7 @@ export default {
       username: "",
       navItems: [
         { name: "首页", path: "/" },
-        { name: "文献检索", path: "/search" },
+        { name: "文献检索", path: "/literature" },
         { name: "知识图谱", path: "/knowledge-graph" },
         { name: "爬虫中心", path: "/crawler" },
         // { name: "个人中心", path: "/profile" },

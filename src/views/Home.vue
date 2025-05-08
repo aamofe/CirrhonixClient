@@ -1,4 +1,4 @@
-<!-- src/views/home.vue -->
+<!-- src/views/Home.vue -->
 <template>
   <div class="home-page">
     <section class="search-container">
@@ -117,7 +117,7 @@ import AuthorCard from "@/components/cards/AuthorCard.vue"
 import AiAssistant from "@/components/AiAssistant.vue"
 import SiteFooter from "@/components/layout/SiteFooter.vue"
 import Literature from "@/api/Literature"
-import Search from "@/api/Search"
+// import Search from "@/api/Search";
 
 export default {
   name: "HomeView",
@@ -249,15 +249,25 @@ export default {
       }
     },
     onSearch(query) {
-      this.$router.push({ path: "/search", query: { q: query } })
+      // 更新为跳转到文献列表页
+      this.$router.push({
+        name: "literature-list",
+        query: { q: query },
+      })
     },
     viewArticle(id) {
       if (id) {
-        this.$router.push(`/literature/${id}`)
+        this.$router.push({
+          name: "literature-detail",
+          params: { id },
+        })
       }
     },
     viewAuthorProfile(id) {
-      this.$router.push(`/authors/${id}`)
+      this.$router.push({
+        name: "authors-detail",
+        params: { id },
+      })
     },
   },
   async mounted() {

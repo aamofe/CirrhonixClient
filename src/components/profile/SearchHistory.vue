@@ -1,5 +1,5 @@
 <!-- src/components/profile/SearchHistoryComponent.vue -->
-<template>
+<!-- <template>
   <div class="search-history-component">
     <h3>搜索历史</h3>
     <div v-if="!loading && searchHistory.length" class="search-history">
@@ -113,4 +113,4 @@ export default {
   padding: 2rem;
   color: #666;
 }
-</style>
+</style> -->

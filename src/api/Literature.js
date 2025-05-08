@@ -8,12 +8,22 @@ const url = {
   collection: (id) => `/literature/collection/${id}`,
   authors: "/literature/authors",
   journals: "/literature/journals",
+  search: "/search",
   graphData: "/literature/graph/data",
   litTree: (id) => `/literature/graph/literature-tree/${id}`,
   conceptNet: "/literature/graph/concept-network",
 };
 
 export default class Literature {
+  static async search(query, page = 1, size = 20) {
+    return service.get(url.basic, {
+      params: {
+        q: query,
+        page,
+        size,
+      },
+    });
+  }
   /**
    * 获取文献列表，支持分页和筛选
    * @param {Object} params - 查询参数
