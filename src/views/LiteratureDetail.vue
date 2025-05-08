@@ -249,14 +249,14 @@
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
 import SiteFooter from "@/components/layout/SiteFooter.vue";
 import Literature from "@/api/Literature";
-import ArrowLeftIcon from "@/components/icons/ArrowLeftIcon.vue"
+import ArrowLeftIcon from "@/components/icons/ArrowLeftIcon.vue";
 
 export default {
   name: "LiteratureDetail",
   components: {
     PrimaryButton,
     SiteFooter,
-    ArrowLeftIcon
+    ArrowLeftIcon,
   },
   data() {
     return {

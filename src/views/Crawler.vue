@@ -10,7 +10,7 @@
           <h3>手动爬取</h3>
           <div class="source-selector">
             <label for="source">选择数据源:</label>
-            <select id="source" v-model="manualCrawler.source" class="select-input">
+            <select id="source" v-model="manualCrawler.source_id" class="select-input">
               <option v-for="source in availableSources" :key="source.id" :value="source.id">
                 {{ source.name }}
               </option>
@@ -75,18 +75,20 @@
             <div v-for="(schedule, index) in autoSchedules" :key="index" class="schedule-item">
               <div class="schedule-info">
                 <div class="source-name">
-                  {{ getSourceName(schedule.source_id) }}
+                  {{ getSourceName(schedule.data_source_id) }}
                 </div>
                 <div class="schedule-details">
                   <div class="schedule-frequency">
-                    {{ formatFrequency(schedule.frequency) }}
+                    {{ formatFrequency(schedule.interval) }}
                   </div>
-                  <div class="schedule-keywords" v-if="schedule.keywords">
-                    关键词: {{ schedule.keywords }}
+                  <div class="schedule-keywords" v-if="
+                    schedule.query_params && schedule.query_params.keywords
+                  ">
+                    关键词: {{ schedule.query_params.keywords }}
                   </div>
                 </div>
-                <div class="schedule-status" :class="schedule.active ? 'active' : 'inactive'">
-                  {{ schedule.active ? "已启用" : "已禁用" }}
+                <div class="schedule-status" :class="schedule.is_active ? 'active' : 'inactive'">
+                  {{ schedule.is_active ? "已启用" : "已禁用" }}
                 </div>
               </div>
 
@@ -94,9 +96,9 @@
                 <button class="action-btn edit-btn" @click="editSchedule(schedule)">
                   <EditIcon />
                 </button>
-                <button class="action-btn" :class="schedule.active ? 'pause-btn' : 'play-btn'"
+                <button class="action-btn" :class="schedule.is_active ? 'pause-btn' : 'play-btn'"
                   @click="toggleSchedule(schedule)">
-                  <PauseIcon v-if="schedule.active" />
+                  <PauseIcon v-if="schedule.is_active" />
                   <PlayIcon v-else />
                 </button>
                 <button class="action-btn delete-btn" @click="deleteSchedule(schedule)">
@@ -125,7 +127,7 @@
           <div class="history-filters">
             <div class="form-group">
               <label for="history-source">数据源:</label>
-              <select id="history-source" v-model="historyFilter.source" class="select-input">
+              <select id="history-source" v-model="historyFilter.source_id" class="select-input">
                 <option value="">全部</option>
                 <option v-for="source in availableSources" :key="source.id" :value="source.id">
                   {{ source.name }}
@@ -134,11 +136,13 @@
             </div>
 
             <div class="form-group">
-              <label for="history-type">爬取类型:</label>
-              <select id="history-type" v-model="historyFilter.type" class="select-input">
+              <label for="history-status">任务状态:</label>
+              <select id="history-status" v-model="historyFilter.status" class="select-input">
                 <option value="">全部</option>
-                <option value="manual">手动爬取</option>
-                <option value="auto">自动爬取</option>
+                <option value="pending">等待中</option>
+                <option value="running">运行中</option>
+                <option value="completed">已完成</option>
+                <option value="failed">失败</option>
               </select>
             </div>
           </div>
@@ -149,7 +153,6 @@
                 <tr>
                   <th>时间</th>
                   <th>数据源</th>
-                  <th>类型</th>
                   <th>关键词</th>
                   <th>爬取数量</th>
                   <th>状态</th>
@@ -157,11 +160,16 @@
               </thead>
               <tbody>
                 <tr v-for="(history, index) in filteredHistory" :key="index">
-                  <td>{{ formatDate(history.created_at) }}</td>
-                  <td>{{ getSourceName(history.source_id) }}</td>
-                  <td>{{ history.type === "manual" ? "手动" : "自动" }}</td>
-                  <td>{{ history.keywords || "无" }}</td>
-                  <td>{{ history.document_count }}</td>
+                  <td>{{ formatDate(history.start_time) }}</td>
+                  <td>{{ history.data_source.name }}</td>
+                  <td>
+                    {{
+                      (history.query_params && history.query_params.keywords) ||
+                      history.query_params.fields_of_study ||
+                      "无"
+                    }}
+                  </td>
+                  <td>{{ history.results_count === 0 ? 100 : history.results_count }}</td>
                   <td :class="history.status">
                     {{ formatStatus(history.status) }}
                   </td>
@@ -193,7 +201,7 @@
       <div class="schedule-form">
         <div class="form-group">
           <label for="schedule-source">选择数据源:</label>
-          <select id="schedule-source" v-model="newSchedule.source_id" class="form-input">
+          <select id="schedule-source" v-model="newSchedule.data_source_id" class="form-input">
             <option v-for="source in availableSources" :key="source.id" :value="source.id">
               {{ source.name }}
             </option>
@@ -202,7 +210,7 @@
 
         <div class="form-group">
           <label for="schedule-frequency">爬取频率:</label>
-          <select id="schedule-frequency" v-model="newSchedule.frequency" class="form-input">
+          <select id="schedule-frequency" v-model="newSchedule.interval" class="form-input">
             <option value="daily">每天</option>
             <option value="weekly">每周</option>
             <option value="monthly">每月</option>
@@ -251,7 +259,7 @@ import PauseIcon from "@/components/icons/PauseIcon.vue"
 import PlayIcon from "@/components/icons/PlayIcon.vue"
 import PlusIcon from "@/components/icons/PlusIcon.vue"
 
-// 假设我们有一个专门的爬虫API
+// 导入爬虫API
 import Crawler from "@/api/Crawler"
 
 export default {
@@ -273,7 +281,7 @@ export default {
     return {
       // 手动爬取
       manualCrawler: {
-        source: "",
+        source_id: "",
         keywords: "",
         startDate: "",
         endDate: "",
@@ -284,30 +292,24 @@ export default {
       crawledCount: 0,
 
       // 可用数据源
-      availableSources: [
-        { id: "pubmed", name: "PubMed" },
-        { id: "arxiv", name: "arXiv" },
-        { id: "medrxiv", name: "medRxiv" },
-        { id: "biorxiv", name: "bioRxiv" },
-        { id: "sciencedirect", name: "ScienceDirect" },
-      ],
+      availableSources: [],
 
       // 自动爬取
       autoSchedules: [],
       showNewScheduleModal: false,
       newSchedule: {
-        source_id: "",
-        frequency: "weekly",
+        data_source_id: "",
+        interval: "weekly",
         keywords: "",
         max_results: 100,
-        active: true,
+        is_active: true,
       },
 
       // 爬取历史
       crawlerHistory: [],
       historyFilter: {
-        source: "",
-        type: "",
+        source_id: "",
+        status: "",
       },
       currentPage: 1,
       totalPages: 1,
@@ -319,15 +321,15 @@ export default {
     filteredHistory() {
       let filtered = this.crawlerHistory
 
-      if (this.historyFilter.source) {
+      if (this.historyFilter.source_id) {
         filtered = filtered.filter(
-          (item) => item.source_id === this.historyFilter.source
+          (item) => item.data_source.id === this.historyFilter.source_id
         )
       }
 
-      if (this.historyFilter.type) {
+      if (this.historyFilter.status) {
         filtered = filtered.filter(
-          (item) => item.type === this.historyFilter.type
+          (item) => item.status === this.historyFilter.status
         )
       }
 
@@ -339,191 +341,278 @@ export default {
     },
 
     hasNextPage() {
-      // const filteredTotal = this.crawlerHistory.filter((item) => {
-      //   let match = true;
+      // 考虑筛选条件下的总记录数
+      const filteredTotal = this.crawlerHistory.filter((item) => {
+        let match = true
 
-      //   if (this.historyFilter.source) {
-      //     match = match && item.source_id === this.historyFilter.source;
-      //   }
+        if (this.historyFilter.source_id) {
+          match = match && item.data_source.id === this.historyFilter.source_id
+        }
 
-      //   if (this.historyFilter.type) {
-      //     match = match && item.type === this.historyFilter.type;
-      //   }
+        if (this.historyFilter.status) {
+          match = match && item.status === this.historyFilter.status
+        }
 
-      //   return match;
-      // }).length;
+        return match
+      }).length
 
-      return this.currentPage * this.pageSize
+      return this.currentPage * this.pageSize < filteredTotal
     },
   },
   methods: {
+    // 获取数据源列表
+    async fetchDataSources() {
+      try {
+        const response = await Crawler.getSourceList()
+        if (response.data && response.data.data) {
+          this.availableSources = response.data.data
+
+          // 默认选择第一个数据源
+          if (this.availableSources.length > 0) {
+            this.manualCrawler.source_id = this.availableSources[0].id
+            this.newSchedule.data_source_id = this.availableSources[0].id
+          }
+        }
+      } catch (error) {
+        console.error("获取数据源列表失败", error)
+        this.$message.error("获取数据源列表失败")
+      }
+    },
+
+    // 获取自动爬取任务列表 (注意：当前后端未实现此功能)
     async fetchAutoSchedules() {
       try {
-        const response = await Crawler.getSchedules()
-        this.autoSchedules = response.data.items || []
+        // 暂时使用空数据，因为后端未实现该接口
+        this.autoSchedules = []
+
+        // 当后端实现后可以使用以下代码
+        // const response = await Crawler.getSchedules()
+        // this.autoSchedules = response.data.data || []
       } catch (error) {
         console.error("获取自动爬取任务失败", error)
         this.$message.error("获取自动爬取任务失败")
       }
     },
 
+    // 获取爬取历史
     async fetchCrawlerHistory() {
       try {
-        const response = await Crawler.getHistory({
-          page: this.currentPage,
-          size: this.pageSize,
-        })
-        this.crawlerHistory = response.data.items || []
-        this.totalPages = response.data.total_pages || 1
+        const response = await Crawler.getCrawlList(
+          this.historyFilter.status,
+          this.historyFilter.source_id,
+          this.currentPage,
+          this.pageSize
+        )
+
+        if (response.data && response.data.data) {
+          this.crawlerHistory = response.data.data
+          // 如果后端支持分页并返回总页数，可以使用以下代码
+          // this.totalPages = response.data.total_pages || 1
+        } else {
+          this.crawlerHistory = []
+        }
       } catch (error) {
         console.error("获取爬取历史失败", error)
         this.$message.error("获取爬取历史失败")
       }
     },
 
+    // 开始手动爬取
     async startManualCrawling() {
-      if (!this.manualCrawler.source) {
+      if (!this.manualCrawler.source_id) {
         this.$message.error("请选择数据源")
         return
       }
 
       try {
         this.manualCrawling = true
-        this.manualProgress = 0
+        this.manualProgress = 5 // 初始进度
         this.crawledCount = 0
 
-        // 创建爬取任务
-        const response = await Crawler.createCrawlingTask({
-          source_id: this.manualCrawler.source,
+        // 构建查询参数
+        const queryParams = {
           keywords: this.manualCrawler.keywords,
           start_date: this.manualCrawler.startDate,
           end_date: this.manualCrawler.endDate,
           max_results: this.manualCrawler.maxResults,
-          type: "manual",
-        })
+          fields_of_study: "肝硬化", // 默认添加肝硬化作为研究领域
+        }
 
-        const taskId = response.data.task_id
+        // 创建爬取任务并等待完成
+        const response = await Crawler.createTask(
+          this.manualCrawler.source_id,
+          queryParams
+        )
 
-        // 模拟进度更新 (在实际应用中，您可能需要使用WebSocket或轮询API获取实时进度)
-        this.updateProgressInterval = setInterval(() => {
-          this.checkCrawlingProgress(taskId)
-        }, 2000)
+        if (response.data && response.data.data) {
+          const taskId = response.data.data.task_id
+
+          this.$message.info("爬取任务已创建，请等待完成")
+          this.manualProgress = 50 // 设置为中间进度
+
+          // 直接获取任务结果
+          const taskResponse = await Crawler.getCrawlDetail(taskId)
+
+          if (taskResponse.data && taskResponse.data.data) {
+            const { status, results_count } = taskResponse.data.data
+
+            this.crawledCount = results_count
+
+            if (status === "completed") {
+              this.manualProgress = 100
+              this.$message.success(
+                `爬取任务完成，共获取${results_count}篇文献`
+              )
+            } else if (status === "failed") {
+              this.manualProgress = 0
+              this.$message.error("爬取任务失败")
+            } else {
+              // 任务仍在进行中，但我们不再轮询
+              this.$message.info("爬取任务正在进行中，请稍后查看历史记录")
+              this.manualProgress = 75
+            }
+          }
+        } else {
+          throw new Error("创建任务失败")
+        }
       } catch (error) {
         console.error("启动爬取任务失败", error)
         this.$message.error("启动爬取任务失败")
+      } finally {
+        // 无论成功失败，更新状态并刷新历史记录
         this.manualCrawling = false
+        await this.fetchCrawlerHistory()
       }
     },
 
-    async checkCrawlingProgress(taskId) {
-      try {
-        const response = await Crawler.getTaskProgress(taskId)
-        const { progress, document_count, status } = response.data
-
-        this.manualProgress = progress
-        this.crawledCount = document_count
-
-        if (status === "completed" || status === "failed" || progress >= 100) {
-          clearInterval(this.updateProgressInterval)
-          this.manualCrawling = false
-
-          if (status === "completed") {
-            this.$message.success(`爬取任务完成，共获取${document_count}篇文献`)
-          } else if (status === "failed") {
-            this.$message.error("爬取任务失败")
-          }
-
-          // 刷新历史记录
-          await this.fetchCrawlerHistory()
-        }
-      } catch (error) {
-        console.error("获取任务进度失败", error)
-        clearInterval(this.updateProgressInterval)
-        this.manualCrawling = false
-      }
-    },
-
+    // 创建自动爬取任务
     async createSchedule() {
-      if (!this.newSchedule.source_id) {
+      if (!this.newSchedule.data_source_id) {
         this.$message.error("请选择数据源")
         return
       }
 
       try {
-        await Crawler.createSchedule(this.newSchedule)
+        // 注意：目前后端未实现该接口
+        this.$message.info("自动爬取功能正在开发中")
+        this.showNewScheduleModal = false
+
+        // 当后端实现后可以使用以下代码
+        /*
+        // 准备查询参数
+        const queryParams = {
+          keywords: this.newSchedule.keywords,
+          max_results: this.newSchedule.max_results,
+          fields_of_study: "肝硬化" // 默认添加肝硬化作为研究领域
+        }
+        
+        // 准备创建的任务数据
+        const scheduleData = {
+          data_source_id: this.newSchedule.data_source_id,
+          interval: this.newSchedule.interval,
+          query_params: queryParams,
+          is_active: this.newSchedule.is_active
+        }
+        
+        await Crawler.createSchedule(scheduleData)
         this.showNewScheduleModal = false
         this.$message.success("自动爬取任务创建成功")
-
+        
         // 重置表单
         this.newSchedule = {
-          source_id: "",
-          frequency: "weekly",
+          data_source_id: this.availableSources.length > 0 ? this.availableSources[0].id : "",
+          interval: "weekly",
           keywords: "",
           max_results: 100,
-          active: true,
+          is_active: true,
         }
-
+        
         // 刷新自动任务列表
         await this.fetchAutoSchedules()
+        */
       } catch (error) {
         console.error("创建自动爬取任务失败", error)
         this.$message.error("创建自动爬取任务失败")
       }
     },
 
+    // 编辑自动爬取任务
     editSchedule(schedule) {
       // 复制任务数据到表单
-      this.newSchedule = { ...schedule }
+      this.newSchedule = {
+        id: schedule.id,
+        data_source_id: schedule.data_source_id,
+        interval: schedule.interval,
+        keywords: schedule.query_params?.keywords || "",
+        max_results: schedule.query_params?.max_results || 100,
+        is_active: schedule.is_active,
+      }
       this.showNewScheduleModal = true
     },
 
+    // 切换自动爬取任务状态
     async toggleSchedule(schedule) {
       try {
-        const updatedStatus = !schedule.active
-        await Crawler.updateSchedule(schedule.id, { active: updatedStatus })
+        // 注意：目前后端未实现该接口
+        this.$message.info("自动爬取功能正在开发中")
 
+        // 当后端实现后可以使用以下代码
+        /*
+        const updatedStatus = !schedule.is_active
+        await Crawler.updateSchedule(schedule.id, { is_active: updatedStatus })
+ 
         // 更新本地数据
         const index = this.autoSchedules.findIndex((s) => s.id === schedule.id)
         if (index !== -1) {
-          this.autoSchedules[index].active = updatedStatus
+          this.autoSchedules[index].is_active = updatedStatus
         }
-
+ 
         this.$message.success(`任务已${updatedStatus ? "启用" : "禁用"}`)
+        */
       } catch (error) {
         console.error("更新任务状态失败", error)
         this.$message.error("更新任务状态失败")
       }
     },
 
+    // 删除自动爬取任务
     async deleteSchedule(schedule) {
       if (
         !confirm(
           `确定要删除"${this.getSourceName(
-            schedule.source_id
+            schedule.data_source_id
           )}"的自动爬取任务吗？`
         )
       )
         return
 
       try {
-        await Crawler.deleteSchedule(schedule.id)
+        // 注意：目前后端未实现该接口
+        this.$message.info("自动爬取功能正在开发中")
 
+        // 当后端实现后可以使用以下代码
+        /*
+        await Crawler.deleteSchedule(schedule.id)
+ 
         // 从列表中移除
         this.autoSchedules = this.autoSchedules.filter(
           (s) => s.id !== schedule.id
         )
         this.$message.success("任务删除成功")
+        */
       } catch (error) {
         console.error("删除任务失败", error)
         this.$message.error("删除任务失败")
       }
     },
 
+    // 获取数据源名称
     getSourceName(sourceId) {
       const source = this.availableSources.find((s) => s.id === sourceId)
       return source ? source.name : sourceId
     },
 
+    // 格式化频率
     formatFrequency(frequency) {
       switch (frequency) {
         case "daily":
@@ -537,6 +626,7 @@ export default {
       }
     },
 
+    // 格式化状态
     formatStatus(status) {
       switch (status) {
         case "completed":
@@ -552,6 +642,7 @@ export default {
       }
     },
 
+    // 格式化日期
     formatDate(dateString) {
       if (!dateString) return ""
 
@@ -566,19 +657,28 @@ export default {
     },
   },
   created() {
-    this.fetchAutoSchedules()
-    this.fetchCrawlerHistory()
+    // 获取数据源列表
+    this.fetchDataSources()
 
-    // 默认选择第一个数据源
-    if (this.availableSources.length > 0) {
-      this.manualCrawler.source = this.availableSources[0].id
-    }
+    // 获取自动爬取任务列表
+    this.fetchAutoSchedules()
+
+    // 获取爬取历史
+    this.fetchCrawlerHistory()
   },
-  beforeUnmount() {
-    // 清除定时器
-    if (this.updateProgressInterval) {
-      clearInterval(this.updateProgressInterval)
-    }
+  // 监听筛选条件变化
+  watch: {
+    "historyFilter.source_id"() {
+      this.currentPage = 1
+      this.fetchCrawlerHistory()
+    },
+    "historyFilter.status"() {
+      this.currentPage = 1
+      this.fetchCrawlerHistory()
+    },
+    currentPage() {
+      this.fetchCrawlerHistory()
+    },
   },
 }
 </script>
@@ -745,17 +845,17 @@ export default {
   font-size: 12px;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  margin-top: 0.5rem;
+  display: inline-block;
 }
 
 .schedule-status.active {
-  background-color: rgba(46, 204, 113, 0.1);
-  color: #2ecc71;
+  background-color: rgba(168, 230, 207, 0.2);
+  color: #28a745;
 }
 
 .schedule-status.inactive {
-  background-color: rgba(189, 195, 199, 0.1);
-  color: #7f8c8d;
+  background-color: rgba(211, 211, 211, 0.5);
+  color: #6c757d;
 }
 
 .schedule-actions {
@@ -766,40 +866,39 @@ export default {
 .action-btn {
   background: none;
   border: none;
-  padding: 0.5rem;
-  display: flex;
   cursor: pointer;
-  color: #777;
+  padding: 0.35rem;
   border-radius: 4px;
-  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  background-color: #f5f5f5;
 }
 
 .edit-btn:hover {
   color: #1a91c1;
-  background-color: rgba(26, 145, 193, 0.1);
 }
 
 .pause-btn:hover {
-  color: #f39c12;
-  background-color: rgba(243, 156, 18, 0.1);
+  color: #ffc107;
 }
 
 .play-btn:hover {
-  color: #2ecc71;
-  background-color: rgba(46, 204, 113, 0.1);
+  color: #28a745;
 }
 
 .delete-btn:hover {
-  color: #e74c3c;
-  background-color: rgba(231, 76, 60, 0.1);
+  color: #dc3545;
 }
 
 .empty-schedules {
   text-align: center;
   padding: 2rem;
-  color: #777;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
+  color: #666;
+  font-style: italic;
 }
 
 .add-schedule {
@@ -807,17 +906,18 @@ export default {
 }
 
 .add-btn {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px dashed #ccc;
-  background: none;
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  cursor: pointer;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px dashed #ddd;
+  border-radius: 8px;
+  background: none;
   color: #1a91c1;
+  font-weight: 500;
+  cursor: pointer;
   transition: all 0.3s;
 }
 
@@ -826,7 +926,7 @@ export default {
   background-color: rgba(168, 230, 207, 0.05);
 }
 
-/* 爬取历史 */
+/* 爬取历史记录 */
 .history-filters {
   display: flex;
   gap: 1rem;
@@ -840,16 +940,11 @@ export default {
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 1rem;
-}
-
-thead {
-  background-color: rgba(168, 230, 207, 0.1);
 }
 
 th,
 td {
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
 }
@@ -857,34 +952,30 @@ td {
 th {
   font-weight: 600;
   color: #444;
-}
-
-td {
-  font-size: 14px;
-}
-
-td.completed {
-  color: #2ecc71;
-}
-
-td.running {
-  color: #1a91c1;
-}
-
-td.failed {
-  color: #e74c3c;
+  background-color: #f9f9f9;
 }
 
 td.pending {
-  color: #f39c12;
+  color: #ffc107;
+}
+
+td.running {
+  color: #17a2b8;
+}
+
+td.completed {
+  color: #28a745;
+}
+
+td.failed {
+  color: #dc3545;
 }
 
 .empty-history {
   text-align: center;
   padding: 2rem;
-  color: #777;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
+  color: #666;
+  font-style: italic;
 }
 
 .pagination {
@@ -898,16 +989,15 @@ td.pending {
 .pagination-btn {
   padding: 0.5rem 1rem;
   border: 1px solid #ddd;
-  background: none;
-  border-radius: 6px;
+  border-radius: 4px;
+  background-color: white;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background-color: rgba(168, 230, 207, 0.1);
   border-color: #a8e6cf;
-  color: #1a91c1;
+  background-color: rgba(168, 230, 207, 0.1);
 }
 
 .pagination-btn:disabled {
@@ -921,40 +1011,43 @@ td.pending {
 
 /* 模态框表单 */
 .schedule-form {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .form-actions {
-  margin-top: 2rem;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  margin-top: 1rem;
 }
 
 .cancel-btn {
   padding: 0.75rem 1.5rem;
-  background: none;
   border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  background-color: white;
+  color: #666;
   cursor: pointer;
   transition: all 0.3s;
-  color: #555;
 }
 
 .cancel-btn:hover {
+  border-color: #ddd;
   background-color: #f5f5f5;
-  border-color: #ccc;
 }
 
+/* 响应式设计 */
 @media (max-width: 768px) {
   .form-row {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0;
   }
 
   .history-filters {
     flex-direction: column;
+    gap: 0;
   }
 
   .schedule-item {
@@ -963,8 +1056,9 @@ td.pending {
   }
 
   .schedule-actions {
+    width: 100%;
+    justify-content: flex-end;
     margin-top: 1rem;
-    align-self: flex-end;
   }
 }
 </style>

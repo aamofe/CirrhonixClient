@@ -2,8 +2,10 @@
 <template>
   <div class="collection-card">
     <div class="collection-header">
-      <h4 class="collection-title" @click="$emit('view', collection)">{{ collection.name }}</h4>
-      
+      <h4 class="collection-title" @click="$emit('view', collection)">
+        {{ collection.name }}
+      </h4>
+
       <!-- 三点式下拉菜单 -->
       <!-- 修改后的三点式下拉菜单部分 -->
       <el-dropdown trigger="click" size="small">
@@ -16,7 +18,7 @@
               <el-icon><EditPen /></el-icon>
               <span>编辑信息</span>
             </el-dropdown-item>
-            
+
             <!-- 修改后的删除选项 -->
             <el-dropdown-item @click="confirmDelete">
               <el-icon><Delete /></el-icon>
@@ -25,7 +27,6 @@
           </el-dropdown-menu>
         </template>
       </el-dropdown>
-
     </div>
 
     <p v-if="collection.description" class="collection-description">
@@ -50,8 +51,14 @@
 </template>
 
 <script>
-import { Document, Calendar, MoreFilled, EditPen, Delete } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
+import {
+  Document,
+  Calendar,
+  MoreFilled,
+  EditPen,
+  Delete,
+} from "@element-plus/icons-vue";
+import { ElMessageBox } from "element-plus";
 export default {
   name: "CollectionCard",
   components: {
@@ -59,7 +66,7 @@ export default {
     Calendar,
     MoreFilled,
     EditPen,
-    Delete
+    Delete,
   },
   props: {
     collection: {
@@ -69,26 +76,28 @@ export default {
   },
   methods: {
     formatDate(dateString) {
-      if (!dateString) return ""
+      if (!dateString) return "";
 
-      const date = new Date(dateString)
+      const date = new Date(dateString);
       return date.toLocaleDateString("zh-CN", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
-      })
+      });
     },
     confirmDelete() {
-      ElMessageBox.confirm('确定要删除该收藏夹吗？', '警告', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }).then(() => {
-        this.$emit('delete', this.collection)
-      }).catch(() => {})
-    }
+      ElMessageBox.confirm("确定要删除该收藏夹吗？", "警告", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      })
+        .then(() => {
+          this.$emit("delete", this.collection);
+        })
+        .catch(() => {});
+    },
   },
-}
+};
 </script>
 
 <style scoped>

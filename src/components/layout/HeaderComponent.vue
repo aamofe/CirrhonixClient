@@ -23,7 +23,7 @@
         <div class="avatar-container">
           <img :src="defaultAvatar" alt="用户头像" class="avatar-image" />
         </div>
-        <span class="username">{{ username || '登录' }}</span>
+        <span class="username">{{ username || "登录" }}</span>
       </div>
     </div>
   </header>
@@ -31,7 +31,7 @@
 
 <script>
 import User from "@/api/User";
-import defaultAvatar from "@/assets/female.png"
+import defaultAvatar from "@/assets/female.png";
 export default {
   name: "HeaderComponent",
   data() {

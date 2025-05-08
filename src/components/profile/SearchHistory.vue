@@ -3,7 +3,11 @@
   <div class="search-history-component">
     <h3>搜索历史</h3>
     <div v-if="!loading && searchHistory.length" class="search-history">
-      <div v-for="(search, index) in searchHistory" :key="index" class="search-history-item">
+      <div
+        v-for="(search, index) in searchHistory"
+        :key="index"
+        class="search-history-item"
+      >
         <div class="search-query">
           <router-link :to="{ name: 'search', query: { q: search.query } }">
             {{ search.query }}
@@ -21,7 +25,7 @@
 </template>
 
 <script>
-import Search from "@/api/Search"
+import Search from "@/api/Search";
 
 export default {
   name: "SearchHistoryComponent",
@@ -29,36 +33,36 @@ export default {
     return {
       loading: true,
       searchHistory: [],
-    }
+    };
   },
   methods: {
     async fetchSearchHistory() {
-      this.loading = true
+      this.loading = true;
       try {
-        const response = await Search.getSearchHistory()
-        this.searchHistory = response.data.items || []
+        const response = await Search.getSearchHistory();
+        this.searchHistory = response.data.items || [];
       } catch (error) {
-        console.error("获取搜索历史失败", error)
-        this.$message.error("获取搜索历史失败")
+        console.error("获取搜索历史失败", error);
+        this.$message.error("获取搜索历史失败");
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     formatDate(dateString) {
-      const date = new Date(dateString)
+      const date = new Date(dateString);
       return date.toLocaleString("zh-CN", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
-      })
+      });
     },
   },
   created() {
-    this.fetchSearchHistory()
+    this.fetchSearchHistory();
   },
-}
+};
 </script>
 
 <style scoped>
