@@ -175,13 +175,13 @@ export default {
       }
 
       try {
-        const res = await User.register(
+        await User.register(
           this.username,
           this.email,
           this.password,
           this.confirmPassword
         );
-
+        // const res =
         this.$message.success("注册成功，请登录");
         this.isRegisterMode = false;
       } catch (error) {

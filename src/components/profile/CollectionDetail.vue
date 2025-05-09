@@ -3,7 +3,10 @@
   <div class="collection-detail">
     <div class="collection-header">
       <button class="back-button" @click="goBack">
-        <ArrowLeftIcon /> 返回收藏夹列表
+        <el-icon>
+          <Back />
+        </el-icon>
+        返回收藏夹列表
       </button>
       <h3>{{ collection ? collection.name : "收藏夹详情" }}</h3>
     </div>
@@ -33,15 +36,15 @@
 </template>
 
 <script>
-import LiteratureItem from "@/components/LiteratureItem.vue";
-import ArrowLeftIcon from "@/components/icons/ArrowLeftIcon.vue";
+import LiteratureItem from "@/components/layout/LiteratureItem.vue";
+import { Back } from "@element-plus/icons-vue";
 import Literature from "@/api/Literature";
 
 export default {
   name: "CollectionDetail",
   components: {
     LiteratureItem,
-    ArrowLeftIcon,
+    Back,
   },
   props: {
     collectionId: {

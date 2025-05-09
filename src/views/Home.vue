@@ -17,11 +17,16 @@
           <h2>{{ featuredArticle.title }}</h2>
           <div class="featured-meta">
             <span>来源：{{ featuredArticle.journal }}</span>
-            <span>发表日期：{{ formatDate(featuredArticle.publicationDate) }}</span>
+            <span
+              >发表日期：{{ formatDate(featuredArticle.publicationDate) }}</span
+            >
             <span>引用：{{ featuredArticle.citations }}</span>
           </div>
           <p>{{ featuredArticle.abstract }}</p>
-          <primary-button @click="viewArticle(featuredArticle.id)" :fullWidth="false">
+          <primary-button
+            @click="viewArticle(featuredArticle.id)"
+            :fullWidth="false"
+          >
             阅读全文
           </primary-button>
         </div>
@@ -37,8 +42,12 @@
       <section class="hot-topics">
         <h2 class="section-header">肝硬化研究热点</h2>
         <div class="topics-grid">
-          <div v-for="(topic, index) in researchTopics" :key="index" class="topic-card"
-            @click="onSearch(topic.keyword)">
+          <div
+            v-for="(topic, index) in researchTopics"
+            :key="index"
+            class="topic-card"
+            @click="onSearch(topic.keyword)"
+          >
             <div class="topic-icon">
               <i :class="topic.icon"></i>
             </div>
@@ -76,8 +85,12 @@
         <section class="section-card">
           <h2 class="section-header">最新文献</h2>
           <div class="card-list">
-            <literature-card v-for="article in recentArticles" :key="article.id" :article="article"
-              @click="viewArticle(article.id)" />
+            <literature-card
+              v-for="article in recentArticles"
+              :key="article.id"
+              :article="article"
+              @click="viewArticle(article.id)"
+            />
           </div>
         </section>
 
@@ -85,8 +98,12 @@
         <section class="section-card">
           <h2 class="section-header">领域专家</h2>
           <div class="card-list">
-            <author-card v-for="author in popularAuthors" :key="author.id" :author="author"
-              @click="viewAuthorProfile(author.id)" />
+            <author-card
+              v-for="author in popularAuthors"
+              :key="author.id"
+              :author="author"
+              @click="viewAuthorProfile(author.id)"
+            />
           </div>
         </section>
       </div>
@@ -97,7 +114,10 @@
         <div class="concept-network">
           <div class="network-placeholder">
             <p>肝硬化相关概念图谱</p>
-            <primary-button @click="onSearch('肝硬化概念网络')" :fullWidth="false">
+            <primary-button
+              @click="onSearch('肝硬化概念网络')"
+              :fullWidth="false"
+            >
               查看详情
             </primary-button>
           </div>
@@ -110,14 +130,13 @@
 </template>
 
 <script>
-import SearchBox from "@/components/common/SearchBox.vue"
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import LiteratureCard from "@/components/cards/LiteratureCard.vue"
-import AuthorCard from "@/components/cards/AuthorCard.vue"
-import AiAssistant from "@/components/AiAssistant.vue"
-import SiteFooter from "@/components/layout/SiteFooter.vue"
-import Literature from "@/api/Literature"
-// import Search from "@/api/Search";
+import SearchBox from "@/components/common/SearchBox.vue";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
+import LiteratureCard from "@/components/cards/LiteratureCard.vue";
+import AuthorCard from "@/components/cards/AuthorCard.vue";
+import AiAssistant from "@/components/AiAssistant.vue";
+import SiteFooter from "@/components/layout/SiteFooter.vue";
+import Literature from "@/api/Literature";
 
 export default {
   name: "HomeView",
@@ -176,42 +195,42 @@ export default {
         totalJournals: "87",
         lastUpdate: "2025-05-06",
       },
-    }
+    };
   },
   methods: {
     formatDate(dateString) {
-      if (!dateString) return ""
-      const date = new Date(dateString)
-      return date.toLocaleDateString("zh-CN")
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return date.toLocaleDateString("zh-CN");
     },
     async loadRecentArticles() {
       try {
-        this.isLoading = true
+        this.isLoading = true;
         const response = await Literature.list({
           sort: "-publication_date",
           page: 1,
           size: 4,
-        })
-        this.recentArticles = response.data.items || []
+        });
+        this.recentArticles = response.data.items || [];
       } catch (error) {
-        console.error("Failed to load recent articles", error)
+        console.error("Failed to load recent articles", error);
       } finally {
-        this.isLoading = false
+        this.isLoading = false;
       }
     },
     async loadPopularAuthors() {
       try {
-        this.isLoading = true
+        this.isLoading = true;
         const response = await Literature.getAuthors({
           sort: "publications",
           page: 1,
           size: 4,
-        })
-        this.popularAuthors = response.data.items || []
+        });
+        this.popularAuthors = response.data.items || [];
       } catch (error) {
-        console.error("Failed to load popular authors", error)
+        console.error("Failed to load popular authors", error);
       } finally {
-        this.isLoading = false
+        this.isLoading = false;
       }
     },
     async loadFeaturedArticle() {
@@ -220,10 +239,10 @@ export default {
           sort: "-citation_count",
           page: 1,
           size: 1,
-        })
+        });
 
         if (response.data.items && response.data.items.length > 0) {
-          const article = response.data.items[0]
+          const article = response.data.items[0];
           this.featuredArticle = {
             id: article.id,
             title: article.title,
@@ -231,43 +250,42 @@ export default {
             publicationDate: article.publication_date,
             citations: article.citation_count || 0,
             abstract: article.abstract || "暂无摘要",
-          }
+          };
         }
       } catch (error) {
-        console.error("Failed to load featured article", error)
+        console.error("Failed to load featured article", error);
       }
     },
-    async loadKeywords() {
-      try {
-        const response = await Search.getKeywords({
-          sort: "-weight",
-          size: 10,
-        })
-        this.keywords = response.data.items || []
-      } catch (error) {
-        console.error("Failed to load keywords", error)
-      }
-    },
+    // async loadKeywords() {
+    //   try {
+    //     const response = await Search.getKeywords({
+    //       sort: "-weight",
+    //       size: 10,
+    //     });
+    //     this.keywords = response.data.items || [];
+    //   } catch (error) {
+    //     console.error("Failed to load keywords", error);
+    //   }
+    // },
     onSearch(query) {
-      // 更新为跳转到文献列表页
       this.$router.push({
         name: "literature-list",
         query: { q: query },
-      })
+      });
     },
     viewArticle(id) {
       if (id) {
         this.$router.push({
           name: "literature-detail",
           params: { id },
-        })
+        });
       }
     },
     viewAuthorProfile(id) {
       this.$router.push({
         name: "authors-detail",
         params: { id },
-      })
+      });
     },
   },
   async mounted() {
@@ -277,13 +295,13 @@ export default {
         this.loadRecentArticles(),
         this.loadPopularAuthors(),
         this.loadFeaturedArticle(),
-        this.loadKeywords(),
-      ])
+        // this.loadKeywords(),
+      ]);
     } catch (error) {
-      console.error("Error initializing home page", error)
+      console.error("Error initializing home page", error);
     }
   },
-}
+};
 </script>
 
 <style scoped>
@@ -307,9 +325,11 @@ export default {
   right: -50px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(ellipse at center,
-      rgba(255, 255, 255, 0.2) 0%,
-      rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
   border-radius: 50%;
 }
 
@@ -320,9 +340,11 @@ export default {
   left: 10%;
   width: 150px;
   height: 150px;
-  background: radial-gradient(ellipse at center,
-      rgba(255, 255, 255, 0.15) 0%,
-      rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
   border-radius: 50%;
 }
 

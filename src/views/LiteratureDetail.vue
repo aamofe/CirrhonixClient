@@ -5,7 +5,10 @@
       <div class="article-header">
         <div class="article-actions">
           <router-link to="/literature" class="back-link">
-            <ArrowLeftIcon /> 返回检索结果
+            <el-icon>
+              <Back />
+            </el-icon>
+            返回检索结果
             <!-- <span class="back-icon">←</span>  -->
           </router-link>
 
@@ -250,14 +253,14 @@
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
 import SiteFooter from "@/components/layout/SiteFooter.vue";
 import Literature from "@/api/Literature";
-import ArrowLeftIcon from "@/components/icons/ArrowLeftIcon.vue";
+import { Back } from "@element-plus/icons-vue";
 import AiAssistant from "@/components/AiAssistant.vue";
 export default {
   name: "LiteratureDetail",
   components: {
     PrimaryButton,
     SiteFooter,
-    ArrowLeftIcon,
+    Back,
     AiAssistant,
   },
   data() {

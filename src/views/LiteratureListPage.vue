@@ -34,69 +34,6 @@
     </section>
 
     <div class="literature-content">
-      <div class="filter-sidebar">
-        <div class="filter-section">
-          <h3>筛选结果</h3>
-
-          <div class="filter-group">
-            <h4>文献类型</h4>
-            <div
-              v-for="(count, type) in filters.types"
-              :key="type"
-              class="filter-item"
-            >
-              <label>
-                <input
-                  type="checkbox"
-                  :value="type"
-                  v-model="selectedFilters.types"
-                  @change="applyFilters"
-                />
-                {{ type }} ({{ count }})
-              </label>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <h4>期刊</h4>
-            <div
-              v-for="(count, journal) in filters.journals"
-              :key="journal"
-              class="filter-item"
-            >
-              <label>
-                <input
-                  type="checkbox"
-                  :value="journal"
-                  v-model="selectedFilters.journals"
-                  @change="applyFilters"
-                />
-                {{ journal }} ({{ count }})
-              </label>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <h4>出版年份</h4>
-            <div
-              v-for="(count, year) in filters.years"
-              :key="year"
-              class="filter-item"
-            >
-              <label>
-                <input
-                  type="checkbox"
-                  :value="year"
-                  v-model="selectedFilters.years"
-                  @change="applyFilters"
-                />
-                {{ year }} ({{ count }})
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="literature-results">
         <div class="loading" v-if="isLoading">
           <div class="spinner"></div>
@@ -105,7 +42,7 @@
 
         <div v-else-if="results.length === 0" class="no-results">
           <p>抱歉，未找到符合条件的文献。</p>
-          <p>请尝试修改检索词或筛选条件。</p>
+          <p>请尝试修改检索词。</p>
         </div>
 
         <template v-else>
@@ -157,7 +94,7 @@
 import SearchBox from "@/components/common/SearchBox.vue";
 import SiteFooter from "@/components/layout/SiteFooter.vue";
 import Literature from "@/api/Literature";
-import LiteratureItem from "@/components/LiteratureItem.vue";
+import LiteratureItem from "@/components/layout/LiteratureItem.vue";
 
 export default {
   name: "LiteratureListPage",
@@ -176,16 +113,6 @@ export default {
       pageSize: 10,
       totalPages: 1,
       sortBy: "relevance",
-      filters: {
-        types: {},
-        journals: {},
-        years: {},
-      },
-      selectedFilters: {
-        types: [],
-        journals: [],
-        years: [],
-      },
       // 添加一个标志来追踪是否有保存的列表状态
       hasListState: false,
     };
@@ -239,8 +166,6 @@ export default {
         currentPage: this.currentPage,
         totalPages: this.totalPages,
         sortBy: this.sortBy,
-        filters: this.filters,
-        selectedFilters: this.selectedFilters,
       };
 
       sessionStorage.setItem("literatureListState", JSON.stringify(listState));
@@ -262,16 +187,6 @@ export default {
           this.currentPage = state.currentPage || 1;
           this.totalPages = state.totalPages || 1;
           this.sortBy = state.sortBy || "relevance";
-          this.filters = state.filters || {
-            types: {},
-            journals: {},
-            years: {},
-          };
-          this.selectedFilters = state.selectedFilters || {
-            types: [],
-            journals: [],
-            years: [],
-          };
 
           this.hasListState = true;
         } catch (error) {
@@ -287,20 +202,17 @@ export default {
       this.isLoading = true;
 
       try {
-        const response = await Literature.list({
-          page: this.currentPage,
-          pageSize: this.pageSize,
-          sortBy: this.sortBy,
-          ...this.getFilterParams(),
-        });
+        // 使用空格作为查询参数，避免后端报错
+        const response = await Literature.search(
+          " ", // 使用空格而非空字符串，确保后端不会拒绝请求
+          this.currentPage,
+          this.pageSize
+        );
 
         if (response && response.data) {
           this.results = response?.data?.data?.items || [];
           this.totalResults = response?.data?.data?.total || 0;
           this.totalPages = Math.ceil(this.totalResults / this.pageSize);
-
-          // 处理筛选条件
-          this.processFilters(response?.data?.data?.filters || {});
         } else {
           console.error("Unexpected response format:", response);
           this.results = [];
@@ -321,12 +233,12 @@ export default {
       this.searchQuery = query;
       this.currentPage = 1;
 
-      if (!query) {
-        await this.loadAllLiterature();
-      } else {
-        await this.searchLiterature();
+      if (!query || query.trim() === "") {
+        // 如果搜索词为空，仍然使用搜索API但传入一个空格
+        this.searchQuery = " ";
       }
 
+      await this.searchLiterature();
       this.saveListState();
     },
 
@@ -334,21 +246,17 @@ export default {
       this.isLoading = true;
 
       try {
-        const response = await Literature.search({
-          query: this.searchQuery,
-          page: this.currentPage,
-          pageSize: this.pageSize,
-          sortBy: this.sortBy,
-          ...this.getFilterParams(),
-        });
+        // 正确地传递参数: query, page, size
+        const response = await Literature.search(
+          this.searchQuery, // 直接传递查询字符串
+          this.currentPage, // 直接传递页码
+          this.pageSize // 直接传递每页大小
+        );
 
         if (response && response.data) {
           this.results = response?.data?.data?.items || [];
           this.totalResults = response?.data?.data?.total || 0;
           this.totalPages = Math.ceil(this.totalResults / this.pageSize);
-
-          // 处理筛选条件
-          this.processFilters(response?.data?.data?.filters || {});
         } else {
           console.error("Unexpected response format:", response);
           this.results = [];
@@ -365,53 +273,12 @@ export default {
       }
     },
 
-    getFilterParams() {
-      const filterParams = {};
-
-      if (this.selectedFilters.types.length > 0) {
-        filterParams.types = this.selectedFilters.types;
-      }
-
-      if (this.selectedFilters.journals.length > 0) {
-        filterParams.journals = this.selectedFilters.journals;
-      }
-
-      if (this.selectedFilters.years.length > 0) {
-        filterParams.years = this.selectedFilters.years;
-      }
-
-      return filterParams;
-    },
-
-    processFilters(filterData) {
-      this.filters = {
-        types: filterData.types || {},
-        journals: filterData.journals || {},
-        years: filterData.years || {},
-      };
-    },
-
     async setSortBy(sort) {
       this.sortBy = sort;
 
-      if (this.searchQuery) {
-        await this.searchLiterature();
-      } else {
-        await this.loadAllLiterature();
-      }
-
-      this.saveListState();
-    },
-
-    async applyFilters() {
-      this.currentPage = 1;
-
-      if (this.searchQuery) {
-        await this.searchLiterature();
-      } else {
-        await this.loadAllLiterature();
-      }
-
+      // 由于后端API不支持sortBy参数，我们这里只能重新请求数据
+      // 当前只使用searchLiterature方法获取数据，因为loadAllLiterature也使用searchLiterature
+      await this.searchLiterature();
       this.saveListState();
     },
 
@@ -421,13 +288,7 @@ export default {
       }
 
       this.currentPage = page;
-
-      if (this.searchQuery) {
-        await this.searchLiterature();
-      } else {
-        await this.loadAllLiterature();
-      }
-
+      await this.searchLiterature();
       this.saveListState();
     },
 
@@ -450,9 +311,8 @@ export default {
 
       if (query.q) {
         this.searchQuery = query.q;
-        this.searchLiterature();
       } else {
-        this.loadAllLiterature();
+        this.searchQuery = " "; // 默认使用空格
       }
 
       if (query.page) {
@@ -461,6 +321,8 @@ export default {
           this.currentPage = page;
         }
       }
+
+      this.searchLiterature();
     },
   },
   mounted() {
@@ -477,3 +339,151 @@ export default {
   },
 };
 </script>
+<style scoped>
+.literature-list-page {
+  background-color: #f5fbff;
+  min-height: 100vh;
+}
+
+.list-header {
+  background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
+  padding: 40px 5%;
+  text-align: center;
+  position: relative;
+}
+
+.list-header h1 {
+  color: white;
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.list-header p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 20px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.search-results-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  color: white;
+  font-size: 14px;
+}
+
+.sort-options {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.sort-options span {
+  cursor: pointer;
+}
+
+.sort-options span.active {
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+.literature-content {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 5%;
+}
+
+.literature-results {
+  width: 100%;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(26, 145, 193, 0.3);
+  border-radius: 50%;
+  border-top-color: #1a91c1;
+  margin: 0 auto 15px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 0;
+  color: #666;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px;
+  gap: 5px;
+}
+
+.page-btn,
+.page-number,
+.page-ellipsis {
+  min-width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.page-number {
+  color: #666;
+}
+
+.page-number.active {
+  background: #1a91c1;
+  color: white;
+}
+
+.page-btn {
+  padding: 0 10px;
+  color: #1a91c1;
+}
+
+.page-btn.disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.page-ellipsis {
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  .search-results-info {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .sort-options {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+</style>

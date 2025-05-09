@@ -57,15 +57,21 @@
       <!-- 底部按钮区域 -->
       <div class="action-buttons">
         <button @click="startEditing" class="edit-button">
-          <EditIcon class="button-icon" />
+          <el-icon class="button-icon">
+            <Edit />
+          </el-icon>
           编辑资料
         </button>
         <button @click="$emit('showPasswordModal')" class="password-button">
-          <LockIcon class="button-icon" />
+          <el-icon class="button-icon">
+            <Lock />
+          </el-icon>
           修改密码
         </button>
         <button @click="$emit('logout')" class="logout-button">
-          <LogoutIcon class="button-icon" />
+          <el-icon class="button-icon">
+            <SwitchButton />
+          </el-icon>
           退出登录
         </button>
       </div>
@@ -141,9 +147,7 @@
 
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import EditIcon from "@/components/buttons/EditIcon.vue";
-import LockIcon from "@/components/icons/LockIcon.vue";
-import LogoutIcon from "@/components/icons/LogoutIcon.vue";
+import { Edit, Lock, SwitchButton } from "@element-plus/icons-vue";
 import defaultAvatar from "@/assets/female.png";
 import User from "@/api/User";
 
@@ -151,9 +155,9 @@ export default {
   name: "ProfileForm",
   components: {
     PrimaryButton,
-    EditIcon,
-    LockIcon,
-    LogoutIcon,
+    Edit,
+    Lock,
+    SwitchButton,
   },
   props: {
     user: {

@@ -8,7 +8,7 @@ const url = {
   collection: (id) => `/literature/collection/${id}`,
   authors: "/literature/authors",
   journals: "/literature/journals",
-  search: "/search",
+  search: "/literature/search",
   graphData: "/literature/graph/data",
   litTree: (id) => `/literature/graph/literature-tree/${id}`,
   conceptNet: "/literature/graph/concept-network",
@@ -16,7 +16,7 @@ const url = {
 
 export default class Literature {
   static async search(query, page = 1, size = 20) {
-    return service.get(url.basic, {
+    return service.get(url.search, {
       params: {
         q: query,
         page,
