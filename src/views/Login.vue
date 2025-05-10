@@ -23,23 +23,11 @@
         <!-- 登录表单 -->
         <div v-if="!isRegisterMode">
           <form @submit.prevent="login">
-            <form-input
-              id="username"
-              label="用户名"
-              type="text"
-              v-model="username"
-              placeholder="请输入您的用户名"
-              :required="true"
-            />
+            <form-input id="username" label="用户名" type="text" v-model="username" placeholder="请输入您的用户名"
+              :required="true" />
 
-            <form-input
-              id="password"
-              label="密码"
-              type="password"
-              v-model="password"
-              placeholder="请输入您的密码"
-              :required="true"
-            />
+            <form-input id="password" label="密码" type="password" v-model="password" placeholder="请输入您的密码"
+              :required="true" />
 
             <div class="forgot-password">
               <a href="#">忘记密码？</a>
@@ -48,9 +36,7 @@
             <primary-button type="submit"> 登 录 </primary-button>
 
             <div class="register-link">
-              还没有账号？<a href="#" @click.prevent="isRegisterMode = true"
-                >立即注册</a
-              >
+              还没有账号？<a href="#" @click.prevent="isRegisterMode = true">立即注册</a>
             </div>
           </form>
         </div>
@@ -58,48 +44,21 @@
         <!-- 注册表单 -->
         <div v-else>
           <form @submit.prevent="register">
-            <form-input
-              id="reg-username"
-              label="用户名"
-              type="text"
-              v-model="username"
-              placeholder="请输入用户名"
-              :required="true"
-            />
+            <form-input id="reg-username" label="用户名" type="text" v-model="username" placeholder="请输入用户名"
+              :required="true" />
 
-            <form-input
-              id="email"
-              label="邮箱"
-              type="email"
-              v-model="email"
-              placeholder="请输入您的邮箱"
-              :required="true"
-            />
+            <form-input id="email" label="邮箱" type="email" v-model="email" placeholder="请输入您的邮箱" :required="true" />
 
-            <form-input
-              id="reg-password"
-              label="密码"
-              type="password"
-              v-model="password"
-              placeholder="请输入密码"
-              :required="true"
-            />
+            <form-input id="reg-password" label="密码" type="password" v-model="password" placeholder="请输入密码"
+              :required="true" />
 
-            <form-input
-              id="confirm-password"
-              label="确认密码"
-              type="password"
-              v-model="confirmPassword"
-              placeholder="请再次输入密码"
-              :required="true"
-            />
+            <form-input id="confirm-password" label="确认密码" type="password" v-model="confirmPassword"
+              placeholder="请再次输入密码" :required="true" />
 
             <primary-button type="submit"> 注 册 </primary-button>
 
             <div class="register-link">
-              已有账号？<a href="#" @click.prevent="isRegisterMode = false"
-                >返回登录</a
-              >
+              已有账号？<a href="#" @click.prevent="isRegisterMode = false">返回登录</a>
             </div>
           </form>
         </div>
@@ -109,11 +68,11 @@
 </template>
 
 <script>
-import { mapMutations } from "vuex";
-import service from "@/utils/request";
-import User from "@/api/User";
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import FormInput from "@/components/form/FormInput.vue";
+import { mapMutations } from "vuex"
+import service from "@/utils/request"
+import User from "@/api/User"
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import FormInput from "@/components/form/FormInput.vue"
 
 export default {
   name: "LoginView",
@@ -130,31 +89,32 @@ export default {
       showPassword: false,
       showConfirmPassword: false,
       isRegisterMode: false,
-    };
+    }
   },
   methods: {
     ...mapMutations(["setIsAdmin", "setUserId"]),
 
     async login() {
       if (!this.username || !this.password) {
-        this.$message.error("用户名和密码不得为空");
-        return;
+        this.$message.error("用户名和密码不得为空")
+        return
       }
       try {
-        const loginRes = await User.login(this.username, this.password);
+        const loginRes = await User.login(this.username, this.password)
 
         if (!loginRes?.data) {
-          this.$message.error(loginRes?.data?.message || "登录失败");
-          return;
+          this.$message.error(loginRes?.data?.message || "登录失败")
+          return
         }
-        const userInfo = loginRes.data.data;
-        localStorage.setItem("token", userInfo.token);
+        const userInfo = loginRes.data.data
+        localStorage.setItem("token", userInfo.token)
 
-        this.setIsAdmin(userInfo.is_super_user);
-        this.setUserId(userInfo.id);
-        this.$router.push("/");
+        this.setIsAdmin(userInfo.is_super_user)
+        this.setUserId(userInfo.id)
+        this.$router.push("/")
       } catch (err) {
-        this.$message.error(err?.response?.data?.message || "登录请求出错");
+        console.log(err)
+        this.$message.error(err?.response?.data?.message || "登录请求出错")
       }
     },
 
@@ -165,13 +125,13 @@ export default {
         !this.confirmPassword ||
         !this.email
       ) {
-        this.$message.error("所有字段均为必填");
-        return;
+        this.$message.error("所有字段均为必填")
+        return
       }
 
       if (this.password !== this.confirmPassword) {
-        this.$message.error("两次密码不一致");
-        return;
+        this.$message.error("两次密码不一致")
+        return
       }
 
       try {
@@ -180,42 +140,42 @@ export default {
           this.email,
           this.password,
           this.confirmPassword
-        );
+        )
         // const res =
-        this.$message.success("注册成功，请登录");
-        this.isRegisterMode = false;
+        this.$message.success("注册成功，请登录")
+        this.isRegisterMode = false
       } catch (error) {
-        this.$message.error(error?.response?.data?.message || "注册失败");
+        this.$message.error(error?.response?.data?.message || "注册失败")
       }
     },
 
     // 登出
     async logout() {
       try {
-        await User.logout();
-        localStorage.removeItem("token");
-        delete service.defaults.headers.common["Authorization"];
-        this.setUserId(null);
-        this.setIsAdmin(false);
-        this.$router.push("/login");
-        this.$message.success("已登出");
+        await User.logout()
+        localStorage.removeItem("token")
+        delete service.defaults.headers.common["Authorization"]
+        this.setUserId(null)
+        this.setIsAdmin(false)
+        this.$router.push("/login")
+        this.$message.success("已登出")
       } catch (error) {
-        this.$message.error("登出失败");
+        this.$message.error("登出失败")
       }
     },
 
     // 获取当前用户信息
     async getProfile() {
       try {
-        const response = await User.profile();
-        const data = response.data.data;
-        this.$message.success(`当前用户：${data.username}`);
+        const response = await User.profile()
+        const data = response.data.data
+        this.$message.success(`当前用户：${data.username}`)
       } catch (error) {
-        this.$message.error("获取用户信息失败");
+        this.$message.error("获取用户信息失败")
       }
     },
   },
-};
+}
 </script>
 
 <style scoped>
@@ -335,11 +295,9 @@ h1 {
   right: -100px;
   width: 600px;
   height: 600px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(168, 230, 207, 0.15) 0%,
-    rgba(168, 230, 207, 0) 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(168, 230, 207, 0.15) 0%,
+      rgba(168, 230, 207, 0) 70%);
   border-radius: 50% 50% 50% 70%;
   transform: rotate(45deg);
   z-index: 0;

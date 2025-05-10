@@ -1,18 +1,16 @@
-import service from "@/http";
+import service from '@/http'
 
 const url = {
-  list: "/literature/list",
+  list: '/literature/list',
   detail: (id) => `/literature/detail/${id}`,
-  interaction: "/literature/interaction",
-  collections: "/literature/collection",
+  interaction: '/literature/interaction',
+  collections: '/literature/collections',
   collection: (id) => `/literature/collection/${id}`,
-  authors: "/literature/authors",
-  journals: "/literature/journals",
-  search: "/literature/search",
-  graphData: "/literature/graph/data",
-  litTree: (id) => `/literature/graph/literature-tree/${id}`,
-  conceptNet: "/literature/graph/concept-network",
-};
+  search: '/literature/search',
+  uploadSinglePaper: '/literature/upload',
+  uploadBatchPaper: '/literature/batch',
+  translate: '/literature/translate',
+}
 
 export default class Literature {
   static async search(query, page = 1, size = 20) {
@@ -22,7 +20,7 @@ export default class Literature {
         page,
         size,
       },
-    });
+    })
   }
   /**
    * 获取文献列表，支持分页和筛选
@@ -38,7 +36,10 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async list(params = {}) {
-    return service.get(url.list, { params });
+    return service.get(url.list, { params })
+  }
+  static async translate(params = {}) {
+    return service.post(url.translate, { params })
   }
 
   /**
@@ -47,7 +48,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async detail(id) {
-    return service.get(url.detail(id));
+    return service.get(url.detail(id))
   }
 
   /**
@@ -57,7 +58,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async updateDetail(id, data) {
-    return service.put(url.detail(id), data);
+    return service.put(url.detail(id), data)
   }
 
   /**
@@ -66,7 +67,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async deleteDetail(id) {
-    return service.delete(url.detail(id));
+    return service.delete(url.detail(id))
   }
 
   /**
@@ -79,7 +80,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async createInteraction(data) {
-    return service.post(url.interaction, data);
+    return service.post(url.interaction, data)
   }
 
   /**
@@ -90,7 +91,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async getInteractions(params = {}) {
-    return service.get(url.interaction, { params });
+    return service.get(url.interaction, { params })
   }
 
   /**
@@ -101,7 +102,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async getCollections(params = {}) {
-    return service.get(url.collections, { params });
+    return service.get(url.collections, { params })
   }
 
   /**
@@ -113,7 +114,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async createCollection(data) {
-    return service.post(url.collections, data);
+    return service.post(url.collections, data)
   }
 
   /**
@@ -122,7 +123,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async getCollection(id) {
-    return service.get(url.collection(id));
+    return service.get(url.collection(id))
   }
 
   /**
@@ -136,7 +137,7 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async updateCollection(id, data) {
-    return service.put(url.collection(id), data);
+    return service.put(url.collection(id), data)
   }
 
   /**
@@ -145,64 +146,28 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async deleteCollection(id) {
-    return service.delete(url.collection(id));
+    return service.delete(url.collection(id))
   }
 
   /**
-   * 获取作者列表
-   * @param {Object} params - 查询参数
-   * @param {string} [params.name] - 按作者姓名搜索
-   * @param {string} [params.affiliation] - 按机构搜索
-   * @param {string} [params.sort='name'] - 排序方式（'publications'或'name'）
-   * @param {number} [params.page=1] - 页码
-   * @param {number} [params.size=20] - 每页数量
-   * @returns {Promise} API响应
+   * 上传单个文献PDF文件
+   * @param {FormData} formData
+   * @returns {Promise}
    */
-  static async getAuthors(params = {}) {
-    return service.get(url.authors, { params });
+  static async uploadPaper(formData) {
+    return service.post(url.uploadSinglePaper, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
   }
 
   /**
-   * 获取期刊列表
-   * @param {Object} params - 查询参数
-   * @param {string} [params.name] - 按期刊名称搜索
-   * @param {string} [params.sort='name'] - 排序方式（'impact_factor'或'name'）
-   * @param {number} [params.page=1] - 页码
-   * @param {number} [params.size=20] - 每页数量
-   * @returns {Promise} API响应
+   * 批量上传文献PDF文件
+   * @param {FormData} formData
+   * @returns {Promise}
    */
-  static async getJournals(params = {}) {
-    return service.get(url.journals, { params });
-  }
-
-  /**
-   * 获取知识图谱数据
-   * @param {Object} params - 查询参数
-   * @param {string} [params.node_type] - 按节点类型筛选
-   * @param {number} [params.limit=100] - 节点数量限制
-   * @returns {Promise} API响应
-   */
-  static async getGraphData(params = {}) {
-    return service.get(url.graphData, { params });
-  }
-
-  /**
-   * 获取特定文献的关系树
-   * @param {number} id - 文献ID
-   * @returns {Promise} API响应
-   */
-  static async getLitTree(id) {
-    return service.get(url.litTree(id));
-  }
-
-  /**
-   * 获取概念网络数据
-   * @param {Object} params - 查询参数
-   * @param {string} [params.keyword] - 按关键词筛选概念
-   * @param {number} [params.limit=50] - 节点数量限制
-   * @returns {Promise} API响应
-   */
-  static async getConceptNet(params = {}) {
-    return service.get(url.conceptNet, { params });
+  static async uploadBatchPaper(formData) {
+    return service.post(url.uploadBatchPaper, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
   }
 }

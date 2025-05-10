@@ -1,12 +1,7 @@
 <!-- src/components/SearchBox.vue -->
 <template>
   <div class="search-box">
-    <input
-      type="text"
-      v-model="searchQuery"
-      :placeholder="placeholder"
-      @keyup.enter="handleSearch"
-    />
+    <input type="text" v-model="searchQuery" :placeholder="placeholder" @keyup.enter="handleSearch" />
     <button @click="handleSearch">搜索</button>
   </div>
 </template>
@@ -27,21 +22,19 @@ export default {
   data() {
     return {
       searchQuery: this.initialQuery,
-    };
+    }
   },
   methods: {
     handleSearch() {
-      if (this.searchQuery.trim()) {
-        this.$emit("search", this.searchQuery.trim());
-      }
+      this.$emit("search", this.searchQuery.trim())
     },
   },
   watch: {
     initialQuery(newVal) {
-      this.searchQuery = newVal;
+      this.searchQuery = newVal
     },
   },
-};
+}
 </script>
 
 <style scoped>

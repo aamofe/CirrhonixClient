@@ -4,16 +4,8 @@
     <h3>手动爬取</h3>
     <div class="source-selector">
       <label for="source">选择数据源:</label>
-      <select
-        id="source"
-        v-model="manualCrawler.source_id"
-        class="select-input"
-      >
-        <option
-          v-for="source in availableSources"
-          :key="source.id"
-          :value="source.id"
-        >
+      <select id="source" v-model="manualCrawler.source_id" class="select-input">
+        <option v-for="source in availableSources" :key="source.id" :value="source.id">
           {{ source.name }}
         </option>
       </select>
@@ -22,56 +14,30 @@
     <div class="query-section">
       <div class="form-group">
         <label for="keywords">关键词:</label>
-        <input
-          type="text"
-          id="keywords"
-          v-model="manualCrawler.keywords"
-          class="form-input"
-          placeholder="输入检索关键词，多个关键词用英文逗号分隔"
-        />
+        <input type="text" id="keywords" v-model="manualCrawler.keywords" class="form-input"
+          placeholder="输入检索关键词，多个关键词用英文逗号分隔" />
       </div>
 
       <div class="form-row">
         <div class="form-group flex-1">
           <label for="start-date">起始日期:</label>
-          <input
-            type="date"
-            id="start-date"
-            v-model="manualCrawler.startDate"
-            class="form-input"
-          />
+          <input type="date" id="start-date" v-model="manualCrawler.startDate" class="form-input" />
         </div>
 
         <div class="form-group flex-1">
           <label for="end-date">结束日期:</label>
-          <input
-            type="date"
-            id="end-date"
-            v-model="manualCrawler.endDate"
-            class="form-input"
-          />
+          <input type="date" id="end-date" v-model="manualCrawler.endDate" class="form-input" />
         </div>
       </div>
 
       <div class="form-group">
         <label for="max-results">最大结果数:</label>
-        <input
-          type="number"
-          id="max-results"
-          v-model="manualCrawler.maxResults"
-          class="form-input"
-          min="1"
-          max="500"
-        />
+        <input type="number" id="max-results" v-model="manualCrawler.maxResults" class="form-input" min="1" max="500" />
       </div>
     </div>
 
     <div class="action-buttons">
-      <PrimaryButton
-        :fullWidth="false"
-        @click="startManualCrawling"
-        :disabled="manualCrawling"
-      >
+      <PrimaryButton :fullWidth="false" @click="startManualCrawling" :disabled="manualCrawling">
         开始爬取
         <template #icon>
           <el-icon v-if="!manualCrawling">
@@ -87,10 +53,7 @@
     <!-- 爬取进度 -->
     <div v-if="manualCrawling" class="crawling-progress">
       <div class="progress-bar">
-        <div
-          class="progress-value"
-          :style="{ width: `${manualProgress}%` }"
-        ></div>
+        <div class="progress-value" :style="{ width: `${manualProgress}%` }"></div>
       </div>
       <div class="progress-text">
         {{ manualProgress }}% - 已爬取 {{ crawledCount }} 篇文献
@@ -100,11 +63,11 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import { Spider, Loading } from "@element-plus/icons-vue";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import { Spider, Loading } from "@element-plus/icons-vue"
 
 // 导入爬虫API
-import Crawler from "@/api/Crawler";
+import Crawler from "@/api/Crawler"
 
 export default {
   name: "ManualCrawler",
@@ -131,88 +94,96 @@ export default {
       manualCrawling: false,
       manualProgress: 0,
       crawledCount: 0,
-    };
+      messageShown: false, // 添加消息标志位
+    }
   },
   watch: {
     availableSources: {
       handler(newSources) {
         if (newSources.length > 0 && !this.manualCrawler.source_id) {
-          this.manualCrawler.source_id = newSources[0].id;
+          this.manualCrawler.source_id = newSources[0].id
         }
       },
       immediate: true,
     },
   },
   methods: {
+    // 显示消息并防止重复
+    showMessage(type, content) {
+      // 防止重复显示相同消息
+      if (this.messageShown && this.lastMessage === content) {
+        return
+      }
+
+      this.messageShown = true
+      this.lastMessage = content
+      this.$message[type](content)
+
+      // 重置消息状态标志（可选，根据实际需求决定是否需要）
+      setTimeout(() => {
+        this.messageShown = false
+      }, 500)
+    },
+
     // 开始手动爬取
     async startManualCrawling() {
+      if (this.manualCrawling) return // 防止重复点击
+
       if (!this.manualCrawler.source_id) {
-        this.$message.error("请选择数据源");
-        return;
+        this.showMessage('error', "请选择数据源")
+        return
       }
 
       try {
-        this.manualCrawling = true;
-        this.manualProgress = 5; // 初始进度
-        this.crawledCount = 0;
+        this.manualCrawling = true
+        this.manualProgress = 5 // 初始进度
+        this.crawledCount = 0
 
-        // 构建查询参数
         const queryParams = {
           keywords: this.manualCrawler.keywords,
           start_date: this.manualCrawler.startDate,
           end_date: this.manualCrawler.endDate,
           max_results: this.manualCrawler.maxResults,
-          fields_of_study: "肝硬化", // 默认添加肝硬化作为研究领域
-        };
+        }
 
-        // 创建爬取任务并等待完成
+        // 创建任务
+        this.showMessage('info', "爬取任务已创建，请等待完成")
         const response = await Crawler.createTask(
           this.manualCrawler.source_id,
           queryParams
-        );
+        )
 
         if (response.data && response.data.data) {
-          const taskId = response.data.data.task_id;
+          const taskId = response.data.data.task_id
+          this.manualProgress = 50
 
-          this.$message.info("爬取任务已创建，请等待完成");
-          this.manualProgress = 50; // 设置为中间进度
-
-          // 直接获取任务结果
-          const taskResponse = await Crawler.getCrawlDetail(taskId);
+          // 获取任务详情
+          const taskResponse = await Crawler.getCrawlDetail(taskId)
 
           if (taskResponse.data && taskResponse.data.data) {
-            const { status, results_count } = taskResponse.data.data;
-
-            this.crawledCount = results_count;
+            const { status, results_count } = taskResponse.data.data
+            this.crawledCount = results_count
 
             if (status === "completed") {
-              this.manualProgress = 100;
-              this.$message.success(
-                `爬取任务完成，共获取100篇文献`
-                // ${results_count}
-              );
-              // 通知父组件任务完成，需要刷新历史记录
-              this.$emit("crawl-completed");
+              this.manualProgress = 100
+              this.showMessage('success', `爬取任务完成，共获取${results_count}篇文献`)
             } else if (status === "failed") {
-              this.manualProgress = 0;
-              this.$message.error("爬取任务失败");
+              this.manualProgress = 0
+              this.showMessage('error', "爬取任务失败")
             } else {
-              // 任务仍在进行中，但我们不再轮询
-              this.$message.info("爬取任务正在进行中，请稍后查看历史记录");
-              this.manualProgress = 75;
+              this.manualProgress = 75
+              this.showMessage('info', "爬取任务正在进行中，请稍后查看历史记录")
             }
           }
         } else {
-          throw new Error("创建任务失败");
+          throw new Error("创建任务失败")
         }
       } catch (error) {
-        console.error("启动爬取任务失败", error);
-        this.$message.error("启动爬取任务失败");
+        console.error("启动爬取任务失败", error)
+        this.showMessage('error', "启动爬取任务失败")
       } finally {
-        // 无论成功失败，更新状态
-        this.manualCrawling = false;
-        // 通知父组件更新历史记录
-        this.$emit("crawl-completed");
+        this.manualCrawling = false
+        this.$emit("crawl-completed")
       }
     },
 
@@ -225,12 +196,12 @@ export default {
         startDate: "",
         endDate: "",
         maxResults: 100,
-      };
-      this.manualProgress = 0;
-      this.crawledCount = 0;
+      }
+      this.manualProgress = 0
+      this.crawledCount = 0
     },
   },
-};
+}
 </script>
 
 <style scoped>

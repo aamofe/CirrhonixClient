@@ -1,4 +1,3 @@
-```vue
 <template>
   <div class="card upload-paper">
     <h3>上传文献</h3>
@@ -6,18 +5,10 @@
 
     <div class="upload-modes">
       <div class="mode-tabs">
-        <button
-          class="tab-btn"
-          :class="{ active: uploadMode === 'single' }"
-          @click="uploadMode = 'single'"
-        >
+        <button class="tab-btn" :class="{ active: uploadMode === 'single' }" @click="uploadMode = 'single'">
           单个上传
         </button>
-        <button
-          class="tab-btn"
-          :class="{ active: uploadMode === 'batch' }"
-          @click="uploadMode = 'batch'"
-        >
+        <button class="tab-btn" :class="{ active: uploadMode === 'batch' }" @click="uploadMode = 'batch'">
           批量上传
         </button>
       </div>
@@ -26,19 +17,8 @@
     <!-- 单个上传表单 -->
     <div v-if="uploadMode === 'single'" class="single-upload">
       <div class="form-section">
-        <div
-          class="pdf-upload-area"
-          @click="triggerFileInput"
-          @drop.prevent="handleFileDrop"
-          @dragover.prevent
-        >
-          <input
-            type="file"
-            ref="fileInput"
-            @change="handleFileChange"
-            accept=".pdf"
-            style="display: none"
-          />
+        <div class="pdf-upload-area" @click="triggerFileInput" @drop.prevent="handleFileDrop" @dragover.prevent>
+          <input type="file" ref="fileInput" @change="handleFileChange" accept=".pdf" style="display: none" />
           <div v-if="!singleUpload.file" class="upload-placeholder">
             <el-icon>
               <Document />
@@ -61,47 +41,25 @@
         <div class="form-fields">
           <div class="form-group">
             <label for="paper-title" class="required">标题:</label>
-            <input
-              type="text"
-              id="paper-title"
-              v-model="singleUpload.title"
-              class="form-input"
-              placeholder="文献标题"
-              required
-            />
+            <input type="text" id="paper-title" v-model="singleUpload.title" class="form-input" placeholder="文献标题"
+              required />
           </div>
 
           <div class="form-group">
             <label for="paper-authors" class="required">作者:</label>
-            <input
-              type="text"
-              id="paper-authors"
-              v-model="singleUpload.authors"
-              class="form-input"
-              placeholder="作者姓名，多个作者用逗号分隔"
-              required
-            />
+            <input type="text" id="paper-authors" v-model="singleUpload.authors" class="form-input"
+              placeholder="作者姓名，多个作者用逗号分隔" required />
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
               <label for="paper-date" class="required">发表日期:</label>
-              <input
-                type="date"
-                id="paper-date"
-                v-model="singleUpload.publication_date"
-                class="form-input"
-                required
-              />
+              <input type="date" id="paper-date" v-model="singleUpload.publication_date" class="form-input" required />
             </div>
 
             <div class="form-group flex-1">
               <label for="paper-language">语言:</label>
-              <select
-                id="paper-language"
-                v-model="singleUpload.language"
-                class="form-input"
-              >
+              <select id="paper-language" v-model="singleUpload.language" class="form-input">
                 <option value="en">英文</option>
                 <option value="zh">中文</option>
                 <option value="other">其他</option>
@@ -109,100 +67,45 @@
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="paper-journal">期刊:</label>
-              <input
-                type="text"
-                id="paper-journal"
-                v-model="singleUpload.journal"
-                class="form-input"
-                placeholder="期刊名称"
-              />
-            </div>
-
-            <div class="form-group flex-1">
-              <label for="paper-type">文献类型:</label>
-              <select
-                id="paper-type"
-                v-model="singleUpload.publication_type"
-                class="form-input"
-              >
-                <option value="article">研究文章</option>
-                <option value="review">综述</option>
-                <option value="case_report">病例报告</option>
-                <option value="clinical_trial">临床试验</option>
-                <option value="meta_analysis">元分析</option>
-                <option value="other">其他</option>
-              </select>
-            </div>
+          <div class="form-group">
+            <label for="paper-type">文献类型:</label>
+            <select id="paper-type" v-model="singleUpload.publication_type" class="form-input">
+              <option value="article">研究文章</option>
+              <option value="review">综述</option>
+              <option value="case_report">病例报告</option>
+              <option value="clinical_trial">临床试验</option>
+              <option value="meta_analysis">元分析</option>
+              <option value="other">其他</option>
+            </select>
           </div>
 
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="paper-doi">DOI:</label>
-              <input
-                type="text"
-                id="paper-doi"
-                v-model="singleUpload.doi"
-                class="form-input"
-                placeholder="10.xxxx/xxxxx"
-              />
-            </div>
-
-            <div class="form-group flex-1">
-              <label for="paper-pmid">PMID:</label>
-              <input
-                type="text"
-                id="paper-pmid"
-                v-model="singleUpload.pmid"
-                class="form-input"
-                placeholder="PubMed ID"
-              />
-            </div>
+          <div class="form-group">
+            <label for="paper-doi">DOI:</label>
+            <input type="text" id="paper-doi" v-model="singleUpload.doi" class="form-input"
+              placeholder="10.xxxx/xxxxx" />
           </div>
 
           <div class="form-group">
             <label for="paper-keywords">关键词:</label>
-            <input
-              type="text"
-              id="paper-keywords"
-              v-model="singleUpload.keywords"
-              class="form-input"
-              placeholder="关键词，多个关键词用逗号分隔"
-            />
+            <input type="text" id="paper-keywords" v-model="singleUpload.keywords" class="form-input"
+              placeholder="关键词，多个关键词用逗号分隔" />
           </div>
 
           <div class="form-group">
             <label for="paper-abstract">摘要:</label>
-            <textarea
-              id="paper-abstract"
-              v-model="singleUpload.abstract"
-              class="form-textarea"
-              placeholder="文献摘要"
-              rows="4"
-            ></textarea>
+            <textarea id="paper-abstract" v-model="singleUpload.abstract" class="form-textarea" placeholder="文献摘要"
+              rows="4"></textarea>
           </div>
 
           <div class="form-group">
             <label for="paper-url">原文链接:</label>
-            <input
-              type="url"
-              id="paper-url"
-              v-model="singleUpload.url"
-              class="form-input"
-              placeholder="https://..."
-            />
+            <input type="url" id="paper-url" v-model="singleUpload.url" class="form-input" placeholder="https://..." />
           </div>
         </div>
       </div>
 
       <div class="upload-actions">
-        <PrimaryButton
-          :fullWidth="false"
-          @click="uploadSinglePaper"
-          :disabled="uploading"
-        >
+        <PrimaryButton :fullWidth="false" @click="uploadSinglePaper" :disabled="uploading">
           {{ uploading ? "上传中..." : "上传文献" }}
           <template #icon>
             <el-icon v-if="!uploading">
@@ -218,20 +121,10 @@
 
     <!-- 批量上传表单 -->
     <div v-else class="batch-upload">
-      <div
-        class="batch-upload-area"
-        @click="triggerBatchFileInput"
-        @drop.prevent="handleBatchFileDrop"
-        @dragover.prevent
-      >
-        <input
-          type="file"
-          ref="batchFileInput"
-          @change="handleBatchFileChange"
-          accept=".pdf"
-          multiple
-          style="display: none"
-        />
+      <div class="batch-upload-area" @click="triggerBatchFileInput" @drop.prevent="handleBatchFileDrop"
+        @dragover.prevent>
+        <input type="file" ref="batchFileInput" @change="handleBatchFileChange" accept=".pdf" multiple
+          style="display: none" />
         <div v-if="!batchFiles.length" class="upload-placeholder">
           <el-icon>
             <Document />
@@ -245,11 +138,7 @@
             <button class="text-btn" @click.stop="clearBatchFiles">清空</button>
           </div>
           <div class="batch-files-list">
-            <div
-              v-for="(file, index) in batchFiles"
-              :key="index"
-              class="batch-file-item"
-            >
+            <div v-for="(file, index) in batchFiles" :key="index" class="batch-file-item">
               <el-icon>
                 <Document />
               </el-icon>
@@ -267,36 +156,17 @@
       <div class="batch-upload-options">
         <div class="form-group">
           <label for="batch-extraction">文件名信息提取:</label>
-          <select
-            id="batch-extraction"
-            v-model="batchUpload.extractionMode"
-            class="form-input"
-          >
+          <select id="batch-extraction" v-model="batchUpload.extractionMode" class="form-input">
             <option value="filename">从文件名提取标题</option>
             <option value="pdf">尝试从PDF自动提取元数据</option>
             <option value="none">不提取，仅上传文件</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="batch-journal">默认期刊 (可选):</label>
-          <input
-            type="text"
-            id="batch-journal"
-            v-model="batchUpload.defaultJournal"
-            class="form-input"
-            placeholder="所有文件的默认期刊名称"
-          />
-        </div>
-
         <div class="form-row">
           <div class="form-group flex-1">
             <label for="batch-type">默认文献类型:</label>
-            <select
-              id="batch-type"
-              v-model="batchUpload.defaultType"
-              class="form-input"
-            >
+            <select id="batch-type" v-model="batchUpload.defaultType" class="form-input">
               <option value="article">研究文章</option>
               <option value="review">综述</option>
               <option value="other">其他</option>
@@ -305,11 +175,7 @@
 
           <div class="form-group flex-1">
             <label for="batch-language">默认语言:</label>
-            <select
-              id="batch-language"
-              v-model="batchUpload.defaultLanguage"
-              class="form-input"
-            >
+            <select id="batch-language" v-model="batchUpload.defaultLanguage" class="form-input">
               <option value="en">英文</option>
               <option value="zh">中文</option>
               <option value="other">其他</option>
@@ -319,11 +185,7 @@
       </div>
 
       <div class="upload-actions">
-        <PrimaryButton
-          :fullWidth="false"
-          @click="uploadBatchPapers"
-          :disabled="batchUploading || !batchFiles.length"
-        >
+        <PrimaryButton :fullWidth="false" @click="uploadBatchPapers" :disabled="batchUploading || !batchFiles.length">
           {{ batchUploading ? "上传中..." : "开始批量上传" }}
           <template #icon>
             <el-icon v-if="!batchUploading">
@@ -339,10 +201,7 @@
       <!-- 批量上传进度 -->
       <div v-if="batchUploading" class="upload-progress">
         <div class="progress-bar">
-          <div
-            class="progress-value"
-            :style="{ width: `${uploadProgress}%` }"
-          ></div>
+          <div class="progress-value" :style="{ width: `${uploadProgress}%` }"></div>
         </div>
         <div class="progress-text">
           {{ uploadProgress }}% - 已上传 {{ uploadedCount }}/{{
@@ -354,11 +213,7 @@
     </div>
 
     <!-- 上传结果提示 -->
-    <div
-      v-if="uploadResult.show"
-      class="upload-result"
-      :class="uploadResult.success ? 'success' : 'error'"
-    >
+    <div v-if="uploadResult.show" class="upload-result" :class="uploadResult.success ? 'success' : 'error'">
       <div class="result-icon">
         <el-icon v-if="uploadResult.success">
           <CircleCheck />
@@ -378,11 +233,10 @@
     </div>
   </div>
 </template>
-```
-<script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import Crawler from "@/api/Crawler";
 
+<script>
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import Literature from "@/api/Literature"
 // 使用 Element Plus 图标组件
 import {
   Document,
@@ -391,7 +245,7 @@ import {
   Close,
   CircleCheck,
   CircleClose,
-} from "@element-plus/icons-vue";
+} from "@element-plus/icons-vue"
 
 export default {
   name: "UploadPaper",
@@ -414,10 +268,8 @@ export default {
         title: "",
         authors: "",
         publication_date: "",
-        journal: "",
         publication_type: "article",
         doi: "",
-        pmid: "",
         abstract: "",
         keywords: "",
         language: "en",
@@ -429,7 +281,6 @@ export default {
       batchFiles: [],
       batchUpload: {
         extractionMode: "filename",
-        defaultJournal: "",
         defaultType: "article",
         defaultLanguage: "en",
       },
@@ -443,114 +294,106 @@ export default {
         success: false,
         message: "",
       },
-    };
+    }
   },
   methods: {
     // 单个文件上传相关方法
     triggerFileInput() {
-      this.$refs.fileInput.click();
+      this.$refs.fileInput.click()
     },
 
     handleFileChange(event) {
-      const file = event.target.files[0];
+      const file = event.target.files[0]
       if (file && file.type === "application/pdf") {
-        this.singleUpload.file = file;
+        this.singleUpload.file = file
       } else if (file) {
-        this.$message.error("请上传PDF格式的文件");
-        this.$refs.fileInput.value = "";
+        this.$message.error("请上传PDF格式的文件")
+        this.$refs.fileInput.value = ""
       }
     },
 
     handleFileDrop(event) {
-      const file = event.dataTransfer.files[0];
+      const file = event.dataTransfer.files[0]
       if (file && file.type === "application/pdf") {
-        this.singleUpload.file = file;
+        this.singleUpload.file = file
       } else if (file) {
-        this.$message.error("请上传PDF格式的文件");
+        this.$message.error("请上传PDF格式的文件")
       }
     },
 
     removeSingleFile() {
-      this.singleUpload.file = null;
-      this.$refs.fileInput.value = "";
+      this.singleUpload.file = null
+      this.$refs.fileInput.value = ""
     },
 
     async uploadSinglePaper() {
       // 验证必填字段
       if (!this.singleUpload.file) {
-        this.$message.error("请选择PDF文件");
-        return;
+        this.$message.error("请选择PDF文件")
+        return
       }
 
       if (!this.singleUpload.title) {
-        this.$message.error("请输入文献标题");
-        return;
+        this.$message.error("请输入文献标题")
+        return
       }
 
       if (!this.singleUpload.authors) {
-        this.$message.error("请输入作者信息");
-        return;
+        this.$message.error("请输入作者信息")
+        return
       }
 
       if (!this.singleUpload.publication_date) {
-        this.$message.error("请选择发表日期");
-        return;
+        this.$message.error("请选择发表日期")
+        return
       }
 
-      this.uploading = true;
+      this.uploading = true
 
       try {
         // 准备表单数据
-        const formData = new FormData();
-        formData.append("pdf_file", this.singleUpload.file);
-        formData.append("title", this.singleUpload.title);
-        formData.append("authors", this.singleUpload.authors);
-        formData.append("publication_date", this.singleUpload.publication_date);
-        formData.append("publication_type", this.singleUpload.publication_type);
-        formData.append("language", this.singleUpload.language);
+        const formData = new FormData()
+        formData.append("pdf_file", this.singleUpload.file)
+        formData.append("title", this.singleUpload.title)
+        formData.append("authors", this.singleUpload.authors)
+        formData.append("publication_date", this.singleUpload.publication_date)
+        formData.append("publication_type", this.singleUpload.publication_type)
+        formData.append("language", this.singleUpload.language)
 
         // 添加可选字段
-        if (this.singleUpload.journal) {
-          formData.append("journal", this.singleUpload.journal);
-        }
-
         if (this.singleUpload.doi) {
-          formData.append("doi", this.singleUpload.doi);
-        }
-
-        if (this.singleUpload.pmid) {
-          formData.append("pmid", this.singleUpload.pmid);
+          formData.append("doi", this.singleUpload.doi)
         }
 
         if (this.singleUpload.abstract) {
-          formData.append("abstract", this.singleUpload.abstract);
+          formData.append("abstract", this.singleUpload.abstract)
         }
 
         if (this.singleUpload.keywords) {
-          formData.append("keywords", this.singleUpload.keywords);
+          formData.append("keywords", this.singleUpload.keywords)
         }
 
         if (this.singleUpload.url) {
-          formData.append("url", this.singleUpload.url);
+          formData.append("url", this.singleUpload.url)
         }
 
         // 发送请求
-        const response = await Crawler.uploadPaper(formData);
+        const response = await Literature.uploadPaper(formData)
 
-        if (response.data && response.data.success) {
-          this.showUploadResult(true, "文献上传成功");
-          this.resetSingleUploadForm();
+        if (response.data.data && response.data.data.success) {
+          this.showUploadResult(true, "文献上传成功")
+          this.resetSingleUploadForm()
         } else {
-          throw new Error(response.data?.message || "上传失败");
+          throw new Error(response.data.data?.message || "上传失败")
         }
       } catch (error) {
-        console.error("上传文献失败", error);
+        console.error("上传文献失败", error)
         this.showUploadResult(
           false,
           `上传失败: ${error.message || "未知错误"}`
-        );
+        )
       } finally {
-        this.uploading = false;
+        this.uploading = false
       }
     },
 
@@ -560,120 +403,112 @@ export default {
         title: "",
         authors: "",
         publication_date: "",
-        journal: "",
         publication_type: "article",
         doi: "",
-        pmid: "",
         abstract: "",
         keywords: "",
         language: "en",
         url: "",
-      };
-      this.$refs.fileInput.value = "";
+      }
+      this.$refs.fileInput.value = ""
     },
 
     // 批量上传相关方法
     triggerBatchFileInput() {
-      this.$refs.batchFileInput.click();
+      this.$refs.batchFileInput.click()
     },
 
     handleBatchFileChange(event) {
-      const files = event.target.files;
+      const files = event.target.files
       if (files.length > 0) {
-        this.addBatchFiles(files);
+        this.addBatchFiles(files)
       }
     },
 
     handleBatchFileDrop(event) {
-      const files = event.dataTransfer.files;
+      const files = event.dataTransfer.files
       if (files.length > 0) {
-        this.addBatchFiles(files);
+        this.addBatchFiles(files)
       }
     },
 
     addBatchFiles(files) {
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        const file = files[i]
         if (file.type === "application/pdf") {
-          this.batchFiles.push(file);
+          this.batchFiles.push(file)
         } else {
-          this.$message.warning(`跳过非PDF文件: ${file.name}`);
+          this.$message.warning(`跳过非PDF文件: ${file.name}`)
         }
       }
-      this.$refs.batchFileInput.value = "";
+      this.$refs.batchFileInput.value = ""
     },
 
     removeBatchFile(index) {
-      this.batchFiles.splice(index, 1);
+      this.batchFiles.splice(index, 1)
     },
 
     clearBatchFiles() {
-      this.batchFiles = [];
-      this.$refs.batchFileInput.value = "";
+      this.batchFiles = []
+      this.$refs.batchFileInput.value = ""
     },
 
     async uploadBatchPapers() {
       if (this.batchFiles.length === 0) {
-        this.$message.error("请选择至少一个PDF文件");
-        return;
+        this.$message.error("请选择至少一个PDF文件")
+        return
       }
 
-      this.batchUploading = true;
-      this.uploadProgress = 0;
-      this.uploadedCount = 0;
+      this.batchUploading = true
+      this.uploadProgress = 0
+      this.uploadedCount = 0
 
       try {
         // 准备批量上传参数
         const batchParams = {
           extraction_mode: this.batchUpload.extractionMode,
-          default_journal: this.batchUpload.defaultJournal,
           default_type: this.batchUpload.defaultType,
           default_language: this.batchUpload.defaultLanguage,
-        };
+        }
 
-        const totalFiles = this.batchFiles.length;
-        const successUploads = [];
-        const failedUploads = [];
+        const totalFiles = this.batchFiles.length
+        const successUploads = []
+        const failedUploads = []
 
         // 逐个上传文件
         for (let i = 0; i < this.batchFiles.length; i++) {
-          const file = this.batchFiles[i];
-          const formData = new FormData();
+          const file = this.batchFiles[i]
+          const formData = new FormData()
 
           // 添加文件和批量上传参数
-          formData.append("pdf_file", file);
-          formData.append("extraction_mode", batchParams.extraction_mode);
-
-          if (batchParams.default_journal) {
-            formData.append("default_journal", batchParams.default_journal);
-          }
-
-          formData.append("default_type", batchParams.default_type);
-          formData.append("default_language", batchParams.default_language);
+          formData.append("pdf_file", file)
+          formData.append("extraction_mode", batchParams.extraction_mode)
+          formData.append("default_type", batchParams.default_type)
+          formData.append("default_language", batchParams.default_language)
 
           try {
-            const response = await Crawler.uploadBatchPaper(formData);
+            const response = await Literature.uploadBatchPaper(formData)
 
-            if (response.data && response.data.success) {
-              successUploads.push(file.name);
+            if (response.data.data && response.data.data.success) {
+              successUploads.push(file.name)
             } else {
               failedUploads.push({
                 name: file.name,
-                error: response.data?.message || "未知错误",
-              });
+                error: response.data.data?.message || "未知错误",
+              })
             }
           } catch (error) {
             failedUploads.push({
               name: file.name,
               error: error.message || "上传失败",
-            });
+            })
           }
 
           // 更新进度
-          this.uploadedCount = i + 1;
+          this.uploadedCount = i + 1
           this.uploadProgress = Math.round(
             (this.uploadedCount / totalFiles) * 100
-          );
+          )
         }
 
         // 显示上传结果
@@ -681,27 +516,27 @@ export default {
           this.showUploadResult(
             true,
             `成功上传 ${successUploads.length} 个文件`
-          );
-          this.clearBatchFiles();
+          )
+          this.clearBatchFiles()
         } else if (successUploads.length === 0) {
           this.showUploadResult(
             false,
             `所有 ${failedUploads.length} 个文件上传失败`
-          );
+          )
         } else {
           this.showUploadResult(
             true,
             `成功上传 ${successUploads.length} 个文件，${failedUploads.length} 个文件失败`
-          );
+          )
           // 保留失败的文件
           this.batchFiles = this.batchFiles.filter((_, index) => {
             return failedUploads.some(
               (fail) => fail.name === this.batchFiles[index].name
-            );
-          });
+            )
+          })
         }
       } finally {
-        this.batchUploading = false;
+        this.batchUploading = false
       }
     },
 
@@ -711,19 +546,19 @@ export default {
         show: true,
         success,
         message,
-      };
+      }
 
       // 5秒后自动关闭
       setTimeout(() => {
-        this.closeUploadResult();
-      }, 5000);
+        this.closeUploadResult()
+      }, 5000)
     },
 
     closeUploadResult() {
-      this.uploadResult.show = false;
+      this.uploadResult.show = false
     },
   },
-};
+}
 </script>
 
 <style scoped>
@@ -799,6 +634,10 @@ h3 {
   align-items: center;
   justify-content: center;
   min-height: 200px;
+  max-height: 300px;
+  /* 添加最大高度限制 */
+  overflow: auto;
+  /* 允许内容溢出时滚动 */
 }
 
 .pdf-upload-area:hover,
@@ -829,27 +668,39 @@ h3 {
 
 .file-preview {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  /* 改为flex-start以便于文本换行 */
   gap: 0.5rem;
   background-color: #f0f7ff;
   padding: 0.75rem 1rem;
   border-radius: 4px;
   width: 100%;
   position: relative;
+  flex-wrap: wrap;
+  /* 允许内容换行 */
 }
 
 .file-preview svg {
   color: #1976d2;
   font-size: 1.5rem;
+  flex-shrink: 0;
+  /* 防止图标缩小 */
 }
 
 .file-preview p {
   flex: 1;
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
+  /* 允许长单词在任意位置断行 */
+  overflow-wrap: break-word;
+  /* 确保长单词能够断行 */
+  white-space: normal;
+  /* 允许文本正常换行 */
   text-align: left;
+  min-width: 0;
+  /* 确保flex子项可以缩小到比内容更小 */
+  max-width: 100%;
+  /* 限制最大宽度 */
 }
 
 .remove-btn {
@@ -862,6 +713,10 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  /* 防止按钮缩小 */
+  align-self: flex-start;
+  /* 将按钮定位在顶部 */
 }
 
 .remove-btn:hover {
@@ -973,13 +828,18 @@ label.required::after {
 .batch-file-item svg {
   color: #1976d2;
   font-size: 1.25rem;
+  flex-shrink: 0;
+  /* 防止图标缩小 */
 }
 
 .file-name {
   flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
+  /* 允许长单词在任意位置断行 */
+  overflow-wrap: break-word;
+  /* 确保长单词能够断行 */
+  white-space: normal;
+  /* 允许文本正常换行 */
 }
 
 .batch-upload-options {

@@ -9,13 +9,12 @@
               <Back />
             </el-icon>
             返回检索结果
-            <!-- <span class="back-icon">←</span>  -->
           </router-link>
 
           <div class="action-buttons">
-            <button class="action-btn" @click="toggleFavorite">
-              <span :class="['icon', isFavorite ? 'favorited' : '']">★</span>
-              {{ isFavorite ? "已收藏" : "收藏" }}
+            <button class="action-btn" @click="showCollectionDialog">
+              <span :class="['icon', isInAnyCollection ? 'favorited' : '']">★</span>
+              {{ isInAnyCollection ? "已收藏" : "收藏" }}
             </button>
 
             <button class="action-btn" @click="toggleTranslation">
@@ -30,22 +29,16 @@
           </div>
         </div>
 
-        <h1>{{ article.title }}</h1>
+        <h1>{{ showTranslation && translatedTitle ? translatedTitle : article.title }}</h1>
 
         <div class="article-meta">
           <div class="meta-row">
             <span class="meta-label">作者:</span>
             <span class="meta-value">
-              <span
-                v-for="(author, index) in article.authors"
-                :key="index"
-                class="author-name"
-                @click="navigateToAuthor(author.id)"
-              >
-                {{ author.name
-                }}{{ index < article.authors.length - 1 ? ", " : "" }}
+              <span v-for="(author, index) in article.authors" :key="index" class="author-name"
+                @click="navigateToAuthor(author.id)">
+                {{ author.name }}{{ index < article.authors.length - 1 ? ", " : "" }} </span>
               </span>
-            </span>
           </div>
 
           <div class="meta-row">
@@ -55,19 +48,13 @@
 
           <div class="meta-row">
             <span class="meta-label">发表日期:</span>
-            <span class="meta-value">{{
-              formatDate(article.publication_date)
-            }}</span>
+            <span class="meta-value">{{ formatDate(article.publication_date) }}</span>
           </div>
 
           <div class="meta-row">
             <span class="meta-label">DOI:</span>
             <span class="meta-value">
-              <a
-                :href="'https://doi.org/' + article.doi"
-                target="_blank"
-                class="doi-link"
-              >
+              <a :href="'https://doi.org/' + article.doi" target="_blank" class="doi-link">
                 {{ article.doi }}
               </a>
             </span>
@@ -79,25 +66,18 @@
         <div class="main-content">
           <div class="section-card">
             <h2>摘要</h2>
-            <div v-if="showTranslation && article.translated_abstract">
-              {{ article.translated_abstract }}
+            <div v-if="showTranslation && translatedAbstract">
+              {{ translatedAbstract }}
             </div>
             <div v-else>
               {{ article.abstract }}
             </div>
           </div>
 
-          <div
-            class="section-card"
-            v-if="article.keywords && article.keywords.length > 0"
-          >
+          <div class="section-card" v-if="article.keywords && article.keywords.length > 0">
             <h2>关键词</h2>
             <div class="keywords">
-              <span
-                v-for="(keyword, index) in article.keywords"
-                :key="index"
-                class="keyword-tag"
-              >
+              <span v-for="(keyword, index) in article.keywords" :key="index" class="keyword-tag">
                 {{ keyword }}
               </span>
             </div>
@@ -105,44 +85,29 @@
 
           <div class="section-card">
             <h2>全文</h2>
-            <!-- 这里使用 markdown-shower 组件 -->
             <div class="content-placeholder">
-              {{
-                showTranslation && article.translated_content
-                  ? article.translated_content
-                  : article.full_text || "全文内容将在此显示"
-              }}
+              {{ article.full_text || "全文内容将在此显示" }}
             </div>
           </div>
 
-          <div
-            class="section-card"
-            v-if="article.references && article.references.length > 0"
-          >
+          <div class="section-card" v-if="article.references && article.references.length > 0">
             <h2>参考文献</h2>
             <ul class="references-list">
-              <li
-                v-for="(reference, index) in article.references"
-                :key="index"
-                class="reference-item"
-                @click="navigateToReference(reference.id)"
-              >
+              <li v-for="(reference, index) in article.references" :key="index" class="reference-item"
+                @click="navigateToReference(reference.id)">
                 {{ reference.authors }} ({{ reference.year }}).
                 {{ reference.title }}.
-                <span class="reference-journal">{{ reference.journal }}</span
-                >.
+                <span class="reference-journal">{{ reference.journal }}</span>.
               </li>
             </ul>
           </div>
 
           <div class="section-card">
             <h2>个人笔记</h2>
-            <textarea
-              v-model="personalNotes"
-              class="notes-textarea"
-              placeholder="在此添加您的个人笔记..."
-              @change="saveNotes"
-            ></textarea>
+            <textarea v-model="personalNotes" class="notes-textarea" placeholder="在此添加您的个人笔记..."></textarea>
+            <div class="notes-actions">
+              <primary-button @click="saveNotes" class="save-notes-btn">保存笔记</primary-button>
+            </div>
           </div>
         </div>
 
@@ -155,9 +120,7 @@
             </div>
             <div class="info-item">
               <span class="info-label">文献类型:</span>
-              <span class="info-value">{{
-                article.publication_type || "研究文章"
-              }}</span>
+              <span class="info-value">{{ article.publication_type || "研究文章" }}</span>
             </div>
             <div class="info-item" v-if="article.publisher">
               <span class="info-label">出版商:</span>
@@ -165,26 +128,25 @@
             </div>
             <div class="info-item" v-if="article.journal">
               <span class="info-label">影响因子:</span>
-              <span class="info-value">{{
-                article.journal.impact_factor || "N/A"
-              }}</span>
+              <span class="info-value">{{ article.journal.impact_factor || "N/A" }}</span>
             </div>
           </div>
+
           <!-- AI助手 -->
           <AiAssistant :literatureId="articleId" />
+
           <div class="sidebar-card">
             <h3>相关文献</h3>
             <div class="related-articles">
-              <div
-                v-for="(related, index) in relatedArticles"
-                :key="index"
-                class="related-article"
-                @click="navigateToArticle(related.id)"
-              >
+              <div v-if="relatedArticles.length === 0" class="no-related">
+                暂无相关文献
+              </div>
+              <div v-for="(related, index) in relatedArticles" :key="index" class="related-article"
+                @click="navigateToArticle(related.id)">
                 <div class="related-title">{{ related.title }}</div>
                 <div class="related-meta">
-                  {{ related.authors.slice(0, 1).join(", ") }} 等.
-                  {{ new Date(related.publication_date).getFullYear() }}
+                  {{ getAuthorDisplay(related.authors) }}
+                  {{ related.publication_date ? new Date(related.publication_date).getFullYear() : '' }}
                 </div>
               </div>
             </div>
@@ -195,66 +157,56 @@
             <div class="summary-content">
               {{ aiSummary }}
             </div>
-            <primary-button
-              :fullWidth="true"
-              @click="generateAISummary"
-              :disabled="isGeneratingSummary"
-              class="ai-summary-btn"
-            >
+            <primary-button :fullWidth="true" @click="generateAISummary" :disabled="isGeneratingSummary"
+              class="ai-summary-btn">
               {{ aiSummary ? "重新生成总结" : "生成AI总结" }}
             </primary-button>
-          </div>
-
-          <div class="sidebar-card">
-            <h3>添加到收藏夹</h3>
-            <div class="collections-list">
-              <div
-                v-for="(collection, index) in collections"
-                :key="index"
-                class="collection-item"
-                :class="{ active: isInCollection(collection.id) }"
-                @click="toggleCollection(collection.id)"
-              >
-                <span class="collection-icon">{{
-                  isInCollection(collection.id) ? "✓" : "+"
-                }}</span>
-                <span class="collection-name">{{ collection.name }}</span>
-              </div>
-            </div>
-            <div class="create-collection">
-              <input
-                type="text"
-                v-model="newCollectionName"
-                placeholder="新建收藏夹..."
-                @keyup.enter="createNewCollection"
-              />
-              <button
-                @click="createNewCollection"
-                :disabled="!newCollectionName.trim()"
-              >
-                创建
-              </button>
-            </div>
           </div>
         </div>
       </div>
     </div>
-
     <div class="loading-container" v-else>
       <div class="spinner"></div>
       <p>正在加载文献详情...</p>
     </div>
+    <!-- 收藏夹选择对话框 -->
+    <el-dialog title="选择收藏夹" v-model="collectionDialogVisible" width="400px">
+      <div class="collections-dialog">
+        <div v-if="collections.length === 0" class="no-collections">
+          您还没有创建收藏夹
+        </div>
+        <div v-else class="collections-list-dialog">
+          <div v-for="(collection, index) in collections" :key="index" class="collection-item-dialog"
+            @click="toggleCollectionSelection(collection.id)">
+            <el-checkbox v-model="collection.selected"></el-checkbox>
+            <span class="collection-name">{{ collection.name }}</span>
+          </div>
+        </div>
+
+        <div class="create-collection-dialog">
+          <el-input v-model="newCollectionName" placeholder="创建新收藏夹..." @keyup.enter="createNewCollection"></el-input>
+          <el-button type="primary" @click="createNewCollection" :disabled="!newCollectionName.trim()">创建</el-button>
+        </div>
+
+        <div class="dialog-footer">
+          <el-button @click="collectionDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveCollectionSelections">确定</el-button>
+        </div>
+      </div>
+    </el-dialog>
+
+
 
     <site-footer />
   </div>
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import SiteFooter from "@/components/layout/SiteFooter.vue";
-import Literature from "@/api/Literature";
-import { Back } from "@element-plus/icons-vue";
-import AiAssistant from "@/components/AiAssistant.vue";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import SiteFooter from "@/components/layout/SiteFooter.vue"
+import Literature from "@/api/Literature"
+import { Back } from "@element-plus/icons-vue"
+import AiAssistant from "@/components/AiAssistant.vue"
 export default {
   name: "LiteratureDetail",
   components: {
@@ -270,9 +222,7 @@ export default {
       article: {
         title: "",
         abstract: "",
-        translated_abstract: "",
         content: "",
-        translated_content: "",
         publication_date: "",
         doi: "",
         authors: [],
@@ -287,198 +237,217 @@ export default {
         type: "",
       },
       personalNotes: "",
-      isFavorite: false,
+      isInAnyCollection: false,
       showTranslation: false,
+      translatedTitle: "",
+      translatedAbstract: "",
       relatedArticles: [],
       collections: [],
-      selectedCollections: [],
+      selectedCollectionIds: [],
       newCollectionName: "",
+      collectionDialogVisible: false,
       aiSummary: "",
       isGeneratingSummary: false,
-    };
+    }
   },
   methods: {
     async loadArticleDetail() {
-      this.isLoading = true;
+      this.isLoading = true
       try {
         if (!this.articleId) {
-          this.articleId = this.$route.params.id;
+          this.articleId = this.$route.params.id
         }
+        const response = await Literature.detail(this.articleId)
+        // console.log("文献详情", response)
+        this.article = response.data.data
+        this.reference = this.article.references
+        await this.loadUserInteraction()
 
-        const response = await Literature.detail(this.articleId);
-        console.log("文献详情", response);
-        this.article = response.data.data;
+        await this.loadUserCollections()
 
-        // console.log(this.article.title)
-        await this.loadUserInteraction();
-
-        // 加载相关文献
-        await this.loadRelatedArticles();
-
-        // 加载用户收藏夹
-        await this.loadUserCollections();
+        if (this.article.title) {
+          this.translateText(this.article.title, 'title')
+        }
+        if (this.article.abstract) {
+          this.translateText(this.article.abstract, 'abstract')
+        }
       } catch (error) {
-        console.error("Error loading article details:", error);
+        console.error("Error loading article details:", error)
+        this.$message.error(error.response.data.message)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     async loadUserInteraction() {
       try {
-        const response = await Literature.getInteractions({
-          literature_id: this.articleId,
-        });
-
-        const interaction = response.data.items[0];
-
+        const response = await Literature.getInteractions(this.articleId)
+        const interaction = response.data.data
+        console.log(interaction)
         if (interaction) {
-          this.isFavorite = interaction.is_favorite || false;
-          this.personalNotes = interaction.personal_notes || "";
+          this.personalNotes = interaction.personal_notes || ""
         }
       } catch (error) {
-        console.error("Error loading user interaction:", error);
-      }
-    },
-    async loadRelatedArticles() {
-      try {
-        // 假设这里有一个获取相关文献的接口
-        const response = await Literature.getLitTree(this.articleId);
-
-        // 过滤出相关文献
-        this.relatedArticles = response.data.related_articles || [];
-      } catch (error) {
-        console.error("Error loading related articles:", error);
+        console.log(error.response.data.message)
+        console.error("Error loading user interaction:", error)
       }
     },
     async loadUserCollections() {
       try {
-        const response = await Literature.getCollections();
+        const response = await Literature.getCollections(this.articleId)
 
-        this.collections = response.data.items || [];
+        this.collections = (response.data.data || []).map(collection => ({
+          ...collection,
+          selected: collection.has_literature
+        }))
 
-        // 查找该文献所在的收藏夹
-        for (const collection of this.collections) {
-          if (
-            collection.literature_ids &&
-            collection.literature_ids.includes(this.articleId)
-          ) {
-            this.selectedCollections.push(collection.id);
-          }
-        }
+        this.isInAnyCollection = this.collections.some(collection => collection.has_literature)
+
+        this.selectedCollectionIds = this.collections
+          .filter(collection => collection.has_literature)
+          .map(collection => collection.id)
       } catch (error) {
-        console.error("Error loading user collections:", error);
+        console.error("Error loading user collections:", error)
       }
     },
     formatDate(dateString) {
-      if (!dateString) return "";
+      if (!dateString) return ""
 
-      const date = new Date(dateString);
-      return date.toLocaleDateString("zh-CN");
+      const date = new Date(dateString)
+      return date.toLocaleDateString("zh-CN")
     },
-    async toggleFavorite() {
+    showCollectionDialog() {
+      this.collectionDialogVisible = true
+    },
+    toggleCollectionSelection(collectionId) {
+      const collection = this.collections.find(c => c.id === collectionId)
+      if (collection) {
+        collection.selected = !collection.selected
+      }
+    },
+    async saveCollectionSelections() {
       try {
-        this.isFavorite = !this.isFavorite;
+        // 获取选中的收藏夹ID
+        const selectedIds = this.collections
+          .filter(collection => collection.selected)
+          .map(collection => collection.id)
 
-        await Literature.createInteraction({
-          literature_id: this.articleId,
-          is_favorite: this.isFavorite,
-        });
+        // 调用API更新收藏夹
+        await Literature.updateLiteratureCollections(this.articleId, {
+          collection_ids: selectedIds
+        })
+
+        // 更新已选择的收藏夹ID
+        this.selectedCollectionIds = [...selectedIds]
+
+        // 更新是否已收藏到任意收藏夹
+        this.isInAnyCollection = selectedIds.length > 0
+
+        // 关闭对话框
+        this.collectionDialogVisible = false
       } catch (error) {
-        console.error("Error toggling favorite:", error);
-        this.isFavorite = !this.isFavorite; // 恢复原状态
+        console.error("Error updating collections:", error)
+      }
+    },
+    async createNewCollection() {
+      const name = this.newCollectionName.trim()
+
+      if (!name) return
+
+      try {
+        const response = await Literature.createCollection({
+          name,
+          literature_ids: [this.articleId],
+        })
+
+        // 添加新创建的收藏夹并设为选中
+        const newCollection = {
+          ...response.data,
+          selected: true,
+          has_literature: true
+        }
+
+        this.collections.push(newCollection)
+        this.selectedCollectionIds.push(newCollection.id)
+        this.isInAnyCollection = true
+
+        // 清空输入
+        this.newCollectionName = ""
+      } catch (error) {
+        console.error("Error creating collection:", error)
       }
     },
     toggleTranslation() {
-      this.showTranslation = !this.showTranslation;
+      this.showTranslation = !this.showTranslation
+    },
+    async translateText(text, type) {
+      try {
+        const response = await Literature.translate({ "text": text })
+
+        if (type === 'title') {
+          this.translatedTitle = response.data.data.translated
+        } else if (type === 'abstract') {
+          this.translatedAbstract = response.data.data.translated
+        }
+      } catch (error) {
+        console.error(`Error translating ${type}:`, error)
+      }
     },
     async saveNotes() {
       try {
         await Literature.createInteraction({
           literature_id: this.articleId,
           personal_notes: this.personalNotes,
-        });
+        })
+        this.$message.success('笔记已保存')
       } catch (error) {
-        console.error("Error saving notes:", error);
+        console.error("Error saving notes:", error)
+        this.$message.error('笔记保存失败')
       }
     },
     downloadPDF() {
-      // 这里实现下载PDF的功能
       if (this.article.pdf_url) {
-        window.open(this.article.pdf_url, "_blank");
+        window.open(this.article.pdf_url, "_blank")
       } else {
-        alert("PDF暂不可用");
+        this.$message.warning('PDF暂不可用')
       }
     },
     navigateToAuthor(authorId) {
       if (authorId) {
-        this.$router.push(`/authors/${authorId}`);
+        this.$router.push(`/authors/${authorId}`)
       }
     },
     navigateToReference(referenceId) {
       if (referenceId) {
-        this.$router.push(`/literature/${referenceId}`);
+        this.$router.push(`/literature/${referenceId}`)
       }
     },
     navigateToArticle(articleId) {
       if (articleId) {
-        this.$router.push(`/literature/${articleId}`);
+        this.$router.push(`/literature/${articleId}`)
       }
     },
-    isInCollection(collectionId) {
-      return this.selectedCollections.includes(collectionId);
-    },
-    async toggleCollection(collectionId) {
-      const isSelected = this.isInCollection(collectionId);
+    getAuthorDisplay(authors) {
+      if (!authors || !authors.length) return ''
 
-      try {
-        // const collection = this.collections.find((c) => c.id === collectionId);
-
-        if (isSelected) {
-          // 从收藏夹中移除
-          await Literature.updateCollection(collectionId, {
-            remove_literature_ids: [this.articleId],
-          });
-
-          this.selectedCollections = this.selectedCollections.filter(
-            (id) => id !== collectionId
-          );
-        } else {
-          // 添加到收藏夹
-          await Literature.updateCollection(collectionId, {
-            add_literature_ids: [this.articleId],
-          });
-
-          this.selectedCollections.push(collectionId);
-        }
-      } catch (error) {
-        console.error("Error updating collection:", error);
+      if (typeof authors === 'string') {
+        return authors
       }
-    },
-    async createNewCollection() {
-      const name = this.newCollectionName.trim();
 
-      if (!name) return;
-
-      try {
-        const response = await Literature.createCollection({
-          name,
-          literature_ids: [this.articleId],
-        });
-
-        // 添加新创建的收藏夹
-        this.collections.push(response.data);
-        this.selectedCollections.push(response.data.id);
-
-        // 清空输入
-        this.newCollectionName = "";
-      } catch (error) {
-        console.error("Error creating collection:", error);
+      if (authors.length === 1) {
+        return authors[0].name || authors[0]
       }
+
+      if (authors.length > 1) {
+        const firstAuthor = authors[0].name || authors[0]
+        return `${firstAuthor} 等. `
+      }
+
+      return ''
     },
     async generateAISummary() {
-      if (this.isGeneratingSummary) return;
+      if (this.isGeneratingSummary) return
 
-      this.isGeneratingSummary = true;
+      this.isGeneratingSummary = true
 
       try {
         // 这里可以调用AI生成摘要的接口
@@ -488,28 +457,28 @@ export default {
 
         // 模拟API调用
         setTimeout(() => {
-          this.aiSummary = `这篇文章研究了非酒精性脂肪性肝炎向肝硬化转变的分子机制。通过多组学分析揭示了NASH患者肝脏中炎症反应与细胞外基质累积的分子调控网络，发现了TGF-β1信号通路在肝纤维化进展中的关键作用。研究结果为肝纤维化的精准治疗提供了新的靶点。`;
-          this.isGeneratingSummary = false;
-        }, 2000);
+          this.aiSummary = `这篇文章研究了非酒精性脂肪性肝炎向肝硬化转变的分子机制。通过多组学分析揭示了NASH患者肝脏中炎症反应与细胞外基质累积的分子调控网络，发现了TGF-β1信号通路在肝纤维化进展中的关键作用。研究结果为肝纤维化的精准治疗提供了新的靶点。`
+          this.isGeneratingSummary = false
+        }, 2000)
       } catch (error) {
-        console.error("Error generating AI summary:", error);
-        this.isGeneratingSummary = false;
+        console.error("Error generating AI summary:", error)
+        this.isGeneratingSummary = false
       }
     },
   },
   created() {
-    this.articleId = this.$route.params.id;
-    this.loadArticleDetail();
+    this.articleId = this.$route.params.id
+    this.loadArticleDetail()
   },
   watch: {
     "$route.params.id"(newId) {
       if (newId && newId !== this.articleId) {
-        this.articleId = newId;
-        this.loadArticleDetail();
+        this.articleId = newId
+        this.loadArticleDetail()
       }
     },
   },
-};
+}
 </script>
 
 <style scoped>

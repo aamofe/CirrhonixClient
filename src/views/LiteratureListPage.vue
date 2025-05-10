@@ -11,22 +11,13 @@
         <span>共找到 {{ totalResults }} 条结果</span>
         <div class="sort-options">
           <span>排序: </span>
-          <span
-            :class="{ active: sortBy === 'relevance' }"
-            @click="setSortBy('relevance')"
-          >
+          <span :class="{ active: sortBy === 'relevance' }" @click="setSortBy('relevance')">
             相关度
           </span>
-          <span
-            :class="{ active: sortBy === 'date' }"
-            @click="setSortBy('date')"
-          >
+          <span :class="{ active: sortBy === 'date' }" @click="setSortBy('date')">
             出版日期
           </span>
-          <span
-            :class="{ active: sortBy === 'citations' }"
-            @click="setSortBy('citations')"
-          >
+          <span :class="{ active: sortBy === 'citations' }" @click="setSortBy('citations')">
             引用次数
           </span>
         </div>
@@ -40,45 +31,29 @@
           <p>正在加载文献...</p>
         </div>
 
-        <div v-else-if="results.length === 0" class="no-results">
+        <div v-else-if="sortedResults.length === 0" class="no-results">
           <p>抱歉，未找到符合条件的文献。</p>
           <p>请尝试修改检索词。</p>
         </div>
 
         <template v-else>
-          <literature-item
-            v-for="article in results"
-            :key="article.id"
-            :article="article"
-            @view-detail="viewArticleDetail"
-          />
+          <literature-item v-for="article in paginatedResults" :key="article.id" :article="article"
+            @view-detail="viewArticleDetail" />
 
           <div class="pagination">
-            <span
-              class="page-btn"
-              :class="{ disabled: currentPage === 1 }"
-              @click="changePage(currentPage - 1)"
-            >
+            <span class="page-btn" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
               上一页
             </span>
 
             <template v-for="page in displayedPages" :key="page">
               <span v-if="page === '...'" class="page-ellipsis"> ... </span>
-              <span
-                v-else
-                class="page-number"
-                :class="{ active: page === currentPage }"
-                @click="changePage(page)"
-              >
+              <span v-else class="page-number" :class="{ active: page === currentPage }" @click="changePage(page)">
                 {{ page }}
               </span>
             </template>
 
-            <span
-              class="page-btn"
-              :class="{ disabled: currentPage === totalPages }"
-              @click="changePage(currentPage + 1)"
-            >
+            <span class="page-btn" :class="{ disabled: currentPage === totalPages }"
+              @click="changePage(currentPage + 1)">
               下一页
             </span>
           </div>
@@ -91,10 +66,10 @@
 </template>
 
 <script>
-import SearchBox from "@/components/common/SearchBox.vue";
-import SiteFooter from "@/components/layout/SiteFooter.vue";
-import Literature from "@/api/Literature";
-import LiteratureItem from "@/components/layout/LiteratureItem.vue";
+import SearchBox from "@/components/common/SearchBox.vue"
+import SiteFooter from "@/components/layout/SiteFooter.vue"
+import Literature from "@/api/Literature"
+import LiteratureItem from "@/components/layout/LiteratureItem.vue"
 
 export default {
   name: "LiteratureListPage",
@@ -115,48 +90,103 @@ export default {
       sortBy: "relevance",
       // 添加一个标志来追踪是否有保存的列表状态
       hasListState: false,
-    };
+    }
   },
   computed: {
+    // 排序后的结果
+    sortedResults() {
+      if (!this.results || this.results.length === 0) return []
+
+      // 克隆数组以避免修改原始数据
+      const sorted = [...this.results]
+
+      switch (this.sortBy) {
+        case 'date':
+          return sorted.sort((a, b) => {
+            // 假设有一个名为 publishDate 的字段，如果名称不同需要调整
+            const dateA = new Date(a.publishDate || 0)
+            const dateB = new Date(b.publishDate || 0)
+            return dateB - dateA // 降序(最新的在前)
+          })
+        case 'citations':
+          return sorted.sort((a, b) => {
+            // 假设有一个名为 citationCount 的字段，如果名称不同需要调整
+            const citationsA = a.citationCount || 0
+            const citationsB = b.citationCount || 0
+            return citationsB - citationsA // 降序(引用多的在前)
+          })
+        case 'relevance':
+        default:
+          // 如果已经从后端按相关性排序，则不再排序
+          return sorted
+      }
+    },
+
+    // 当前页面需要展示的结果
+    paginatedResults() {
+      // 计算当前页应该显示的数据
+      const start = (this.currentPage - 1) * this.pageSize
+      const end = start + this.pageSize
+      return this.sortedResults.slice(start, end)
+    },
+
     displayedPages() {
-      const pages = [];
+      const pages = []
       if (this.totalPages <= 7) {
         for (let i = 1; i <= this.totalPages; i++) {
-          pages.push(i);
+          pages.push(i)
         }
       } else {
-        pages.push(1);
+        pages.push(1)
 
         if (this.currentPage > 3) {
-          pages.push("...");
+          pages.push("...")
         }
 
-        const start = Math.max(2, this.currentPage - 1);
-        const end = Math.min(this.totalPages - 1, this.currentPage + 1);
+        const start = Math.max(2, this.currentPage - 1)
+        const end = Math.min(this.totalPages - 1, this.currentPage + 1)
 
         for (let i = start; i <= end; i++) {
-          pages.push(i);
+          pages.push(i)
         }
 
         if (this.currentPage < this.totalPages - 2) {
-          pages.push("...");
+          pages.push("...")
         }
 
-        pages.push(this.totalPages);
+        pages.push(this.totalPages)
       }
-      return pages;
+      return pages
     },
   },
   created() {
+    // 检查 URL 查询参数，优先级高于 sessionStorage
+    const urlQuery = this.$route.query.q
+    if (urlQuery !== undefined) {
+      this.searchQuery = urlQuery
+      if (urlQuery) {
+        this.searchLiterature()
+      } else {
+        this.loadAllLiterature()
+      }
+      return
+    }
+
     // 从 sessionStorage 恢复状态（如果有）
-    this.restoreListState();
+    this.restoreListState()
 
     // 如果没有已保存的状态，则加载所有文献
     if (!this.hasListState) {
-      this.loadAllLiterature();
+      this.loadAllLiterature()
     }
   },
   methods: {
+    // 清除列表状态
+    clearListState() {
+      sessionStorage.removeItem("literatureListState")
+      this.hasListState = false
+    },
+
     // 保存列表状态到 sessionStorage
     saveListState() {
       const listState = {
@@ -166,179 +196,220 @@ export default {
         currentPage: this.currentPage,
         totalPages: this.totalPages,
         sortBy: this.sortBy,
-      };
+      }
 
-      sessionStorage.setItem("literatureListState", JSON.stringify(listState));
-      this.hasListState = true;
+      sessionStorage.setItem("literatureListState", JSON.stringify(listState))
+      this.hasListState = true
     },
 
     // 从 sessionStorage 恢复列表状态
     restoreListState() {
-      const savedState = sessionStorage.getItem("literatureListState");
+      const savedState = sessionStorage.getItem("literatureListState")
 
       if (savedState) {
         try {
-          const state = JSON.parse(savedState);
+          const state = JSON.parse(savedState)
 
           // 恢复列表状态
-          this.searchQuery = state.searchQuery || "";
-          this.results = state.results || [];
-          this.totalResults = state.totalResults || 0;
-          this.currentPage = state.currentPage || 1;
-          this.totalPages = state.totalPages || 1;
-          this.sortBy = state.sortBy || "relevance";
+          this.searchQuery = state.searchQuery || ""
+          this.results = state.results || []
+          this.totalResults = state.totalResults || 0
+          this.currentPage = state.currentPage || 1
+          this.sortBy = state.sortBy || "relevance"
 
-          this.hasListState = true;
+          // 重新计算总页数，以防数据变化
+          this.totalPages = Math.ceil(this.results.length / this.pageSize)
+
+          this.hasListState = true
         } catch (error) {
-          console.error("Error restoring literature list state:", error);
-          this.hasListState = false;
+          console.error("Error restoring literature list state:", error)
+          this.hasListState = false
         }
       } else {
-        this.hasListState = false;
+        this.hasListState = false
       }
     },
 
     async loadAllLiterature() {
-      this.isLoading = true;
+      this.isLoading = true
 
       try {
-        // 使用空格作为查询参数，避免后端报错
-        const response = await Literature.search(
-          " ", // 使用空格而非空字符串，确保后端不会拒绝请求
-          this.currentPage,
-          this.pageSize
-        );
-
+        const response = await Literature.list({
+          page: 1,
+          size: this.pageSize
+        })
         if (response && response.data) {
-          this.results = response?.data?.data?.items || [];
-          this.totalResults = response?.data?.data?.total || 0;
-          this.totalPages = Math.ceil(this.totalResults / this.pageSize);
+          this.results = response?.data?.data?.items || []
+          this.totalResults = response?.data?.data?.total || 0
+          this.totalPages = Math.ceil(this.totalResults / this.pageSize)
         } else {
-          console.error("Unexpected response format:", response);
-          this.results = [];
-          this.totalResults = 0;
-          this.totalPages = 1;
+          console.error("Unexpected response format:", response)
+          this.results = []
+          this.totalResults = 0
+          this.totalPages = 1
         }
       } catch (error) {
-        console.error("Error loading literature list:", error);
-        this.results = [];
-        this.totalResults = 0;
-        this.totalPages = 1;
+        console.error("Error loading literature list:", error)
+        this.results = []
+        this.totalResults = 0
+        this.totalPages = 1
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
 
     async onSearch(query) {
-      this.searchQuery = query;
-      this.currentPage = 1;
+      // 重置当前页面到第一页
+      this.currentPage = 1
 
-      if (!query || query.trim() === "") {
-        // 如果搜索词为空，仍然使用搜索API但传入一个空格
-        this.searchQuery = " ";
+      // 设置搜索查询文本
+      this.searchQuery = query
+
+      // 清除之前保存的状态
+      this.clearListState()
+
+      if (!query) {
+        // 如果搜索词为空，清除搜索状态并加载所有文献
+        await this.loadAllLiterature()
+
+        // 更新URL，去掉q参数
+        this.updateUrl()
+      } else {
+        // 搜索特定关键词
+        await this.searchLiterature()
+
+        // 更新URL，添加q参数
+        this.updateUrl()
       }
 
-      await this.searchLiterature();
-      this.saveListState();
+      // 搜索完成后保存新状态
+      this.saveListState()
     },
 
     async searchLiterature() {
-      this.isLoading = true;
+      this.isLoading = true
 
       try {
-        // 正确地传递参数: query, page, size
+        // 搜索API调用
         const response = await Literature.search(
-          this.searchQuery, // 直接传递查询字符串
-          this.currentPage, // 直接传递页码
-          this.pageSize // 直接传递每页大小
-        );
+          this.searchQuery,
+          this.currentPage,
+          this.pageSize
+        )
 
         if (response && response.data) {
-          this.results = response?.data?.data?.items || [];
-          this.totalResults = response?.data?.data?.total || 0;
-          this.totalPages = Math.ceil(this.totalResults / this.pageSize);
+          this.results = response?.data?.data?.items || []
+          this.totalResults = response?.data?.data?.total || 0
+          this.totalPages = Math.ceil(this.totalResults / this.pageSize)
         } else {
-          console.error("Unexpected response format:", response);
-          this.results = [];
-          this.totalResults = 0;
-          this.totalPages = 1;
+          console.error("Unexpected response format:", response)
+          this.results = []
+          this.totalResults = 0
+          this.totalPages = 1
         }
       } catch (error) {
-        console.error("Error searching literature:", error);
-        this.results = [];
-        this.totalResults = 0;
-        this.totalPages = 1;
+        console.error("Error searching literature:", error)
+        this.results = []
+        this.totalResults = 0
+        this.totalPages = 1
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
 
-    async setSortBy(sort) {
-      this.sortBy = sort;
+    // 更新URL，但不重新加载页面
+    updateUrl() {
+      const query = { ...this.$route.query }
 
-      // 由于后端API不支持sortBy参数，我们这里只能重新请求数据
-      // 当前只使用searchLiterature方法获取数据，因为loadAllLiterature也使用searchLiterature
-      await this.searchLiterature();
-      this.saveListState();
+      if (this.searchQuery) {
+        query.q = this.searchQuery
+      } else {
+        delete query.q
+      }
+
+      query.page = this.currentPage
+
+      this.$router.replace({
+        query
+      }).catch(err => {
+        // 忽略重复导航的错误
+        if (err.name !== 'NavigationDuplicated') {
+          throw err
+        }
+      })
     },
 
-    async changePage(page) {
+    setSortBy(sort) {
+      // 前端排序，无需请求后端
+      this.sortBy = sort
+      this.currentPage = 1 // 重置到第一页
+      this.saveListState()
+    },
+
+    changePage(page) {
       if (page < 1 || page > this.totalPages || page === this.currentPage) {
-        return;
+        return
       }
 
-      this.currentPage = page;
-      await this.searchLiterature();
-      this.saveListState();
+      this.currentPage = page
+
+      // 更新URL的页码参数
+      this.updateUrl()
+
+      // 由于使用前端排序和分页，这里无需再请求API
+      this.saveListState()
+
+      // 滚动到页面顶部以便用户查看新结果
+      window.scrollTo(0, 0)
     },
 
     viewArticleDetail(id) {
-      // 保存当前列表状态，然后导航到详情页
-      this.saveListState();
+      this.saveListState()
       this.$router.push({
         name: "literature-detail",
         params: { id },
-      });
+      })
     },
 
     parseQueryParams() {
-      const query = this.$route.query;
+      const query = this.$route.query
 
-      // 如果已经有保存的列表状态，不要覆盖它，除非URL参数明确要求新的搜索
       if (this.hasListState && !query.q && !query.page) {
-        return;
+        return
       }
 
-      if (query.q) {
-        this.searchQuery = query.q;
-      } else {
-        this.searchQuery = " "; // 默认使用空格
-      }
-
-      if (query.page) {
-        const page = parseInt(query.page, 10);
-        if (!isNaN(page) && page > 0) {
-          this.currentPage = page;
+      if (query.q !== undefined) {
+        this.searchQuery = query.q || ""
+        if (this.searchQuery) {
+          this.searchLiterature()
+        } else {
+          this.loadAllLiterature()
         }
       }
 
-      this.searchLiterature();
+      if (query.page) {
+        const page = parseInt(query.page, 10)
+        if (!isNaN(page) && page > 0) {
+          this.currentPage = page
+        }
+      }
     },
   },
   mounted() {
-    this.parseQueryParams();
+    this.parseQueryParams()
   },
   watch: {
     "$route.query"(newQuery) {
-      this.parseQueryParams();
+      this.parseQueryParams()
     },
   },
   beforeUnmount() {
     // 在组件卸载前保存状态
-    this.saveListState();
+    this.saveListState()
   },
-};
+}
 </script>
+
 <style scoped>
 .literature-list-page {
   background-color: #f5fbff;
