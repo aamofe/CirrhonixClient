@@ -35,9 +35,8 @@
           <div class="meta-row">
             <span class="meta-label">作者:</span>
             <span class="meta-value">
-              <span v-for="(author, index) in article.authors" :key="index" class="author-name"
-                @click="navigateToAuthor(author.id)">
-                {{ author.name }}{{ index < article.authors.length - 1 ? ", " : "" }} </span>
+              <span v-for="(author, index) in article.authors" :key="index" class="author-name">
+                {{ author }}{{ index < article.authors.length - 1 ? ", " : "" }} </span>
               </span>
           </div>
 
@@ -58,6 +57,27 @@
                 {{ article.doi }}
               </a>
             </span>
+          </div>
+
+          <!-- 移动文章信息到这里 -->
+          <div class="meta-row">
+            <span class="meta-label">引用次数:</span>
+            <span class="meta-value">{{ article.citation_count || 0 }}</span>
+          </div>
+
+          <div class="meta-row">
+            <span class="meta-label">文献类型:</span>
+            <span class="meta-value">{{ article.publication_type || "研究文章" }}</span>
+          </div>
+
+          <div class="meta-row" v-if="article.publisher">
+            <span class="meta-label">出版商:</span>
+            <span class="meta-value">{{ article.publisher || "N/A" }}</span>
+          </div>
+
+          <div class="meta-row" v-if="article.journal">
+            <span class="meta-label">影响因子:</span>
+            <span class="meta-value">{{ article.journal.impact_factor || "N/A" }}</span>
           </div>
         </div>
       </div>
@@ -101,34 +121,15 @@
               </li>
             </ul>
           </div>
-
-          <div class="section-card">
-            <h2>个人笔记</h2>
-            <textarea v-model="personalNotes" class="notes-textarea" placeholder="在此添加您的个人笔记..."></textarea>
-            <div class="notes-actions">
-              <primary-button @click="saveNotes" class="save-notes-btn">保存笔记</primary-button>
-            </div>
-          </div>
         </div>
 
         <div class="sidebar">
+          <!-- 将个人笔记移动到这里作为第一个侧边栏组件 -->
           <div class="sidebar-card">
-            <h3>文章信息</h3>
-            <div class="info-item">
-              <span class="info-label">引用次数:</span>
-              <span class="info-value">{{ article.citation_count || 0 }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">文献类型:</span>
-              <span class="info-value">{{ article.publication_type || "研究文章" }}</span>
-            </div>
-            <div class="info-item" v-if="article.publisher">
-              <span class="info-label">出版商:</span>
-              <span class="info-value">{{ article.publisher || "N/A" }}</span>
-            </div>
-            <div class="info-item" v-if="article.journal">
-              <span class="info-label">影响因子:</span>
-              <span class="info-value">{{ article.journal.impact_factor || "N/A" }}</span>
+            <h3>个人笔记</h3>
+            <textarea v-model="personalNotes" class="notes-textarea" placeholder="在此添加您的个人笔记..."></textarea>
+            <div class="notes-actions">
+              <primary-button @click="saveNotes" class="save-notes-btn">保存笔记</primary-button>
             </div>
           </div>
 
@@ -170,43 +171,20 @@
       <p>正在加载文献详情...</p>
     </div>
     <!-- 收藏夹选择对话框 -->
-    <el-dialog title="选择收藏夹" v-model="collectionDialogVisible" width="400px">
-      <div class="collections-dialog">
-        <div v-if="collections.length === 0" class="no-collections">
-          您还没有创建收藏夹
-        </div>
-        <div v-else class="collections-list-dialog">
-          <div v-for="(collection, index) in collections" :key="index" class="collection-item-dialog"
-            @click="toggleCollectionSelection(collection.id)">
-            <el-checkbox v-model="collection.selected"></el-checkbox>
-            <span class="collection-name">{{ collection.name }}</span>
-          </div>
-        </div>
-
-        <div class="create-collection-dialog">
-          <el-input v-model="newCollectionName" placeholder="创建新收藏夹..." @keyup.enter="createNewCollection"></el-input>
-          <el-button type="primary" @click="createNewCollection" :disabled="!newCollectionName.trim()">创建</el-button>
-        </div>
-
-        <div class="dialog-footer">
-          <el-button @click="collectionDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="saveCollectionSelections">确定</el-button>
-        </div>
-      </div>
-    </el-dialog>
-
-
-
+    <CollectionDialog title="选择收藏夹" :visible.sync="collectionDialogVisible" :literature-id="articleId"
+      :collections="collections" @collections-updated="onCollectionsUpdated"
+      @cancel="collectionDialogVisible = false" />
     <site-footer />
   </div>
 </template>
-
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
 import SiteFooter from "@/components/layout/SiteFooter.vue"
 import Literature from "@/api/Literature"
 import { Back } from "@element-plus/icons-vue"
 import AiAssistant from "@/components/AiAssistant.vue"
+import CollectionDialog from "@/components/layout/CollectionDialog.vue" // 导入新组件
+
 export default {
   name: "LiteratureDetail",
   components: {
@@ -214,6 +192,7 @@ export default {
     SiteFooter,
     Back,
     AiAssistant,
+    CollectionDialog
   },
   data() {
     return {
@@ -243,8 +222,8 @@ export default {
       translatedAbstract: "",
       relatedArticles: [],
       collections: [],
-      selectedCollectionIds: [],
-      newCollectionName: "",
+      // selectedCollectionIds: [],
+      // newCollectionName: "",
       collectionDialogVisible: false,
       aiSummary: "",
       isGeneratingSummary: false,
@@ -258,9 +237,8 @@ export default {
           this.articleId = this.$route.params.id
         }
         const response = await Literature.detail(this.articleId)
-        // console.log("文献详情", response)
         this.article = response.data.data
-        this.reference = this.article.references
+        // console.log(this.article.authors)
         await this.loadUserInteraction()
 
         await this.loadUserCollections()
@@ -282,12 +260,10 @@ export default {
       try {
         const response = await Literature.getInteractions(this.articleId)
         const interaction = response.data.data
-        console.log(interaction)
         if (interaction) {
           this.personalNotes = interaction.personal_notes || ""
         }
       } catch (error) {
-        console.log(error.response.data.message)
         console.error("Error loading user interaction:", error)
       }
     },
@@ -318,64 +294,7 @@ export default {
     showCollectionDialog() {
       this.collectionDialogVisible = true
     },
-    toggleCollectionSelection(collectionId) {
-      const collection = this.collections.find(c => c.id === collectionId)
-      if (collection) {
-        collection.selected = !collection.selected
-      }
-    },
-    async saveCollectionSelections() {
-      try {
-        // 获取选中的收藏夹ID
-        const selectedIds = this.collections
-          .filter(collection => collection.selected)
-          .map(collection => collection.id)
 
-        // 调用API更新收藏夹
-        await Literature.updateLiteratureCollections(this.articleId, {
-          collection_ids: selectedIds
-        })
-
-        // 更新已选择的收藏夹ID
-        this.selectedCollectionIds = [...selectedIds]
-
-        // 更新是否已收藏到任意收藏夹
-        this.isInAnyCollection = selectedIds.length > 0
-
-        // 关闭对话框
-        this.collectionDialogVisible = false
-      } catch (error) {
-        console.error("Error updating collections:", error)
-      }
-    },
-    async createNewCollection() {
-      const name = this.newCollectionName.trim()
-
-      if (!name) return
-
-      try {
-        const response = await Literature.createCollection({
-          name,
-          literature_ids: [this.articleId],
-        })
-
-        // 添加新创建的收藏夹并设为选中
-        const newCollection = {
-          ...response.data,
-          selected: true,
-          has_literature: true
-        }
-
-        this.collections.push(newCollection)
-        this.selectedCollectionIds.push(newCollection.id)
-        this.isInAnyCollection = true
-
-        // 清空输入
-        this.newCollectionName = ""
-      } catch (error) {
-        console.error("Error creating collection:", error)
-      }
-    },
     toggleTranslation() {
       this.showTranslation = !this.showTranslation
     },
@@ -411,11 +330,7 @@ export default {
         this.$message.warning('PDF暂不可用')
       }
     },
-    navigateToAuthor(authorId) {
-      if (authorId) {
-        this.$router.push(`/authors/${authorId}`)
-      }
-    },
+
     navigateToReference(referenceId) {
       if (referenceId) {
         this.$router.push(`/literature/${referenceId}`)
@@ -465,6 +380,14 @@ export default {
         this.isGeneratingSummary = false
       }
     },
+    onCollectionsUpdated(updatedCollections) {
+      // 更新本地收藏夹数据
+      this.collections = updatedCollections
+
+      // 更新是否已收藏到任意收藏夹
+      this.isInAnyCollection = updatedCollections.some(collection => collection.selected)
+    },
+
   },
   created() {
     this.articleId = this.$route.params.id
