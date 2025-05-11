@@ -258,7 +258,7 @@ export default {
     },
     async loadUserInteraction() {
       try {
-        const response = await Literature.getInteractions(this.articleId)
+        const response = await Literature.getInteraction(this.articleId)
         const interaction = response.data.data
         if (interaction) {
           this.personalNotes = interaction.personal_notes || ""

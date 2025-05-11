@@ -71,26 +71,6 @@
         </div>
       </section>
 
-      <!-- 最新文献 -->
-      <div class="content-sections">
-        <section class="section-card">
-          <h2 class="section-header">最新文献</h2>
-          <div class="card-list">
-            <literature-card v-for="article in recentArticles" :key="article.id" :article="article"
-              @click="viewArticle(article.id)" />
-          </div>
-        </section>
-
-        <!-- 知名专家 -->
-        <section class="section-card">
-          <h2 class="section-header">领域专家</h2>
-          <div class="card-list">
-            <author-card v-for="author in popularAuthors" :key="author.id" :author="author"
-              @click="viewAuthorProfile(author.id)" />
-          </div>
-        </section>
-      </div>
-
       <!-- 语义分析 -->
       <section class="semantic-analysis">
         <h2 class="section-header">热门研究概念网络</h2>
@@ -226,7 +206,7 @@ export default {
           this.featuredArticle = {
             id: article.id,
             title: article.title,
-            journal: article.journal?.name || "Unknown Journal",
+            journal: article.source || "Unknown Journal",
             publicationDate: article.publication_date,
             citations: article.citation_count || 0,
             abstract: article.abstract || "暂无摘要",
@@ -260,12 +240,6 @@ export default {
           params: { id },
         })
       }
-    },
-    viewAuthorProfile(id) {
-      this.$router.push({
-        name: "authors-detail",
-        params: { id },
-      })
     },
   },
   async mounted() {
@@ -501,26 +475,9 @@ export default {
 }
 
 /* 内容区域 */
-.content-sections {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  margin-bottom: 40px;
-}
 
-.section-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 25px;
-  height: 100%;
-}
 
-.card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
+
 
 /* 语义分析区域 */
 .semantic-analysis {
@@ -557,9 +514,7 @@ export default {
 }
 
 @media (max-width: 980px) {
-  .content-sections {
-    grid-template-columns: 1fr;
-  }
+
 
   .stats-container {
     justify-content: center;

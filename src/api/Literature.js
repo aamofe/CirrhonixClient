@@ -80,7 +80,6 @@ export default class Literature {
   }
 
   /**
-   * 创建或更新用户与文献的交互信息
    * @param {Object} data - 交互数据
    * @param {number} data.literature_id - 文献ID
    * @param {boolean} [data.is_read] - 是否已读
@@ -96,8 +95,11 @@ export default class Literature {
    * @param {number} literatureId - 文献ID
    * @returns {Promise} API响应
    */
-  static async getInteractions(literatureId) {
-    return service.get(`${url.interaction}/${literatureId}`)
+  static async getInteraction(literatureId) {
+    return service.get(url.interactionDetail + literatureId)
+  }
+  static async getInteractions() {
+    return service.get(url.interaction)
   }
 
   /**

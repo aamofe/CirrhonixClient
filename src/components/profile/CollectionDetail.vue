@@ -11,22 +11,15 @@
       <h3>{{ collection ? collection.name : "收藏夹详情" }}</h3>
     </div>
 
-    <p
-      v-if="collection && collection.description"
-      class="collection-description"
-    >
+    <p v-if="collection && collection.description" class="collection-description">
       {{ collection.description }}
     </p>
 
     <div v-if="loading" class="loading">加载中...</div>
 
     <div v-else-if="literatures && literatures.length" class="literatures-list">
-      <literature-item
-        v-for="article in literatures"
-        :key="article.id"
-        :article="article"
-        @view-detail="viewArticleDetail"
-      />
+      <literature-item v-for="article in literatures" :key="article.id" :article="article"
+        @view-detail="viewArticleDetail" />
     </div>
 
     <div v-else-if="collection" class="empty-state">
@@ -36,9 +29,9 @@
 </template>
 
 <script>
-import LiteratureItem from "@/components/layout/LiteratureItem.vue";
-import { Back } from "@element-plus/icons-vue";
-import Literature from "@/api/Literature";
+import LiteratureItem from "@/components/layout/LiteratureItem.vue"
+import { Back } from "@element-plus/icons-vue"
+import Literature from "@/api/Literature"
 
 export default {
   name: "CollectionDetail",
@@ -57,42 +50,41 @@ export default {
       loading: true,
       collection: null,
       literatures: [],
-    };
+    }
   },
   methods: {
     async fetchCollectionDetail() {
-      this.loading = true;
+      this.loading = true
       try {
-        const response = await Literature.getCollection(this.collectionId);
-        // console.log(response.data)
-        this.collection = response.data.data;
+        const response = await Literature.getCollection(this.collectionId)
+        // console.log(response)
+        this.collection = response.data.data
 
-        this.literatures = this.collection.literatures || [];
+        this.literatures = this.collection.literatures || []
       } catch (error) {
-        // console.error("获取收藏夹详情失败", error)
-        this.$message.error("获取收藏夹详情失败");
+        this.$message.error("获取收藏夹详情失败")
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
     goBack() {
       // 仅更改URL参数，不实际切换路由
-      this.$emit("back-to-collections");
+      this.$emit("back-to-collections")
     },
     viewArticleDetail(article) {
       // 处理查看文献详情的逻辑
-      this.$router.push({ name: "article-detail", params: { id: article.id } });
+      this.$router.push({ name: "article-detail", params: { id: article.id } })
     },
   },
   watch: {
     collectionId: {
       immediate: true,
       handler() {
-        this.fetchCollectionDetail();
+        this.fetchCollectionDetail()
       },
     },
   },
-};
+}
 </script>
 
 <style scoped>

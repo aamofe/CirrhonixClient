@@ -4,19 +4,12 @@
 
     <div class="meta-info">
       <span class="authors">{{ formatAuthors }}</span>
-      <span class="divider" v-if="article.authors?.length && article.source"
-        >|</span
-      >
+      <span class="divider" v-if="article.authors?.length && article.source">|</span>
       <span class="source">{{ article.source }}</span>
-      <span
-        class="divider"
-        v-if="(article.authors?.length || article.source) && formattedDate"
-        >|</span
-      >
+      <span class="divider" v-if="(article.authors?.length || article.source) && formattedDate">|</span>
+      <!-- <span>{{ article.authors }}</span> -->
       <span class="date">{{ formattedDate }}</span>
-      <span class="divider" v-if="article.publication_type && formattedDate"
-        >|</span
-      >
+      <span class="divider" v-if="article.publication_type && formattedDate">|</span>
       <span class="type" v-if="article.publication_type">{{
         formatPublicationType
       }}</span>
@@ -38,11 +31,7 @@
           <span v-if="article.citation_count !== undefined" class="info-item">
             被引: {{ article.citation_count }}
           </span>
-          <span
-            class="divider"
-            v-if="article.citation_count !== undefined && article.language"
-            >|</span
-          >
+          <span class="divider" v-if="article.citation_count !== undefined && article.language">|</span>
           <span v-if="article.language" class="info-item">
             {{ getLanguageName(article.language) }}
           </span>
@@ -71,20 +60,20 @@ export default {
   },
   computed: {
     formatAuthors() {
-      const authors = this.article.authors || [];
-      if (authors.length === 0) return "未知作者";
-      if (authors.length === 1) return authors[0].name;
+      const authors = this.article.authors || []
+      if (authors.length === 0) return "未知作者"
+      if (authors.length === 1) return authors[0]
       if (authors.length === 2)
-        return `${authors[0].name} 和 ${authors[1].name}`;
-      return `${authors[0].name} 等.`;
+        return `${authors[0]} 和 ${authors[1]}`
+      return `${authors[0]} 等.`
     },
     formattedDate() {
-      if (!this.article.publication_date) return "";
-      const date = new Date(this.article.publication_date);
-      return date.toLocaleDateString("zh-CN");
+      if (!this.article.publication_date) return ""
+      const date = new Date(this.article.publication_date)
+      return date.toLocaleDateString("zh-CN")
     },
     limitedKeywords() {
-      return this.article.keywords?.slice(0, 3) || [];
+      return this.article.keywords?.slice(0, 3) || []
     },
     formatPublicationType() {
       const types = {
@@ -93,22 +82,22 @@ export default {
         conference: "会议论文",
         book: "书籍",
         thesis: "学位论文",
-      };
+      }
       return (
         types[this.article.publication_type] || this.article.publication_type
-      );
+      )
     },
   },
   methods: {
     handleClick() {
-      this.$emit("view-detail", this.article.id);
+      this.$emit("view-detail", this.article.id)
     },
     viewFullText(e) {
-      e.stopPropagation();
+      e.stopPropagation()
       if (this.article.url) {
-        window.open(this.article.url, "_blank");
+        window.open(this.article.url, "_blank")
       } else {
-        this.$emit("view-detail", this.article.id);
+        this.$emit("view-detail", this.article.id)
       }
     },
     getLanguageName(code) {
@@ -120,11 +109,11 @@ export default {
         de: "德文",
         es: "西班牙文",
         ru: "俄文",
-      };
-      return languages[code] || code;
+      }
+      return languages[code] || code
     },
   },
-};
+}
 </script>
 
 <style scoped>

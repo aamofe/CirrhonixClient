@@ -3,14 +3,8 @@
   <div class="reading-history-component">
     <h3>阅读历史</h3>
     <div v-if="!loading && readingHistory.length" class="reading-history">
-      <LiteratureCard
-        v-for="item in readingHistory"
-        :key="item.id"
-        :literature="item.literature"
-        :compact="true"
-        :showReadDate="true"
-        :readDate="item.read_date"
-      />
+      <LiteratureCard v-for="item in readingHistory" :key="item.id" :literature_id="item.literature_id"
+        :literature_title="item.literature_title" :readDate="item.read_date" />
     </div>
     <div v-else-if="loading" class="loading">加载中...</div>
     <div v-else class="empty-state">您还没有阅读记录</div>
@@ -18,8 +12,8 @@
 </template>
 
 <script>
-import LiteratureCard from "@/components/cards/LiteratureCard.vue";
-import Literature from "@/api/Literature";
+import LiteratureCard from "@/components/cards/LiteratureCard.vue"
+import Literature from "@/api/Literature"
 
 export default {
   name: "ReadingHistoryComponent",
@@ -30,39 +24,29 @@ export default {
     return {
       loading: true,
       readingHistory: [],
-    };
+    }
   },
   methods: {
     async fetchReadingHistory() {
-      this.loading = true;
+      this.loading = true
       try {
-        const response = await Literature.getInteractions({
-          is_read: true,
-          sort: "-updated_at",
-        });
-        this.readingHistory = response.data.items || [];
+        const response = await Literature.getInteractions()
+        // 确保我们得到的是数组
+        this.readingHistory = response.data.data
+        console.log(response)
+        // console.log("获取到的阅读历史:", this.readingHistory)
       } catch (error) {
-        console.error("获取阅读历史失败", error);
-        this.$message.error("获取阅读历史失败");
+        console.error("获取阅读历史失败", error)
+        this.$message.error("获取阅读历史失败")
       } finally {
-        this.loading = false;
+        this.loading = false
       }
-    },
-    formatDate(dateString) {
-      const date = new Date(dateString);
-      return date.toLocaleString("zh-CN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    },
+    }
   },
   created() {
-    this.fetchReadingHistory();
+    this.fetchReadingHistory()
   },
-};
+}
 </script>
 
 <style scoped>
