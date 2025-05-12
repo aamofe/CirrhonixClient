@@ -9,10 +9,7 @@
       <nav>
         <ul>
           <li v-for="(item, index) in navItems" :key="index">
-            <router-link
-              :to="item.path"
-              :class="{ active: isActive(item.path) }"
-            >
+            <router-link :to="item.path" :class="{ active: isActive(item.path) }">
               {{ item.name }}
             </router-link>
           </li>
@@ -30,8 +27,8 @@
 </template>
 
 <script>
-import User from "@/api/User";
-import defaultAvatar from "@/assets/female.png";
+import User from "@/api/User"
+import defaultAvatar from "@/assets/female.png"
 export default {
   name: "HeaderComponent",
   data() {
@@ -45,45 +42,45 @@ export default {
         // { name: "个人中心", path: "/profile" },
       ],
       defaultAvatar,
-    };
+    }
   },
   methods: {
     isActive(path) {
       // 检查当前路由是否匹配导航项
-      return this.$route.path === path;
+      return this.$route.path === path
     },
     goToHome() {
-      this.$router.push("/");
+      this.$router.push("/")
     },
     goToProfile() {
       if (!this.username) {
-        this.$router.push("/login");
+        this.$router.push("/login")
       } else {
-        this.$router.push("/profile");
+        this.$router.push("/profile")
       }
     },
     async getProfile() {
       try {
-        const response = await User.profile();
-        const data = response.data.data;
-        this.username = data.username;
+        const response = await User.profile()
+        const data = response.data.data
+        this.username = data.username
       } catch (error) {
-        console.error(error);
+        console.error(error)
         if (error.response && error.response.status === 401) {
-          this.username = "";
+          this.username = ""
         } else {
-          this.$message.error("获取用户信息失败");
+          this.$message.error("获取用户信息失败")
         }
       }
     },
   },
   mounted() {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token")
     if (token) {
-      this.getProfile();
+      this.getProfile()
     }
   },
-};
+}
 </script>
 
 <style scoped>
@@ -99,7 +96,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 5%;
+  padding: 15px 1%;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -108,6 +105,9 @@ header {
   cursor: pointer;
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
+  width: 120px;
+  /* 固定宽度，与用户区域相匹配 */
 }
 
 .logo {
@@ -116,9 +116,11 @@ header {
 }
 
 nav {
-  flex-grow: 1;
+  flex: 1 1 auto;
   display: flex;
   justify-content: center;
+  margin: 0;
+  width: 100%;
 }
 
 nav ul {
@@ -126,6 +128,8 @@ nav ul {
   list-style: none;
   margin: 0;
   padding: 0;
+  justify-content: center;
+  /* 确保列表项居中 */
 }
 
 nav ul li {
@@ -161,6 +165,10 @@ nav ul li a.active {
   padding: 6px 12px;
   border-radius: 20px;
   transition: background-color 0.3s;
+  flex: 0 0 auto;
+  width: 120px;
+  /* 固定宽度，与logo区域相匹配 */
+  justify-content: flex-end;
 }
 
 .user-area:hover {
@@ -188,9 +196,106 @@ nav ul li a.active {
 .user-area .username {
   color: #555;
   font-weight: 500;
+  font-size: 16px;
+}
+
+@media (max-width: 1100px) {
+  .header-container {
+    padding: 10px 1%;
+  }
+
+  .logo-container {
+    width: 100px;
+  }
+
+  .user-area {
+    width: 100px;
+  }
+
+  nav ul li {
+    margin: 0 8px;
+  }
+
+  nav ul li a {
+    padding: 7px 10px;
+    font-size: 16px;
+    /* 保持与原始字体相同的大小 */
+  }
+}
+
+@media (max-width: 900px) {
+  .logo {
+    height: 40px;
+  }
+
+  nav ul li {
+    margin: 0 5px;
+  }
+
+  nav ul li a {
+    font-size: 15.5px;
+    /* 增加了字体大小 */
+    padding: 6px 8px;
+  }
+
+  .avatar-container {
+    width: 34px;
+    height: 34px;
+    margin-right: 8px;
+  }
+
+  .user-area .username {
+    font-size: 15.5px;
+    /* 与导航字体保持一致 */
+  }
 }
 
 @media (max-width: 768px) {
+  .header-container {
+    flex-wrap: nowrap;
+    padding: 8px 1%;
+  }
+
+  .logo {
+    height: 36px;
+  }
+
+  .logo-container {
+    width: 90px;
+    /* 稍微增加宽度 */
+  }
+
+  .user-area {
+    width: 90px;
+    /* 稍微增加宽度 */
+    padding: 4px 6px;
+  }
+
+  nav ul li {
+    margin: 0 2px;
+    /* 稍微减少外边距，给文字留更多空间 */
+  }
+
+  nav ul li a {
+    font-size: 15px;
+    /* 增加字体大小 */
+    padding: 5px 5px;
+    /* 稍微减少内边距，保持整体布局 */
+  }
+
+  .avatar-container {
+    width: 32px;
+    height: 32px;
+    margin-right: 6px;
+  }
+
+  .user-area .username {
+    font-size: 15px;
+    /* 增加字体大小 */
+  }
+}
+
+@media (max-width: 576px) {
   .header-container {
     flex-direction: column;
     align-items: flex-start;
@@ -198,7 +303,7 @@ nav ul li a.active {
 
   nav {
     width: 100%;
-    margin: 15px 0;
+    margin: 10px 0;
   }
 
   nav ul {
@@ -211,8 +316,25 @@ nav ul li a.active {
     margin: 5px 10px;
   }
 
+  nav ul li a {
+    font-size: 16px;
+    padding: 8px 12px;
+  }
+
   .user-area {
     align-self: flex-end;
+    margin-top: 5px;
+    width: auto;
+  }
+
+  .avatar-container {
+    width: 38px;
+    height: 38px;
+    margin-right: 10px;
+  }
+
+  .user-area .username {
+    font-size: 16px;
   }
 }
 </style>

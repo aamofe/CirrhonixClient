@@ -19,11 +19,7 @@ Plus图标：
     </p>
 
     <div class="auto-schedules">
-      <div
-        v-for="(schedule, index) in autoSchedules"
-        :key="index"
-        class="schedule-item"
-      >
+      <div v-for="(schedule, index) in autoSchedules" :key="index" class="schedule-item">
         <div class="schedule-info">
           <div class="source-name">
             {{ getSourceName(schedule.data_source_id) }}
@@ -32,17 +28,11 @@ Plus图标：
             <div class="schedule-frequency">
               {{ formatFrequency(schedule.interval) }}
             </div>
-            <div
-              class="schedule-keywords"
-              v-if="schedule.query_params && schedule.query_params.keywords"
-            >
+            <div class="schedule-keywords" v-if="schedule.query_params && schedule.query_params.keywords">
               关键词: {{ schedule.query_params.keywords }}
             </div>
           </div>
-          <div
-            class="schedule-status"
-            :class="schedule.is_active ? 'active' : 'inactive'"
-          >
+          <div class="schedule-status" :class="schedule.is_active ? 'active' : 'inactive'">
             {{ schedule.is_active ? "已启用" : "已禁用" }}
           </div>
         </div>
@@ -53,11 +43,8 @@ Plus图标：
               <Edit />
             </el-icon>
           </button>
-          <button
-            class="action-btn"
-            :class="schedule.is_active ? 'pause-btn' : 'play-btn'"
-            @click="toggleSchedule(schedule)"
-          >
+          <button class="action-btn" :class="schedule.is_active ? 'pause-btn' : 'play-btn'"
+            @click="toggleSchedule(schedule)">
             <el-icon v-if="schedule.is_active">
               <VideoPause />
             </el-icon>
@@ -65,10 +52,7 @@ Plus图标：
               <VideoPlay />
             </el-icon>
           </button>
-          <button
-            class="action-btn delete-btn"
-            @click="deleteSchedule(schedule)"
-          >
+          <button class="action-btn delete-btn" @click="deleteSchedule(schedule)">
             <el-icon>
               <Delete />
             </el-icon>
@@ -91,24 +75,12 @@ Plus图标：
     </div>
 
     <!-- 新建自动爬取任务模态框 -->
-    <ModalComponent
-      v-if="showNewScheduleModal"
-      title="添加自动爬取任务"
-      @close="showNewScheduleModal = false"
-    >
+    <ModalComponent v-if="showNewScheduleModal" title="添加自动爬取任务" @close="showNewScheduleModal = false">
       <div class="schedule-form">
         <div class="form-group">
           <label for="schedule-source">选择数据源:</label>
-          <select
-            id="schedule-source"
-            v-model="newSchedule.data_source_id"
-            class="form-input"
-          >
-            <option
-              v-for="source in availableSources"
-              :key="source.id"
-              :value="source.id"
-            >
+          <select id="schedule-source" v-model="newSchedule.data_source_id" class="form-input">
+            <option v-for="source in availableSources" :key="source.id" :value="source.id">
               {{ source.name }}
             </option>
           </select>
@@ -116,11 +88,7 @@ Plus图标：
 
         <div class="form-group">
           <label for="schedule-frequency">爬取频率:</label>
-          <select
-            id="schedule-frequency"
-            v-model="newSchedule.interval"
-            class="form-input"
-          >
+          <select id="schedule-frequency" v-model="newSchedule.interval" class="form-input">
             <option value="daily">每天</option>
             <option value="weekly">每周</option>
             <option value="monthly">每月</option>
@@ -129,33 +97,18 @@ Plus图标：
 
         <div class="form-group">
           <label for="schedule-keywords">关键词 (可选):</label>
-          <input
-            type="text"
-            id="schedule-keywords"
-            v-model="newSchedule.keywords"
-            class="form-input"
-            placeholder="输入检索关键词，多个关键词用英文逗号分隔"
-          />
+          <input type="text" id="schedule-keywords" v-model="newSchedule.keywords" class="form-input"
+            placeholder="输入检索关键词，多个关键词用英文逗号分隔" />
         </div>
 
         <div class="form-group">
           <label for="schedule-max-results">每次最大爬取数量:</label>
-          <input
-            type="number"
-            id="schedule-max-results"
-            v-model="newSchedule.max_results"
-            class="form-input"
-            min="1"
-            max="500"
-          />
+          <input type="number" id="schedule-max-results" v-model="newSchedule.max_results" class="form-input" min="1"
+            max="500" />
         </div>
 
         <div class="form-actions">
-          <button
-            type="button"
-            class="cancel-btn"
-            @click="showNewScheduleModal = false"
-          >
+          <button type="button" class="cancel-btn" @click="showNewScheduleModal = false">
             取消
           </button>
           <PrimaryButton :fullWidth="false" @click="createSchedule">
@@ -168,18 +121,18 @@ Plus图标：
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import ModalComponent from "@/components/common/ModalComponent.vue";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import ModalComponent from "@/components/common/ModalComponent.vue"
 import {
   Edit,
   Delete,
   VideoPause,
   VideoPlay,
   Plus,
-} from "@element-plus/icons-vue";
+} from "@element-plus/icons-vue"
 
 // 导入爬虫API
-import Crawler from "@/api/Crawler";
+import Crawler from "@/api/Crawler"
 
 export default {
   name: "AutoCrawler",
@@ -209,48 +162,48 @@ export default {
         max_results: 100,
         is_active: true,
       },
-    };
+    }
   },
   watch: {
     availableSources: {
       handler(newSources) {
         if (newSources.length > 0 && !this.newSchedule.data_source_id) {
-          this.newSchedule.data_source_id = newSources[0].id;
+          this.newSchedule.data_source_id = newSources[0].id
         }
       },
       immediate: true,
     },
   },
   created() {
-    this.fetchAutoSchedules();
+    this.fetchAutoSchedules()
   },
   methods: {
     // 获取自动爬取任务列表
     async fetchAutoSchedules() {
       try {
         // 暂时使用空数据，因为后端未实现该接口
-        this.autoSchedules = [];
+        this.autoSchedules = []
 
         // 当后端实现后可以使用以下代码
-        const response = await Crawler.getSchedules();
-        this.autoSchedules = response.data.data || [];
+        const response = await Crawler.getSchedules()
+        this.autoSchedules = response.data.data || []
       } catch (error) {
-        console.error("获取自动爬取任务失败", error);
-        this.$message.error("获取自动爬取任务失败");
+        // console.error("获取自动爬取任务失败", error);
+        // this.$message.error("获取自动爬取任务失败");
       }
     },
 
     // 创建自动爬取任务
     async createSchedule() {
       if (!this.newSchedule.data_source_id) {
-        this.$message.error("请选择数据源");
-        return;
+        this.$message.error("请选择数据源")
+        return
       }
 
       try {
         // 注意：目前后端未实现该接口
-        this.$message.info("自动爬取功能正在开发中");
-        this.showNewScheduleModal = false;
+        this.$message.info("自动爬取功能正在开发中")
+        this.showNewScheduleModal = false
 
         // 当后端实现后可以使用以下代码
         /*
@@ -286,8 +239,8 @@ export default {
         await this.fetchAutoSchedules()
         */
       } catch (error) {
-        console.error("创建自动爬取任务失败", error);
-        this.$message.error("创建自动爬取任务失败");
+        console.error("创建自动爬取任务失败", error)
+        this.$message.error("创建自动爬取任务失败")
       }
     },
 
@@ -301,15 +254,15 @@ export default {
         keywords: schedule.query_params?.keywords || "",
         max_results: schedule.query_params?.max_results || 100,
         is_active: schedule.is_active,
-      };
-      this.showNewScheduleModal = true;
+      }
+      this.showNewScheduleModal = true
     },
 
     // 切换自动爬取任务状态
     async toggleSchedule(schedule) {
       try {
         // 注意：目前后端未实现该接口
-        this.$message.info("自动爬取功能正在开发中");
+        this.$message.info("自动爬取功能正在开发中")
 
         // 当后端实现后可以使用以下代码
         /*
@@ -325,8 +278,8 @@ export default {
         this.$message.success(`任务已${updatedStatus ? "启用" : "禁用"}`)
         */
       } catch (error) {
-        console.error("更新任务状态失败", error);
-        this.$message.error("更新任务状态失败");
+        console.error("更新任务状态失败", error)
+        this.$message.error("更新任务状态失败")
       }
     },
 
@@ -339,11 +292,11 @@ export default {
           )}"的自动爬取任务吗？`
         )
       )
-        return;
+        return
 
       try {
         // 注意：目前后端未实现该接口
-        this.$message.info("自动爬取功能正在开发中");
+        this.$message.info("自动爬取功能正在开发中")
 
         // 当后端实现后可以使用以下代码
         /*
@@ -356,32 +309,32 @@ export default {
         this.$message.success("任务删除成功")
         */
       } catch (error) {
-        console.error("删除任务失败", error);
-        this.$message.error("删除任务失败");
+        console.error("删除任务失败", error)
+        this.$message.error("删除任务失败")
       }
     },
 
     // 获取数据源名称
     getSourceName(sourceId) {
-      const source = this.availableSources.find((s) => s.id === sourceId);
-      return source ? source.name : sourceId;
+      const source = this.availableSources.find((s) => s.id === sourceId)
+      return source ? source.name : sourceId
     },
 
     // 格式化频率
     formatFrequency(frequency) {
       switch (frequency) {
         case "daily":
-          return "每天";
+          return "每天"
         case "weekly":
-          return "每周";
+          return "每周"
         case "monthly":
-          return "每月";
+          return "每月"
         default:
-          return frequency;
+          return frequency
       }
     },
   },
-};
+}
 </script>
 
 <style scoped>

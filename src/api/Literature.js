@@ -14,29 +14,17 @@ const url = {
   translate: '/literature/translate',
 }
 export default class Literature {
-  static async search(query, page = 1, size = 20) {
+  static async search(query, page = 1, size = 20, sortBy = 'relevance') {
     return service.get(url.search, {
       params: {
         q: query,
         page,
         size,
+        sort_by: sortBy,
       },
     })
   }
 
-  /**
-   * 获取文献列表，支持分页和筛选
-   * @param {Object} params - 查询参数
-   * @param {string} [params.type] - 按文献类型筛选
-   * @param {string} [params.language] - 按语言筛选
-   * @param {number} [params.journal_id] - 按期刊ID筛选
-   * @param {number} [params.author_id] - 按作者ID筛选
-   * @param {string} [params.keyword] - 按关键词筛选(标题或摘要)
-   * @param {string} [params.sort='-publication_date'] - 排序方式
-   * @param {number} [params.page=1] - 页码
-   * @param {number} [params.size=20] - 每页数量
-   * @returns {Promise} API响应
-   */
   static async list(params = {}) {
     return service.get(url.list, { params })
   }

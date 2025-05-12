@@ -31,13 +31,13 @@
           <p>正在加载文献...</p>
         </div>
 
-        <div v-else-if="sortedResults.length === 0" class="no-results">
+        <div v-else-if="results.length === 0" class="no-results">
           <p>抱歉，未找到符合条件的文献。</p>
           <p>请尝试修改检索词。</p>
         </div>
 
         <template v-else>
-          <literature-item v-for="article in paginatedResults" :key="article.id" :article="article"
+          <literature-item v-for="article in results" :key="article.id" :article="article"
             @view-detail="viewArticleDetail" />
 
           <div class="pagination">
@@ -93,43 +93,6 @@ export default {
     }
   },
   computed: {
-    // 排序后的结果
-    sortedResults() {
-      if (!this.results || this.results.length === 0) return []
-
-      // 克隆数组以避免修改原始数据
-      const sorted = [...this.results]
-
-      switch (this.sortBy) {
-        case 'date':
-          return sorted.sort((a, b) => {
-            // 假设有一个名为 publishDate 的字段，如果名称不同需要调整
-            const dateA = new Date(a.publishDate || 0)
-            const dateB = new Date(b.publishDate || 0)
-            return dateB - dateA // 降序(最新的在前)
-          })
-        case 'citations':
-          return sorted.sort((a, b) => {
-            // 假设有一个名为 citationCount 的字段，如果名称不同需要调整
-            const citationsA = a.citationCount || 0
-            const citationsB = b.citationCount || 0
-            return citationsB - citationsA // 降序(引用多的在前)
-          })
-        case 'relevance':
-        default:
-          // 如果已经从后端按相关性排序，则不再排序
-          return sorted
-      }
-    },
-
-    // 当前页面需要展示的结果
-    paginatedResults() {
-      // 计算当前页应该显示的数据
-      const start = (this.currentPage - 1) * this.pageSize
-      const end = start + this.pageSize
-      return this.sortedResults.slice(start, end)
-    },
-
     displayedPages() {
       const pages = []
       if (this.totalPages <= 7) {
@@ -235,8 +198,9 @@ export default {
 
       try {
         const response = await Literature.list({
-          page: 1,
-          size: this.pageSize
+          page: this.currentPage,
+          size: this.pageSize,
+          sort_by: this.sortBy  // 添加排序参数
         })
         if (response && response.data) {
           this.results = response?.data?.data?.items || []
@@ -290,11 +254,12 @@ export default {
       this.isLoading = true
 
       try {
-        // 搜索API调用
+        // 搜索API调用，传入当前页码和排序参数
         const response = await Literature.search(
           this.searchQuery,
           this.currentPage,
-          this.pageSize
+          this.pageSize,
+          this.sortBy  // 添加排序参数
         )
 
         if (response && response.data) {
@@ -316,7 +281,6 @@ export default {
         this.isLoading = false
       }
     },
-
     // 更新URL，但不重新加载页面
     updateUrl() {
       const query = { ...this.$route.query }
@@ -328,6 +292,7 @@ export default {
       }
 
       query.page = this.currentPage
+      query.sort_by = this.sortBy  // 添加排序参数到URL
 
       this.$router.replace({
         query
@@ -340,9 +305,22 @@ export default {
     },
 
     setSortBy(sort) {
-      // 前端排序，无需请求后端
+      if (this.sortBy === sort) return
+
       this.sortBy = sort
       this.currentPage = 1 // 重置到第一页
+
+      // 调用API获取新的排序结果
+      if (this.searchQuery) {
+        this.searchLiterature()
+      } else {
+        this.loadAllLiterature()
+      }
+
+      // 更新URL
+      this.updateUrl()
+
+      // 保存状态
       this.saveListState()
     },
 
@@ -356,7 +334,14 @@ export default {
       // 更新URL的页码参数
       this.updateUrl()
 
-      // 由于使用前端排序和分页，这里无需再请求API
+      // 根据当前搜索条件决定加载方式
+      if (this.searchQuery) {
+        this.searchLiterature() // 将使用this.currentPage获取对应页的数据
+      } else {
+        this.loadAllLiterature() // 将使用this.currentPage获取对应页的数据
+      }
+
+      // 保存状态
       this.saveListState()
 
       // 滚动到页面顶部以便用户查看新结果
@@ -374,17 +359,16 @@ export default {
     parseQueryParams() {
       const query = this.$route.query
 
-      if (this.hasListState && !query.q && !query.page) {
+      if (this.hasListState && !query.q && !query.page && !query.sort_by) {
         return
       }
 
       if (query.q !== undefined) {
         this.searchQuery = query.q || ""
-        if (this.searchQuery) {
-          this.searchLiterature()
-        } else {
-          this.loadAllLiterature()
-        }
+      }
+
+      if (query.sort_by) {
+        this.sortBy = query.sort_by
       }
 
       if (query.page) {
@@ -392,6 +376,13 @@ export default {
         if (!isNaN(page) && page > 0) {
           this.currentPage = page
         }
+      }
+
+      // 根据参数加载数据
+      if (this.searchQuery) {
+        this.searchLiterature()
+      } else {
+        this.loadAllLiterature()
       }
     },
   },
