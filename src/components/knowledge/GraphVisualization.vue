@@ -131,16 +131,13 @@ export default {
       return graphData.value.edges ? graphData.value.edges.length : 0
     })
 
-    // 数据加载逻辑 - 从父组件移到子组件
     const loadGraphData = async () => {
       try {
-        // 构建过滤参数
         const params = {
           verified_only: false,
           limit: 500,
         }
 
-        // 添加类型过滤
         if (props.selectedFilters.selectedNodeTypes?.length > 0) {
           params.type = props.selectedFilters.selectedNodeTypes.join(',')
         }
@@ -149,10 +146,10 @@ export default {
         }
 
         const response = await KnowledgeGraph.getGraph(params)
-        if (response.data) {
+        if (response.data.data) {
           graphData.value = {
-            nodes: response.data.nodes || [],
-            edges: response.data.edges || [],
+            nodes: response.data.data.nodes || [],
+            edges: response.data.data.edges || [],
           }
 
           // 重新初始化网络图
@@ -520,6 +517,7 @@ export default {
   },
 }
 </script>
+
 <style scoped>
 .graph-visualization {
   position: relative;

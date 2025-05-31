@@ -27,17 +27,20 @@
       </div>
     </div>
 
-    <site-footer />
+    <!-- 页脚组件 -->
+    <SiteFooter />
   </div>
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useNodeConfig } from '@/composables/useNodeConfig'
 import GraphHeader from '@/components/knowledge/GraphHeader.vue'
 import GraphSidebar from '@/components/knowledge/GraphSidebar.vue'
 import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
 import NodeDetailPanel from '@/components/knowledge/NodeDetailPanel.vue'
+import SiteFooter from '@/components/layout/SiteFooter.vue' // 假设你的页脚组件路径
 
 export default {
   name: 'KnowledgeGraph',
@@ -46,8 +49,10 @@ export default {
     GraphSidebar,
     GraphVisualization,
     NodeDetailPanel,
+    SiteFooter,
   },
   setup() {
+    const router = useRouter()
     const { nodeTypes, relationTypes } = useNodeConfig()
 
     // 全局状态管理
@@ -65,10 +70,28 @@ export default {
       }
     })
 
+    // 数据状态
+    const graphData = ref({ nodes: [], edges: [] })
+    const isLoading = ref(false)
+    const graphStats = ref({
+      totalNodes: 0,
+      totalEdges: 0,
+      nodeTypes: {},
+      relationTypes: {}
+    })
+    const popularConcepts = ref([])
+    const keyPapers = ref([])
+
     // 组件引用
     const graphVisualizationRef = ref(null)
 
-    // 事件处理 - 只处理组件间的通信协调
+    // 计算属性 - 构建过滤条件对象
+    const selectedFilters = computed(() => ({
+      selectedNodeTypes: globalState.selectedNodeTypes,
+      selectedRelationTypes: globalState.selectedRelationTypes
+    }))
+
+    // 事件处理
     const handleNodeSelected = (node) => {
       globalState.selectedNode = node
     }
@@ -83,12 +106,12 @@ export default {
 
     const handleFocusNode = (nodeId) => {
       if (graphVisualizationRef.value) {
-        graphVisualizationRef.value.focusNode(nodeId)
+        graphVisualizationRef.value.focusOnNode(nodeId)
       }
     }
 
     const handleViewArticle = (articleId) => {
-      this.$router.push(`/articles/${articleId}`)
+      router.push(`/articles/${articleId}`)
     }
 
     const handleSearchKeywordChange = (keyword) => {
@@ -99,7 +122,7 @@ export default {
     }
 
     const handleFilterChange = () => {
-      // 通知子组件重新加载数据，具体加载逻辑在子组件中
+      // 通知子组件重新加载数据
       if (graphVisualizationRef.value) {
         graphVisualizationRef.value.reloadData()
       }
@@ -119,12 +142,25 @@ export default {
     }
 
     return {
+      // 状态
       globalState,
+      graphData,
+      isLoading,
+      graphStats,
+      popularConcepts,
+      keyPapers,
+
+      // 配置
       nodeTypes,
       relationTypes,
+
+      // 计算属性
+      selectedFilters,
+
+      // 引用
       graphVisualizationRef,
 
-      // 事件处理
+      // 事件处理方法
       handleNodeSelected,
       handleNodeDeselected,
       handleCloseNodeDetail,

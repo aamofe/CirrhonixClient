@@ -5,7 +5,9 @@
     <div class="panel-header">
       <div class="header-content">
         <div class="node-icon" :class="`icon-${node.type}`">
-          <i :class="getNodeIcon(node.type)"></i>
+          <el-icon>
+            <component :is="getNodeIcon(node.type)" />
+          </el-icon>
         </div>
         <div class="node-info">
           <h3 class="node-name">{{ node.label || node.name }}</h3>
@@ -13,9 +15,7 @@
           <span v-if="node.subtype" class="node-subtype">{{ node.subtype }}</span>
         </div>
       </div>
-      <button class="close-btn" @click="closePanel" title="关闭">
-        <i class="fas fa-times"></i>
-      </button>
+      <el-button class="close-btn" @click="closePanel" link size="small" :icon="Close" title="关闭" />
     </div>
 
     <!-- 面板内容 -->
@@ -23,7 +23,9 @@
       <!-- 基本信息 -->
       <div class="info-section">
         <h4 class="section-title">
-          <i class="fas fa-info-circle"></i>
+          <el-icon>
+            <InfoFilled />
+          </el-icon>
           基本信息
         </h4>
         <div class="info-grid">
@@ -71,7 +73,9 @@
       <!-- 关系统计 -->
       <div class="info-section" v-if="entityDetail?.relation_summary">
         <h4 class="section-title">
-          <i class="fas fa-chart-bar"></i>
+          <el-icon>
+            <DataAnalysis />
+          </el-icon>
           关系统计
         </h4>
         <div class="stats-grid">
@@ -105,17 +109,19 @@
       <!-- 关系列表 -->
       <div class="info-section" v-if="entityDetail?.relations">
         <h4 class="section-title">
-          <i class="fas fa-project-diagram"></i>
+          <el-icon>
+            <Share />
+          </el-icon>
           关系详情
           <span class="section-count">({{ getTotalRelations() }})</span>
         </h4>
 
         <!-- 关系类型标签 -->
         <div class="relation-tabs">
-          <button v-for="tab in relationTabs" :key="tab.key" class="tab-btn"
-            :class="{ active: activeRelationTab === tab.key }" @click="activeRelationTab = tab.key">
+          <el-button v-for="tab in relationTabs" :key="tab.key" :type="activeRelationTab === tab.key ? 'primary' : ''"
+            :plain="activeRelationTab !== tab.key" size="small" @click="activeRelationTab = tab.key">
             {{ tab.label }} ({{ tab.count }})
-          </button>
+          </el-button>
         </div>
 
         <!-- 关系内容 -->
@@ -131,20 +137,24 @@
                   <span class="entity-name" @click="focusEntity(getRelationSourceEntity(relation))">
                     {{ getRelationSourceEntity(relation).name }}
                   </span>
-                  <i class="fas fa-arrow-right"></i>
+                  <el-icon>
+                    <Right />
+                  </el-icon>
                   <span class="relation-type">{{
                     relation.relationship?.name
                   }}</span>
-                  <i class="fas fa-arrow-right"></i>
+                  <el-icon>
+                    <Right />
+                  </el-icon>
                   <span class="entity-name" @click="focusEntity(getRelationTargetEntity(relation))">
                     {{ getRelationTargetEntity(relation).name }}
                   </span>
                 </div>
                 <div class="relation-badges">
-                  <span v-if="relation.is_verified" class="badge verified">已验证</span>
-                  <span class="badge support-degree" :class="getSupportDegreeClass(relation.support_degree)">
+                  <el-tag v-if="relation.is_verified" type="success" size="small">已验证</el-tag>
+                  <el-tag :type="getSupportDegreeTagType(relation.support_degree)" size="small">
                     支持度: {{ (relation.support_degree * 100).toFixed(0) }}%
-                  </span>
+                  </el-tag>
                 </div>
               </div>
 
@@ -156,9 +166,9 @@
 
               <div v-if="relation.supporting_literature" class="relation-literature">
                 <span class="literature-label">支持文献：</span>
-                <a href="#" class="literature-link" @click.prevent="viewArticle(relation.supporting_literature.id)">
+                <el-link type="primary" @click="viewArticle(relation.supporting_literature.id)">
                   {{ relation.supporting_literature.title }}
-                </a>
+                </el-link>
               </div>
 
               <div v-if="relation.verification_notes" class="verification-notes">
@@ -173,7 +183,9 @@
       <!-- 相关实体 -->
       <div class="info-section" v-if="entityDetail?.related_entities?.length > 0">
         <h4 class="section-title">
-          <i class="fas fa-sitemap"></i>
+          <el-icon>
+            <Connection />
+          </el-icon>
           相关实体
           <span class="section-count">({{ entityDetail.related_entities.length }})</span>
         </h4>
@@ -181,7 +193,9 @@
           <div v-for="entity in entityDetail.related_entities" :key="entity.id" class="related-entity-item"
             @click="focusEntity(entity)">
             <div class="entity-icon" :class="`icon-${entity.entity_type}`">
-              <i :class="getNodeIcon(entity.entity_type)"></i>
+              <el-icon>
+                <component :is="getNodeIcon(entity.entity_type)" />
+              </el-icon>
             </div>
             <div class="entity-info">
               <div class="entity-name">{{ entity.name }}</div>
@@ -197,7 +211,9 @@
     <!-- 加载状态 -->
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner">
-        <i class="fas fa-spinner fa-spin"></i>
+        <el-icon class="is-loading">
+          <Loading />
+        </el-icon>
         <span>加载中...</span>
       </div>
     </div>
@@ -206,11 +222,45 @@
 
 <script>
 import { ref, computed, watch, onMounted } from 'vue'
+import {
+  Close,
+  InfoFilled,
+  DataAnalysis,
+  Share,
+  Right,
+  Connection,
+  Loading,
+  BugFilled,
+  Aim,
+  Stethoscope,
+  Search,
+  Pills,
+  Shield,
+  CopyDocument,
+  WarnTriangleFilled
+} from '@element-plus/icons-vue'
 import { useNodeConfig } from '@/composables/useNodeConfig'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
 export default {
   name: 'NodeDetailPanel',
+  components: {
+    Close,
+    InfoFilled,
+    DataAnalysis,
+    Share,
+    Right,
+    Connection,
+    Loading,
+    BugFilled,
+    Aim,
+    Stethoscope,
+    Search,
+    Pills,
+    Shield,
+    CopyDocument,
+    WarnTriangleFilled
+  },
   props: {
     node: {
       type: Object,
@@ -265,8 +315,8 @@ export default {
         isLoading.value = true
         const response = await KnowledgeGraph.getEntityDetail(props.node.id)
 
-        if (response.data) {
-          entityDetail.value = response.data
+        if (response.data.data) {
+          entityDetail.value = response.data.data
         }
       } catch (error) {
         console.error('加载实体详情失败:', error)
@@ -286,6 +336,13 @@ export default {
       if (percentage >= 80) return 'high'
       if (percentage >= 50) return 'medium'
       return 'low'
+    }
+
+    const getSupportDegreeTagType = (degree) => {
+      const percentage = degree * 100
+      if (percentage >= 80) return 'success'
+      if (percentage >= 50) return 'warning'
+      return 'danger'
     }
 
     const formatDate = (dateString) => {
@@ -378,6 +435,23 @@ export default {
     })
 
     return {
+      // Element Plus 图标
+      Close,
+      InfoFilled,
+      DataAnalysis,
+      Share,
+      Right,
+      Connection,
+      Loading,
+      BugFilled,
+      Aim,
+      Stethoscope,
+      Search,
+      Pills,
+      Shield,
+      CopyDocument,
+      WarnTriangleFilled,
+
       // 响应式数据
       isLoading,
       entityDetail,
@@ -389,6 +463,7 @@ export default {
       getNodeIcon,
       getSeverityClass,
       getSupportDegreeClass,
+      getSupportDegreeTagType,
       formatDate,
       getTotalRelations,
       getCurrentRelations,
@@ -409,20 +484,18 @@ export default {
   top: 20px;
   right: 20px;
   width: 400px;
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - 100px);
   background: white;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   z-index: 1000;
-  border: 1px solid #e1e8f0;
 }
 
-/* 面板头部 */
 .panel-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -432,73 +505,52 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
 }
 
 .node-icon {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
   font-size: 20px;
 }
 
-.node-info {
-  flex: 1;
-}
-
-.node-name {
-  margin: 0 0 4px 0;
+.node-info h3 {
+  margin: 0;
   font-size: 18px;
   font-weight: 600;
 }
 
-.node-type {
-  display: inline-block;
-  padding: 2px 8px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+.node-type,
+.node-subtype {
   font-size: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
   margin-right: 8px;
 }
 
-.node-subtype {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
 .close-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  color: white !important;
+  border: none !important;
+  background: rgba(255, 255, 255, 0.2) !important;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.3) !important;
 }
 
-/* 面板内容 */
 .panel-content {
-  max-height: calc(100vh - 300px);
+  max-height: calc(100vh - 200px);
   overflow-y: auto;
-  padding: 0;
+  padding: 20px;
 }
 
 .info-section {
-  padding: 20px;
-  border-bottom: 1px solid #f0f4f8;
-}
-
-.info-section:last-child {
-  border-bottom: none;
+  margin-bottom: 24px;
 }
 
 .section-title {
@@ -508,15 +560,15 @@ export default {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #2d3748;
+  color: #333;
 }
 
 .section-count {
-  color: #718096;
+  color: #999;
   font-weight: normal;
+  font-size: 14px;
 }
 
-/* 基本信息 */
 .info-grid {
   display: flex;
   flex-direction: column;
@@ -530,26 +582,21 @@ export default {
 }
 
 .info-item label {
-  font-weight: 500;
-  color: #4a5568;
-  font-size: 14px;
-}
-
-.info-item span {
-  color: #2d3748;
+  font-weight: 600;
+  color: #666;
   font-size: 14px;
 }
 
 .severity-level {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .severity-bar {
   flex: 1;
   height: 8px;
-  background: #e2e8f0;
+  background: #f0f0f0;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -560,15 +607,15 @@ export default {
 }
 
 .severity-low {
-  background: #48bb78;
+  background: #52c41a;
 }
 
 .severity-medium {
-  background: #ed8936;
+  background: #faad14;
 }
 
 .severity-high {
-  background: #f56565;
+  background: #ff4d4f;
 }
 
 .properties {
@@ -580,19 +627,14 @@ export default {
 .property-item {
   display: flex;
   gap: 8px;
-  font-size: 14px;
 }
 
 .property-key {
-  font-weight: 500;
-  color: #4a5568;
+  font-weight: 600;
+  color: #666;
+  min-width: 60px;
 }
 
-.property-value {
-  color: #2d3748;
-}
-
-/* 统计信息 */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -601,24 +643,23 @@ export default {
 
 .stat-item {
   text-align: center;
-  padding: 12px;
-  background: #f7fafc;
+  padding: 16px;
+  background: #f8f9fa;
   border-radius: 8px;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #2b6cb0;
+  color: #1890ff;
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #718096;
+  color: #666;
 }
 
-/* 关系标签页 */
 .relation-tabs {
   display: flex;
   gap: 8px;
@@ -626,61 +667,33 @@ export default {
   flex-wrap: wrap;
 }
 
-.tab-btn {
-  padding: 6px 12px;
-  border: 1px solid #e2e8f0;
-  background: white;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tab-btn:hover {
-  border-color: #cbd5e0;
-  background: #f7fafc;
-}
-
-.tab-btn.active {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-}
-
-/* 关系列表 */
 .relations-content {
-  max-height: 300px;
-  overflow-y: auto;
+  min-height: 100px;
 }
 
 .no-relations {
   text-align: center;
-  color: #a0aec0;
-  padding: 40px 20px;
-  font-size: 14px;
+  color: #999;
+  padding: 32px;
+  font-style: italic;
 }
 
 .relations-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .relation-item {
-  padding: 12px;
-  border: 1px solid #e2e8f0;
+  padding: 16px;
+  border: 1px solid #e8e8e8;
   border-radius: 8px;
-  background: #f7fafc;
-  transition: all 0.2s;
+  background: #fafafa;
 }
 
 .relation-item.verified {
-  border-color: #48bb78;
-  background: #f0fff4;
-}
-
-.relation-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #52c41a;
+  background: #f6ffed;
 }
 
 .relation-header {
@@ -695,181 +708,111 @@ export default {
   align-items: center;
   gap: 8px;
   flex: 1;
-  font-size: 14px;
+  margin-right: 16px;
 }
 
 .entity-name {
-  font-weight: 500;
-  color: #2b6cb0;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  color: #1890ff;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .entity-name:hover {
-  background: rgba(43, 108, 176, 0.1);
+  color: #40a9ff;
 }
 
 .relation-type {
+  background: #e6f7ff;
+  color: #1890ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 600;
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
-  padding: 2px 8px;
-  border-radius: 12px;
 }
 
 .relation-badges {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-end;
-}
-
-.badge {
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 500;
-}
-
-.badge.verified {
-  background: #c6f6d5;
-  color: #22543d;
-}
-
-.badge.support-degree {
-  color: white;
-}
-
-.badge.support-degree.high {
-  background: #48bb78;
-}
-
-.badge.support-degree.medium {
-  background: #ed8936;
-}
-
-.badge.support-degree.low {
-  background: #f56565;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .relation-description {
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  color: #4a5568;
-  font-style: italic;
+  margin: 8px 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
 }
 
-.relation-literature,
+.relation-literature {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.literature-label {
+  color: #666;
+  margin-right: 8px;
+}
+
 .verification-notes {
-  font-size: 12px;
-  color: #718096;
-  margin-top: 4px;
+  margin-top: 8px;
+  font-size: 14px;
 }
 
-.literature-label,
 .notes-label {
-  font-weight: 500;
+  color: #666;
+  margin-right: 8px;
 }
 
-.literature-link {
-  color: #2b6cb0;
-  text-decoration: none;
-}
-
-.literature-link:hover {
-  text-decoration: underline;
-}
-
-/* 相关实体 */
 .related-entities {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
 .related-entity-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
-  background: white;
+  transition: all 0.2s ease;
 }
 
 .related-entity-item:hover {
-  border-color: #667eea;
-  background: #f7fafc;
+  background: #e6f7ff;
   transform: translateY(-1px);
 }
 
 .entity-icon {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  background: #1890ff;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  color: white;
-}
-
-.entity-icon.icon-pathogen {
-  background: #f56565;
-}
-
-.entity-icon.icon-infection_site {
-  background: #ed8936;
-}
-
-.entity-icon.icon-clinical_symptom {
-  background: #48bb78;
-}
-
-.entity-icon.icon-diagnosis_method {
-  background: #38b2ac;
-}
-
-.entity-icon.icon-treatment_plan {
-  background: #667eea;
-}
-
-.entity-icon.icon-prevention_strategy {
-  background: #9f7aea;
-}
-
-.entity-icon.icon-cirrhosis_stage {
-  background: #ed64a6;
-}
-
-.entity-icon.icon-complication {
-  background: #f6ad55;
+  font-size: 16px;
 }
 
 .entity-info {
   flex: 1;
-  min-width: 0;
 }
 
 .entity-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: #2d3748;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
 }
 
 .entity-type {
-  font-size: 11px;
-  color: #718096;
+  font-size: 12px;
+  color: #666;
 }
 
-/* 加载状态 */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -888,56 +831,29 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: #667eea;
+  color: #1890ff;
 }
 
-.loading-spinner i {
+.loading-spinner .el-icon {
   font-size: 24px;
 }
 
 /* 滚动条样式 */
-.panel-content::-webkit-scrollbar,
-.relations-content::-webkit-scrollbar {
+.panel-content::-webkit-scrollbar {
   width: 6px;
 }
 
-.panel-content::-webkit-scrollbar-track,
-.relations-content::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-.panel-content::-webkit-scrollbar-thumb,
-.relations-content::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
+.panel-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
   border-radius: 3px;
 }
 
-.panel-content::-webkit-scrollbar-thumb:hover,
-.relations-content::-webkit-scrollbar-thumb:hover {
-  background: #a0aec0;
+.panel-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
 }
 
-/* 响应式设计 */
-@media (max-width: 1200px) {
-  .node-detail-panel {
-    width: 350px;
-  }
-}
-
-@media (max-width: 768px) {
-  .node-detail-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 100%;
-    max-width: 400px;
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-
-  .panel-content {
-    max-height: calc(100vh - 100px);
-  }
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style>

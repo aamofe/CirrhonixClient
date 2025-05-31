@@ -125,8 +125,8 @@ export default {
         isLoading.value = true
         const response = await KnowledgeGraph.statistics()
 
-        if (response.data) {
-          const data = response.data
+        if (response.data.data) {
+          const data = response.data.data
 
           // 更新基础统计
           if (data.basic_stats) {

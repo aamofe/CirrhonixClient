@@ -1,5 +1,15 @@
 // composables/useNodeConfig.js
 import { ref } from 'vue'
+import {
+  BugFilled, // 病原体 - 病毒/细菌
+  Aim, // 感染部位 - 瞄准/定位
+  Stethoscope, // 临床症状 - 听诊器
+  Search, // 诊断方法 - 搜索/检查
+  Pills, // 治疗方案 - 药丸（需要自定义或使用MedicineFilled）
+  Shield, // 预防策略 - 盾牌
+  CopyDocument, // 肝硬化阶段 - 分层
+  WarnTriangleFilled, // 并发症 - 警告三角
+} from '@element-plus/icons-vue'
 
 export const useNodeConfig = () => {
   // 节点类型配置
@@ -8,49 +18,49 @@ export const useNodeConfig = () => {
       label: '病原体',
       value: 'pathogen',
       color: '#ff6b6b',
-      icon: 'fas fa-virus',
+      icon: BugFilled,
     },
     {
       label: '感染部位',
       value: 'infection_site',
       color: '#4ecdc4',
-      icon: 'fas fa-crosshairs',
+      icon: Aim,
     },
     {
       label: '临床症状',
       value: 'clinical_symptom',
       color: '#45b7d1',
-      icon: 'fas fa-stethoscope',
+      icon: Stethoscope,
     },
     {
       label: '诊断方法',
       value: 'diagnosis_method',
       color: '#96ceb4',
-      icon: 'fas fa-search',
+      icon: Search,
     },
     {
       label: '治疗方案',
       value: 'treatment_plan',
       color: '#ffeaa7',
-      icon: 'fas fa-pills',
+      icon: Pills,
     },
     {
       label: '预防策略',
       value: 'prevention_strategy',
       color: '#dda0dd',
-      icon: 'fas fa-shield-alt',
+      icon: Shield,
     },
     {
       label: '肝硬化阶段',
       value: 'cirrhosis_stage',
       color: '#98d8c8',
-      icon: 'fas fa-layer-group',
+      icon: CopyDocument,
     },
     {
       label: '并发症',
       value: 'complication',
       color: '#ff7675',
-      icon: 'fas fa-exclamation-triangle',
+      icon: WarnTriangleFilled,
     },
   ])
 
@@ -75,7 +85,7 @@ export const useNodeConfig = () => {
         label: type,
         value: type,
         color: '#95a5a6',
-        icon: 'fas fa-circle',
+        icon: BugFilled, // 默认图标
       }
     )
   }
