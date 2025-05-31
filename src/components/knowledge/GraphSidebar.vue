@@ -1,0 +1,281 @@
+<!-- src/components/knowledge/GraphSidebar.vue -->
+<template>
+  <div class="graph-sidebar">
+    <!-- 图谱统计 -->
+    <div class="sidebar-card">
+      <h3>图谱统计</h3>
+      <div class="stats-item">
+        <span class="stats-label">节点总数:</span>
+        <span class="stats-value">{{ graphStats.totalNodes }}</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-label">关系总数:</span>
+        <span class="stats-value">{{ graphStats.totalRelations }}</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-label">文献数量:</span>
+        <span class="stats-value">{{ graphStats.literatureCount }}</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-label">概念数量:</span>
+        <span class="stats-value">{{ graphStats.conceptCount }}</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-label">作者数量:</span>
+        <span class="stats-value">{{ graphStats.authorCount }}</span>
+      </div>
+    </div>
+
+    <!-- 热门概念 -->
+    <div class="sidebar-card">
+      <h3>热门概念</h3>
+      <div class="popular-list">
+        <div
+          v-for="concept in popularConcepts"
+          :key="concept.id"
+          class="popular-item"
+          @click="$emit('focus-node', concept.id)"
+        >
+          <span class="item-name">{{ concept.name }}</span>
+          <span class="item-count">{{ concept.count }}</span>
+        </div>
+      </div>
+      <div v-if="popularConcepts.length === 0" class="empty-state">
+        暂无数据
+      </div>
+    </div>
+
+    <!-- 核心文献 -->
+    <div class="sidebar-card">
+      <h3>核心文献</h3>
+      <div class="popular-list">
+        <div
+          v-for="paper in keyPapers"
+          :key="paper.id"
+          class="popular-item"
+          @click="$emit('view-article', paper.id)"
+        >
+          <span class="item-name">{{ paper.title }}</span>
+          <span class="item-count">{{ paper.citation_count }}</span>
+        </div>
+      </div>
+      <div v-if="keyPapers.length === 0" class="empty-state">暂无数据</div>
+    </div>
+
+    <!-- 图谱设置 -->
+    <div class="sidebar-card">
+      <h3>图谱设置</h3>
+      <div class="setting-item">
+        <span class="setting-label">节点大小:</span>
+        <input
+          type="range"
+          :value="graphSettings.nodeSize"
+          min="1"
+          max="20"
+          @input="updateSetting('nodeSize', $event.target.value)"
+        />
+        <span class="setting-value">{{ graphSettings.nodeSize }}</span>
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">边线粗细:</span>
+        <input
+          type="range"
+          :value="graphSettings.edgeWidth"
+          min="1"
+          max="10"
+          @input="updateSetting('edgeWidth', $event.target.value)"
+        />
+        <span class="setting-value">{{ graphSettings.edgeWidth }}</span>
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">显示标签:</span>
+        <input
+          type="checkbox"
+          :checked="graphSettings.showLabels"
+          @change="updateSetting('showLabels', $event.target.checked)"
+        />
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">物理引擎:</span>
+        <input
+          type="checkbox"
+          :checked="graphSettings.physics"
+          @change="updateSetting('physics', $event.target.checked)"
+        />
+      </div>
+      <div class="setting-actions">
+        <button @click="$emit('reset-settings')" class="reset-btn">
+          重置设置
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'GraphSidebar',
+  props: {
+    graphStats: Object,
+    popularConcepts: Array,
+    keyPapers: Array,
+    graphSettings: Object,
+  },
+  emits: ['focus-node', 'view-article', 'settings-change', 'reset-settings'],
+  setup(props, { emit }) {
+    const updateSetting = (key, value) => {
+      const newSettings = { ...props.graphSettings }
+      newSettings[key] =
+        typeof value === 'string' && !isNaN(value) ? Number(value) : value
+      emit('settings-change', newSettings)
+    }
+
+    return {
+      updateSetting,
+    }
+  },
+}
+</script>
+
+<style scoped>
+.graph-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.sidebar-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.sidebar-card h3 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.stats-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.stats-item:last-child {
+  border-bottom: none;
+}
+
+.stats-label {
+  color: #666;
+  font-size: 14px;
+}
+
+.stats-value {
+  color: #1a91c1;
+  font-weight: 500;
+}
+
+.popular-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.popular-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.popular-item:hover {
+  background-color: #f8f9fa;
+  margin: 0 -10px;
+  padding: 10px 10px;
+}
+
+.popular-item:last-child {
+  border-bottom: none;
+}
+
+.item-name {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+  margin-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-count {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.empty-state {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.setting-label {
+  width: 80px;
+  font-size: 14px;
+  color: #333;
+  margin-right: 10px;
+}
+
+.setting-item input[type='range'] {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.setting-item input[type='checkbox'] {
+  margin-left: auto;
+}
+
+.setting-value {
+  width: 30px;
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+}
+
+.setting-actions {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.reset-btn {
+  background: #f5f5f5;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  background: #e0e0e0;
+}
+</style>
