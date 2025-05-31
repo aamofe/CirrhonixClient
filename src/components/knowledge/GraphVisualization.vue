@@ -4,7 +4,7 @@
     <!-- 加载状态 -->
     <div v-if="isLoading" class="loading-overlay">
       <div class="spinner"></div>
-      <p>加载知识图谱中...</p>
+      <p class="loading-text">加载知识图谱中...</p>
     </div>
 
     <!-- 图谱画布 -->
@@ -13,68 +13,107 @@
     <!-- 图谱工具栏 -->
     <div class="graph-toolbar">
       <div class="toolbar-group">
-        <button @click="zoomIn" class="toolbar-btn" title="放大">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-          </svg>
-        </button>
-        <button @click="zoomOut" class="toolbar-btn" title="缩小">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M19 13H5v-2h14v2z" />
-          </svg>
-        </button>
-        <button @click="resetZoom" class="toolbar-btn" title="重置缩放">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-          </svg>
-        </button>
-      </div>
-      <div class="toolbar-group">
-        <button @click="centerGraph" class="toolbar-btn" title="居中显示">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </button>
-        <button @click="togglePhysics" class="toolbar-btn" :class="{ active: physicsEnabled }" title="物理引擎">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-          </svg>
-        </button>
-        <button @click="exportImage" class="toolbar-btn" title="导出图片">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-          </svg>
-        </button>
+        <el-tooltip content="放大" placement="bottom">
+          <button @click="zoomIn" class="toolbar-btn">
+            <el-icon>
+              <ZoomIn />
+            </el-icon>
+          </button>
+        </el-tooltip>
+
+        <el-tooltip content="缩小" placement="bottom">
+          <button @click="zoomOut" class="toolbar-btn">
+            <el-icon>
+              <ZoomOut />
+            </el-icon>
+          </button>
+        </el-tooltip>
+
+        <el-tooltip content="适应画面" placement="bottom">
+          <button @click="resetZoom" class="toolbar-btn">
+            <el-icon>
+              <FullScreen />
+            </el-icon>
+          </button>
+        </el-tooltip>
+
+        <div class="toolbar-divider"></div>
+
+        <el-tooltip content="居中显示" placement="bottom">
+          <button @click="centerGraph" class="toolbar-btn">
+            <el-icon>
+              <Aim />
+            </el-icon>
+          </button>
+        </el-tooltip>
+
+        <el-tooltip content="物理引擎" placement="bottom">
+          <button @click="togglePhysics" class="toolbar-btn" :class="{ active: physicsEnabled }">
+            <el-icon>
+              <MagicStick />
+            </el-icon>
+          </button>
+        </el-tooltip>
+
+        <el-tooltip content="导出图片" placement="bottom">
+          <button @click="exportImage" class="toolbar-btn">
+            <el-icon>
+              <Download />
+            </el-icon>
+          </button>
+        </el-tooltip>
       </div>
     </div>
 
     <!-- 图谱信息面板 -->
     <div class="graph-info-panel" v-if="graphData.nodes && graphData.nodes.length > 0">
-      <div class="info-item">
-        <span class="info-label">节点:</span>
-        <span class="info-value">{{ visibleNodes }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">关系:</span>
-        <span class="info-value">{{ visibleEdges }}</span>
-      </div>
-      <div class="info-item" v-if="selectedNodeCount > 0">
-        <span class="info-label">已选:</span>
-        <span class="info-value">{{ selectedNodeCount }}</span>
+      <div class="info-row">
+        <div class="info-item">
+          <el-icon class="info-icon">
+            <Connection />
+          </el-icon>
+          <span class="info-value">{{ visibleNodes }}</span>
+          <span class="info-label">节点</span>
+        </div>
+        <div class="info-item">
+          <el-icon class="info-icon">
+            <Share />
+          </el-icon>
+          <span class="info-value">{{ visibleEdges }}</span>
+          <span class="info-label">关系</span>
+        </div>
+        <div class="info-item" v-if="selectedNodeCount > 0">
+          <el-icon class="info-icon"><Select /></el-icon>
+          <span class="info-value">{{ selectedNodeCount }}</span>
+          <span class="info-label">已选</span>
+        </div>
       </div>
     </div>
 
     <!-- 搜索结果提示 -->
     <div class="search-results" v-if="searchedNodes.length > 0">
       <div class="search-header">
-        <span>搜索结果 ({{ searchedNodes.length }})</span>
-        <button @click="clearSearch" class="clear-btn">清除</button>
+        <div class="search-title">
+          <el-icon>
+            <Search />
+          </el-icon>
+          <span>搜索结果 ({{ searchedNodes.length }})</span>
+        </div>
+        <button @click="clearSearch" class="clear-btn">
+          <el-icon size="14">
+            <Close />
+          </el-icon>
+        </button>
       </div>
       <div class="search-list">
         <div v-for="node in searchedNodes" :key="node.id" class="search-item" @click="focusOnNode(node.id)">
-          <span class="node-name">{{ node.label || node.name }}</span>
-          <span class="node-type">{{ getNodeTypeDisplay(node.type) }}</span>
+          <div class="node-info">
+            <span class="node-name">{{ node.label || node.name }}</span>
+            <span class="node-type">{{ getNodeTypeDisplay(node.type) }}</span>
+          </div>
+          <el-icon class="arrow-icon">
+            <ArrowRight />
+          </el-icon>
         </div>
       </div>
     </div>
@@ -83,11 +122,42 @@
 
 <script>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { Network, DataSet } from 'vis-network/standalone'
 import { useNodeConfig } from '@/composables/useNodeConfig'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
+// 导入Element Plus图标
+import {
+  ZoomIn,
+  ZoomOut,
+  FullScreen,
+  Aim,
+  MagicStick,
+  Download,
+  Close,
+  Connection,
+  Share,
+  Select,
+  Search,
+  ArrowRight
+} from '@element-plus/icons-vue'
+
 export default {
   name: 'GraphVisualization',
+  components: {
+    ZoomIn,
+    ZoomOut,
+    FullScreen,
+    Aim,
+    MagicStick,
+    Download,
+    Close,
+    Connection,
+    Share,
+    Select,
+    Search,
+    ArrowRight
+  },
   props: {
     currentView: {
       type: String,
@@ -131,6 +201,65 @@ export default {
       return graphData.value.edges ? graphData.value.edges.length : 0
     })
 
+    // 安全的节点选择方法
+    const safeSelectNodes = (nodeIds) => {
+      if (!network.value) return false
+
+      try {
+        // 方法1: 直接使用 selectNodes
+        network.value.selectNodes(nodeIds)
+        return true
+      } catch (error) {
+        console.warn('selectNodes 失败，尝试替代方法:', error)
+
+        try {
+          // 方法2: 使用 setSelection
+          network.value.setSelection({
+            nodes: nodeIds,
+            edges: []
+          })
+          return true
+        } catch (error2) {
+          console.warn('setSelection 也失败了，使用手动触发:', error2)
+
+          // 方法3: 手动触发选择事件
+          if (nodeIds.length > 0) {
+            const nodeData = graphData.value.nodes.find((n) => n.id === nodeIds[0])
+            if (nodeData) {
+              emit('node-selected', nodeData)
+              selectedNodeCount.value = nodeIds.length
+            }
+          } else {
+            emit('node-deselected')
+            selectedNodeCount.value = 0
+          }
+          return false
+        }
+      }
+    }
+
+    // 安全的清除选择方法
+    const safeClearSelection = () => {
+      if (!network.value) return false
+
+      try {
+        network.value.selectNodes([])
+        return true
+      } catch (error) {
+        console.warn('清除选择失败:', error)
+        try {
+          network.value.setSelection({ nodes: [], edges: [] })
+          return true
+        } catch (error2) {
+          console.warn('setSelection 清除也失败了:', error2)
+          // 手动触发取消选择事件
+          emit('node-deselected')
+          selectedNodeCount.value = 0
+          return false
+        }
+      }
+    }
+
     const loadGraphData = async () => {
       try {
         const params = {
@@ -163,11 +292,11 @@ export default {
 
     // 获取节点大小
     const getNodeSize = (node) => {
-      const baseSize = props.graphSettings.nodeSize || 10
+      const baseSize = props.graphSettings.nodeSize || 15
       const connections = node.connections || 0
       return Math.max(
         baseSize,
-        Math.min(baseSize + connections * 2, baseSize * 3)
+        Math.min(baseSize + connections * 1.5, baseSize * 2.5)
       )
     }
 
@@ -183,12 +312,6 @@ export default {
       }
 
       try {
-        if (!window.vis) {
-          await loadVisNetwork()
-        }
-
-        const { DataSet } = window.vis
-
         // 处理节点数据
         const nodes = new DataSet(
           graphData.value.nodes.map((node) => ({
@@ -199,19 +322,27 @@ export default {
             title: `${node.name || node.label}\n类型: ${getNodeLabel(node.type)}\n${node.description || ''}`,
             group: node.type,
             color: {
-              background: getNodeColor(node.type),
-              border: getNodeColor(node.type),
+              background: getNodeColor(node.type) || '#A8E6CF',
+              border: '#1A91C1',
               highlight: {
-                background: '#ffd32a',
-                border: '#ff8c00',
+                background: '#1A91C1',
+                border: '#0F7BA0',
               },
             },
             size: getNodeSize(node),
             font: {
               size: 12,
               color: '#333',
+              face: 'Arial, sans-serif'
             },
-            physics: physicsEnabled.value,
+            borderWidth: 2,
+            shadow: {
+              enabled: true,
+              color: 'rgba(26, 145, 193, 0.2)',
+              size: 8,
+              x: 2,
+              y: 2
+            }
           }))
         )
 
@@ -225,9 +356,9 @@ export default {
             title: `关系: ${edge.label}\n支持度: ${edge.support_degree || 0}%`,
             width: props.graphSettings.edgeWidth || 2,
             color: {
-              color: '#848484',
-              highlight: '#ff8c00',
-              opacity: edge.is_verified ? 1.0 : 0.6,
+              color: edge.is_verified ? '#1A91C1' : '#A8E6CF',
+              highlight: '#0F7BA0',
+              opacity: edge.is_verified ? 0.8 : 0.5,
             },
             smooth: {
               type: 'continuous',
@@ -235,9 +366,16 @@ export default {
             arrows: {
               to: {
                 enabled: true,
-                scaleFactor: 1,
+                scaleFactor: 0.8,
+                type: 'arrow'
               },
             },
+            font: {
+              size: 10,
+              color: '#666',
+              strokeWidth: 2,
+              strokeColor: '#F5FBFF'
+            }
           }))
         )
 
@@ -245,41 +383,73 @@ export default {
         const options = {
           physics: {
             enabled: physicsEnabled.value,
-            stabilization: { iterations: 100 },
-            solver: 'barnesHut',
-            barnesHut: {
-              gravitationalConstant: -2000,
-              centralGravity: 0.3,
-              springLength: 95,
-              springConstant: 0.04,
-              damping: 0.09,
+            stabilization: {
+              iterations: 200,
+              updateInterval: 25
+            },
+            solver: 'forceAtlas2Based',
+            forceAtlas2Based: {
+              gravitationalConstant: -80,
+              centralGravity: 0.005,
+              springLength: 150,
+              springConstant: 0.18,
+              damping: 0.4,
+              avoidOverlap: 0.5
             },
           },
           interaction: {
             hover: true,
+            hoverConnectedEdges: true,
             selectConnectedEdges: false,
-            tooltipDelay: 200,
+            tooltipDelay: 300,
+            zoomView: true,
+            dragView: true
           },
           nodes: {
             borderWidth: 2,
             shadow: true,
             font: {
               size: 12,
+              face: 'Arial, sans-serif'
             },
+            chosen: {
+              node: function (values, id, selected, hovering) {
+                values.shadow = true
+                values.shadowSize = 12
+                values.shadowColor = 'rgba(26, 145, 193, 0.4)'
+              }
+            }
           },
           edges: {
-            shadow: true,
+            shadow: false,
             smooth: {
               type: 'continuous',
+              forceDirection: 'none',
+              roundness: 0.1
             },
+            chosen: {
+              edge: function (values, id, selected, hovering) {
+                values.width = values.width * 1.5
+              }
+            }
           },
           layout: {
             improvedLayout: true,
-          },
+            clusterThreshold: 150
+          }
+        }
+
+        // 销毁旧的网络实例
+        if (network.value) {
+          try {
+            network.value.destroy()
+          } catch (error) {
+            console.warn('销毁旧网络实例时出错:', error)
+          }
         }
 
         // 创建网络
-        network.value = new window.vis.Network(
+        network.value = new Network(
           networkContainer.value,
           { nodes, edges },
           options
@@ -290,28 +460,6 @@ export default {
       } catch (error) {
         console.error('初始化网络图失败:', error)
       }
-    }
-
-    // 加载vis-network库
-    const loadVisNetwork = () => {
-      return new Promise((resolve, reject) => {
-        if (window.vis) {
-          resolve()
-          return
-        }
-
-        const script = document.createElement('script')
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js'
-        script.onload = () => {
-          const link = document.createElement('link')
-          link.rel = 'stylesheet'
-          link.href = 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css'
-          document.head.appendChild(link)
-          resolve()
-        }
-        script.onerror = reject
-        document.head.appendChild(script)
-      })
     }
 
     // 设置事件监听器
@@ -346,68 +494,114 @@ export default {
 
       // 稳定化完成事件
       network.value.on('stabilizationIterationsDone', () => {
-        network.value.setOptions({ physics: false })
+        if (physicsEnabled.value) {
+          network.value.setOptions({ physics: { enabled: false } })
+        }
       })
     }
 
     // 工具栏功能
     const zoomIn = () => {
       if (network.value) {
-        const scale = network.value.getScale()
-        network.value.moveTo({ scale: scale * 1.2 })
+        try {
+          const scale = network.value.getScale()
+          network.value.moveTo({
+            scale: Math.min(scale * 1.3, 3.0),
+            animation: { duration: 300, easingFunction: 'easeInOutCubic' }
+          })
+        } catch (error) {
+          console.error('缩放操作失败:', error)
+        }
       }
     }
 
     const zoomOut = () => {
       if (network.value) {
-        const scale = network.value.getScale()
-        network.value.moveTo({ scale: scale * 0.8 })
+        try {
+          const scale = network.value.getScale()
+          network.value.moveTo({
+            scale: Math.max(scale * 0.7, 0.1),
+            animation: { duration: 300, easingFunction: 'easeInOutCubic' }
+          })
+        } catch (error) {
+          console.error('缩放操作失败:', error)
+        }
       }
     }
 
     const resetZoom = () => {
       if (network.value) {
-        network.value.fit()
+        try {
+          network.value.fit({
+            animation: {
+              duration: 800,
+              easingFunction: 'easeInOutQuart',
+            },
+          })
+        } catch (error) {
+          console.error('重置缩放失败:', error)
+        }
       }
     }
 
     const centerGraph = () => {
       if (network.value) {
-        network.value.fit({
-          animation: {
-            duration: 1000,
-            easingFunction: 'easeInOutQuad',
-          },
-        })
+        try {
+          const nodeIds = network.value.getSelectedNodes()
+          if (nodeIds.length > 0) {
+            network.value.focus(nodeIds[0], {
+              scale: 1.2,
+              animation: {
+                duration: 800,
+                easingFunction: 'easeInOutQuart',
+              },
+            })
+          } else {
+            network.value.fit({
+              animation: {
+                duration: 800,
+                easingFunction: 'easeInOutQuart',
+              },
+            })
+          }
+        } catch (error) {
+          console.error('居中操作失败:', error)
+        }
       }
     }
 
     const togglePhysics = () => {
       physicsEnabled.value = !physicsEnabled.value
       if (network.value) {
-        network.value.setOptions({
-          physics: { enabled: physicsEnabled.value },
-        })
+        try {
+          network.value.setOptions({
+            physics: { enabled: physicsEnabled.value },
+          })
+        } catch (error) {
+          console.error('切换物理引擎失败:', error)
+        }
       }
     }
 
     const exportImage = () => {
       if (network.value) {
-        const canvas = network.value.canvas.frame.canvas
-        const link = document.createElement('a')
-        link.download = `knowledge-graph-${Date.now()}.png`
-        link.href = canvas.toDataURL()
-        link.click()
+        try {
+          const canvas = network.value.canvas.frame.canvas
+          const link = document.createElement('a')
+          link.download = `LiverScholar-knowledge-graph-${Date.now()}.png`
+          link.href = canvas.toDataURL('image/png', 1.0)
+          link.click()
+        } catch (error) {
+          console.error('导出图片失败:', error)
+        }
       }
     }
 
-    // 搜索功能
+    // 搜索功能 - 使用安全的选择方法
     const searchNodes = (keyword) => {
       if (!keyword || !graphData.value.nodes) {
         searchedNodes.value = []
-        if (network.value) {
-          network.value.selectNodes([])
-        }
+        safeClearSelection()
         return
       }
 
@@ -419,36 +613,64 @@ export default {
           (node.description || '').toLowerCase().includes(keyword.toLowerCase())
       )
 
-      searchedNodes.value = results
+      searchedNodes.value = results.slice(0, 10) // 限制显示数量
 
       if (network.value && results.length > 0) {
         const nodeIds = results.map((node) => node.id)
-        network.value.selectNodes(nodeIds)
-        if (results.length === 1) {
+        const success = safeSelectNodes(nodeIds)
+
+        if (success && results.length === 1) {
+          // 延迟聚焦以确保选择完成
+          setTimeout(() => {
+            focusOnNode(results[0].id)
+          }, 100)
+        } else if (!success && results.length === 1) {
+          // 如果选择失败，直接聚焦
           focusOnNode(results[0].id)
         }
       }
     }
 
-    // 清除搜索
+    // 清除搜索 - 使用安全的清除方法
     const clearSearch = () => {
       searchedNodes.value = []
-      if (network.value) {
-        network.value.selectNodes([])
-      }
+      safeClearSelection()
     }
 
-    // 聚焦到指定节点
+    // 聚焦到指定节点 - 修复版本
     const focusOnNode = (nodeId) => {
-      if (network.value) {
+      if (!network.value) return
+
+      try {
+        // 先聚焦到节点
         network.value.focus(nodeId, {
           scale: 1.5,
           animation: {
-            duration: 1000,
-            easingFunction: 'easeInOutQuad',
+            duration: 800,
+            easingFunction: 'easeInOutQuart',
           },
         })
-        network.value.selectNodes([nodeId])
+
+        // 延迟选择节点以避免并发问题
+        setTimeout(() => {
+          const success = safeSelectNodes([nodeId])
+          if (!success) {
+            // 如果选择失败，手动触发选择事件
+            const nodeData = graphData.value.nodes.find((n) => n.id === nodeId)
+            if (nodeData) {
+              emit('node-selected', nodeData)
+              selectedNodeCount.value = 1
+            }
+          }
+        }, 200)
+      } catch (error) {
+        console.error('聚焦节点失败:', error)
+        // 即使聚焦失败，也尝试触发选择事件
+        const nodeData = graphData.value.nodes.find((n) => n.id === nodeId)
+        if (nodeData) {
+          emit('node-selected', nodeData)
+          selectedNodeCount.value = 1
+        }
       }
     }
 
@@ -457,7 +679,7 @@ export default {
       loadGraphData()
     }
 
-    // 监听器 - 监听过滤条件变化
+    // 监听器
     watch(
       () => props.selectedFilters,
       () => {
@@ -483,7 +705,11 @@ export default {
 
     onBeforeUnmount(() => {
       if (network.value) {
-        network.value.destroy()
+        try {
+          network.value.destroy()
+        } catch (error) {
+          console.warn('销毁网络实例时出错:', error)
+        }
       }
     })
 
@@ -523,15 +749,17 @@ export default {
   position: relative;
   width: 100%;
   height: 600px;
-  background: #ffffff;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
+  background: #F5FBFF;
+  border: 2px solid #A8E6CF;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(26, 145, 193, 0.1);
 }
 
 .graph-canvas {
   width: 100%;
   height: 100%;
+  background: linear-gradient(135deg, #F5FBFF 0%, rgba(168, 230, 207, 0.1) 100%);
 }
 
 .loading-overlay {
@@ -540,7 +768,8 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(245, 251, 255, 0.95);
+  backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -549,13 +778,20 @@ export default {
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(168, 230, 207, 0.3);
+  border-top: 4px solid #1A91C1;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+.loading-text {
+  color: #1A91C1;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
 }
 
 @keyframes spin {
@@ -570,87 +806,107 @@ export default {
 
 .graph-toolbar {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  gap: 8px;
+  top: 20px;
+  right: 20px;
   z-index: 100;
 }
 
 .toolbar-group {
   display: flex;
+  align-items: center;
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 6px;
-  padding: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 6px 24px rgba(26, 145, 193, 0.15);
+  border: 1px solid rgba(168, 230, 207, 0.3);
 }
 
 .toolbar-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  color: #666;
-  transition: all 0.2s;
+  color: #1A91C1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0 2px;
 }
 
 .toolbar-btn:hover {
-  background: #f5f5f5;
-  color: #333;
+  background: rgba(26, 145, 193, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 145, 193, 0.2);
 }
 
 .toolbar-btn.active {
-  background: #3498db;
+  background: #1A91C1;
   color: white;
+  box-shadow: 0 4px 12px rgba(26, 145, 193, 0.3);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(168, 230, 207, 0.5);
+  margin: 0 8px;
 }
 
 .graph-info-panel {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
+  bottom: 20px;
+  left: 20px;
   background: rgba(255, 255, 255, 0.95);
-  padding: 12px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  font-size: 14px;
+  backdrop-filter: blur(10px);
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(26, 145, 193, 0.15);
+  border: 1px solid rgba(168, 230, 207, 0.3);
   z-index: 100;
+}
+
+.info-row {
+  display: flex;
+  gap: 24px;
 }
 
 .info-item {
   display: flex;
   align-items: center;
-  margin-bottom: 4px;
+  gap: 8px;
 }
 
-.info-item:last-child {
-  margin-bottom: 0;
-}
-
-.info-label {
-  color: #666;
-  margin-right: 8px;
-  min-width: 40px;
+.info-icon {
+  color: #1A91C1;
+  font-size: 16px;
 }
 
 .info-value {
   font-weight: 600;
-  color: #333;
+  font-size: 16px;
+  color: #1A91C1;
+}
+
+.info-label {
+  color: #666;
+  font-size: 14px;
 }
 
 .search-results {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  width: 280px;
-  max-height: 300px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  top: 20px;
+  left: 20px;
+  width: 320px;
+  max-height: 400px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(26, 145, 193, 0.2);
+  border: 1px solid rgba(168, 230, 207, 0.4);
   z-index: 100;
   overflow: hidden;
 }
@@ -659,30 +915,40 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #1A91C1, #0F7BA0);
+  color: white;
+}
+
+.search-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 15px;
 }
 
 .clear-btn {
-  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
-  color: #6c757d;
+  border-radius: 6px;
+  color: white;
   cursor: pointer;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .clear-btn:hover {
-  background: #dee2e6;
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .search-list {
-  max-height: 240px;
+  max-height: 320px;
   overflow-y: auto;
 }
 
@@ -690,31 +956,70 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 16px 20px;
   cursor: pointer;
-  border-bottom: 1px solid #f1f3f4;
-  transition: background-color 0.2s;
+  border-bottom: 1px solid rgba(168, 230, 207, 0.2);
+  transition: all 0.2s;
 }
 
 .search-item:hover {
-  background: #f8f9fa;
+  background: rgba(26, 145, 193, 0.05);
+  transform: translateX(4px);
 }
 
 .search-item:last-child {
   border-bottom: none;
 }
 
+.node-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .node-name {
   font-weight: 500;
   color: #333;
-  flex: 1;
+  font-size: 14px;
 }
 
 .node-type {
   font-size: 12px;
-  color: #666;
-  background: #e9ecef;
-  padding: 2px 6px;
+  color: #1A91C1;
+  background: rgba(168, 230, 207, 0.3);
+  padding: 2px 8px;
   border-radius: 12px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.arrow-icon {
+  color: #A8E6CF;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.search-item:hover .arrow-icon {
+  color: #1A91C1;
+  transform: translateX(2px);
+}
+
+/* 自定义滚动条 */
+.search-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-list::-webkit-scrollbar-track {
+  background: rgba(168, 230, 207, 0.1);
+}
+
+.search-list::-webkit-scrollbar-thumb {
+  background: rgba(26, 145, 193, 0.3);
+  border-radius: 3px;
+}
+
+.search-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 145, 193, 0.5);
 }
 </style>
