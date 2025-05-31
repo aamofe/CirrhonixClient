@@ -4,25 +4,30 @@
     <!-- 图谱统计 -->
     <div class="sidebar-card">
       <h3>图谱统计</h3>
-      <div class="stats-item">
-        <span class="stats-label">节点总数:</span>
-        <span class="stats-value">{{ graphStats.totalNodes }}</span>
+      <div v-if="isLoading" class="loading-state">
+        加载中...
       </div>
-      <div class="stats-item">
-        <span class="stats-label">关系总数:</span>
-        <span class="stats-value">{{ graphStats.totalRelations }}</span>
-      </div>
-      <div class="stats-item">
-        <span class="stats-label">文献数量:</span>
-        <span class="stats-value">{{ graphStats.literatureCount }}</span>
-      </div>
-      <div class="stats-item">
-        <span class="stats-label">概念数量:</span>
-        <span class="stats-value">{{ graphStats.conceptCount }}</span>
-      </div>
-      <div class="stats-item">
-        <span class="stats-label">作者数量:</span>
-        <span class="stats-value">{{ graphStats.authorCount }}</span>
+      <div v-else>
+        <div class="stats-item">
+          <span class="stats-label">节点总数:</span>
+          <span class="stats-value">{{ graphStats.totalNodes }}</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">关系总数:</span>
+          <span class="stats-value">{{ graphStats.totalRelations }}</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">文献数量:</span>
+          <span class="stats-value">{{ graphStats.literatureCount }}</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">概念数量:</span>
+          <span class="stats-value">{{ graphStats.conceptCount }}</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">作者数量:</span>
+          <span class="stats-value">{{ graphStats.authorCount }}</span>
+        </div>
       </div>
     </div>
 
@@ -30,12 +35,8 @@
     <div class="sidebar-card">
       <h3>热门概念</h3>
       <div class="popular-list">
-        <div
-          v-for="concept in popularConcepts"
-          :key="concept.id"
-          class="popular-item"
-          @click="$emit('focus-node', concept.id)"
-        >
+        <div v-for="concept in popularConcepts" :key="concept.id" class="popular-item"
+          @click="focusOnConcept(concept.id)">
           <span class="item-name">{{ concept.name }}</span>
           <span class="item-count">{{ concept.count }}</span>
         </div>
@@ -49,12 +50,7 @@
     <div class="sidebar-card">
       <h3>核心文献</h3>
       <div class="popular-list">
-        <div
-          v-for="paper in keyPapers"
-          :key="paper.id"
-          class="popular-item"
-          @click="$emit('view-article', paper.id)"
-        >
+        <div v-for="paper in keyPapers" :key="paper.id" class="popular-item" @click="viewArticle(paper.id)">
           <span class="item-name">{{ paper.title }}</span>
           <span class="item-count">{{ paper.citation_count }}</span>
         </div>
@@ -67,44 +63,28 @@
       <h3>图谱设置</h3>
       <div class="setting-item">
         <span class="setting-label">节点大小:</span>
-        <input
-          type="range"
-          :value="graphSettings.nodeSize"
-          min="1"
-          max="20"
-          @input="updateSetting('nodeSize', $event.target.value)"
-        />
+        <input type="range" :value="graphSettings.nodeSize" min="1" max="20"
+          @input="updateSetting('nodeSize', $event.target.value)" />
         <span class="setting-value">{{ graphSettings.nodeSize }}</span>
       </div>
       <div class="setting-item">
         <span class="setting-label">边线粗细:</span>
-        <input
-          type="range"
-          :value="graphSettings.edgeWidth"
-          min="1"
-          max="10"
-          @input="updateSetting('edgeWidth', $event.target.value)"
-        />
+        <input type="range" :value="graphSettings.edgeWidth" min="1" max="10"
+          @input="updateSetting('edgeWidth', $event.target.value)" />
         <span class="setting-value">{{ graphSettings.edgeWidth }}</span>
       </div>
       <div class="setting-item">
         <span class="setting-label">显示标签:</span>
-        <input
-          type="checkbox"
-          :checked="graphSettings.showLabels"
-          @change="updateSetting('showLabels', $event.target.checked)"
-        />
+        <input type="checkbox" :checked="graphSettings.showLabels"
+          @change="updateSetting('showLabels', $event.target.checked)" />
       </div>
       <div class="setting-item">
         <span class="setting-label">物理引擎:</span>
-        <input
-          type="checkbox"
-          :checked="graphSettings.physics"
-          @change="updateSetting('physics', $event.target.checked)"
-        />
+        <input type="checkbox" :checked="graphSettings.physics"
+          @change="updateSetting('physics', $event.target.checked)" />
       </div>
       <div class="setting-actions">
-        <button @click="$emit('reset-settings')" class="reset-btn">
+        <button @click="resetSettings" class="reset-btn">
           重置设置
         </button>
       </div>
@@ -113,6 +93,9 @@
 </template>
 
 <script>
+import { ref, reactive, onMounted } from 'vue'
+import KnowledgeGraph from '@/api/knowledgeGraph'
+
 export default {
   name: 'GraphSidebar',
   props: {
@@ -123,20 +106,106 @@ export default {
   },
   emits: ['focus-node', 'view-article', 'settings-change', 'reset-settings'],
   setup(props, { emit }) {
+    // 组件内部管理统计数据
+    const graphStats = reactive({
+      totalNodes: 0,
+      totalRelations: 0,
+      literatureCount: 0,
+      conceptCount: 0,
+      authorCount: 0,
+    })
+
+    const popularConcepts = ref([])
+    const keyPapers = ref([])
+    const isLoading = ref(false)
+
+    // 加载统计数据 - 从父组件移到子组件
+    const loadStatistics = async () => {
+      try {
+        isLoading.value = true
+        const response = await KnowledgeGraph.statistics()
+
+        if (response.data) {
+          const data = response.data
+
+          // 更新基础统计
+          if (data.basic_stats) {
+            Object.assign(graphStats, {
+              totalNodes: data.basic_stats.total_entities,
+              totalRelations: data.basic_stats.total_relations,
+              literatureCount: data.basic_stats.literature_count || 0,
+              conceptCount: data.basic_stats.concept_count || 0,
+              authorCount: data.basic_stats.author_count || 0,
+            })
+          }
+
+          // 更新热门概念
+          if (data.top_active_entities) {
+            popularConcepts.value = data.top_active_entities
+              .slice(0, 10)
+              .map((item) => ({
+                id: item.entity.id,
+                name: item.entity.name,
+                count: item.total_relations,
+              }))
+          }
+
+          // 更新核心文献
+          if (data.key_papers) {
+            keyPapers.value = data.key_papers.slice(0, 5)
+          }
+        }
+      } catch (error) {
+        console.error('加载统计数据失败:', error)
+      } finally {
+        isLoading.value = false
+      }
+    }
+
     const updateSetting = (key, value) => {
       const newSettings = { ...props.graphSettings }
-      newSettings[key] =
-        typeof value === 'string' && !isNaN(value) ? Number(value) : value
+      newSettings[key] = typeof value === 'string' && !isNaN(value) ? Number(value) : value
       emit('settings-change', newSettings)
     }
 
+    const resetSettings = () => {
+      emit('reset-settings')
+    }
+
+    const focusOnConcept = (conceptId) => {
+      emit('focus-node', conceptId)
+    }
+
+    const viewArticle = (articleId) => {
+      emit('view-article', articleId)
+    }
+
+    // 刷新统计数据
+    const refreshStatistics = () => {
+      loadStatistics()
+    }
+
+    onMounted(() => {
+      loadStatistics()
+    })
+
     return {
+      // 状态
+      graphStats,
+      popularConcepts,
+      keyPapers,
+      isLoading,
+
+      // 方法
       updateSetting,
+      resetSettings,
+      focusOnConcept,
+      viewArticle,
+      refreshStatistics,
     }
   },
 }
 </script>
-
 <style scoped>
 .graph-sidebar {
   width: 280px;

@@ -32,42 +32,25 @@
       <div class="toolbar-group">
         <button @click="centerGraph" class="toolbar-btn" title="居中显示">
           <svg viewBox="0 0 24 24" width="16" height="16">
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            />
+            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
             <circle cx="12" cy="12" r="3" />
           </svg>
         </button>
-        <button
-          @click="togglePhysics"
-          class="toolbar-btn"
-          :class="{ active: physicsEnabled }"
-          title="物理引擎"
-        >
+        <button @click="togglePhysics" class="toolbar-btn" :class="{ active: physicsEnabled }" title="物理引擎">
           <svg viewBox="0 0 24 24" width="16" height="16">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
         </button>
         <button @click="exportImage" class="toolbar-btn" title="导出图片">
           <svg viewBox="0 0 24 24" width="16" height="16">
-            <path
-              d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"
-            />
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
           </svg>
         </button>
       </div>
     </div>
 
     <!-- 图谱信息面板 -->
-    <div
-      class="graph-info-panel"
-      v-if="graphData.nodes && graphData.nodes.length > 0"
-    >
+    <div class="graph-info-panel" v-if="graphData.nodes && graphData.nodes.length > 0">
       <div class="info-item">
         <span class="info-label">节点:</span>
         <span class="info-value">{{ visibleNodes }}</span>
@@ -89,13 +72,8 @@
         <button @click="clearSearch" class="clear-btn">清除</button>
       </div>
       <div class="search-list">
-        <div
-          v-for="node in searchedNodes"
-          :key="node.id"
-          class="search-item"
-          @click="focusOnNode(node.id)"
-        >
-          <span class="node-name">{{ node.label }}</span>
+        <div v-for="node in searchedNodes" :key="node.id" class="search-item" @click="focusOnNode(node.id)">
+          <span class="node-name">{{ node.label || node.name }}</span>
           <span class="node-type">{{ getNodeTypeDisplay(node.type) }}</span>
         </div>
       </div>
@@ -104,7 +82,9 @@
 </template>
 
 <script>
-import { ref, onMounted, watch, nextTick, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useNodeConfig } from '@/composables/useNodeConfig'
+import KnowledgeGraph from '@/api/knowledgeGraph'
 
 export default {
   name: 'GraphVisualization',
@@ -115,7 +95,7 @@ export default {
     },
     graphData: {
       type: Object,
-      required: true,
+      default: () => ({ nodes: [], edges: [] })
     },
     graphSettings: {
       type: Object,
@@ -123,64 +103,70 @@ export default {
     },
     selectedFilters: {
       type: Object,
-      default: () => ({}),
+      default: () => ({})
     },
     isLoading: {
       type: Boolean,
-      default: false,
-    },
+      default: false
+    }
   },
   emits: ['node-selected', 'node-deselected'],
   setup(props, { emit }) {
-    const graphContainer = ref(null)
+    const { getNodeColor, getNodeLabel } = useNodeConfig()
+
+    // 组件内部状态
     const networkContainer = ref(null)
     const network = ref(null)
+    const graphData = ref({ nodes: [], edges: [] })
     const searchedNodes = ref([])
     const selectedNodeCount = ref(0)
     const physicsEnabled = ref(true)
 
-    // 节点类型颜色映射
-    const nodeColors = {
-      pathogen: '#ff6b6b',
-      infection_site: '#4ecdc4',
-      clinical_symptom: '#45b7d1',
-      diagnosis_method: '#96ceb4',
-      treatment_plan: '#ffeaa7',
-      prevention_strategy: '#dda0dd',
-      cirrhosis_stage: '#98d8c8',
-      complication: '#ff7675',
-    }
-
-    // 节点类型显示名映射
-    const nodeTypeDisplay = {
-      pathogen: '病原体',
-      infection_site: '感染部位',
-      clinical_symptom: '临床症状',
-      diagnosis_method: '诊断方法',
-      treatment_plan: '治疗方案',
-      prevention_strategy: '预防策略',
-      cirrhosis_stage: '肝硬化阶段',
-      complication: '并发症',
-    }
-
     // 计算属性
     const visibleNodes = computed(() => {
-      return props.graphData.nodes ? props.graphData.nodes.length : 0
+      return graphData.value.nodes ? graphData.value.nodes.length : 0
     })
 
     const visibleEdges = computed(() => {
-      return props.graphData.edges ? props.graphData.edges.length : 0
+      return graphData.value.edges ? graphData.value.edges.length : 0
     })
 
-    // 获取节点颜色
-    const getNodeColor = (nodeType) => {
-      return nodeColors[nodeType] || '#95a5a6'
+    // 数据加载逻辑 - 从父组件移到子组件
+    const loadGraphData = async () => {
+      try {
+        // 构建过滤参数
+        const params = {
+          verified_only: false,
+          limit: 500,
+        }
+
+        // 添加类型过滤
+        if (props.selectedFilters.selectedNodeTypes?.length > 0) {
+          params.type = props.selectedFilters.selectedNodeTypes.join(',')
+        }
+        if (props.selectedFilters.selectedRelationTypes?.length > 0) {
+          params.relation_type = props.selectedFilters.selectedRelationTypes.join(',')
+        }
+
+        const response = await KnowledgeGraph.getGraph(params)
+        if (response.data) {
+          graphData.value = {
+            nodes: response.data.nodes || [],
+            edges: response.data.edges || [],
+          }
+
+          // 重新初始化网络图
+          await nextTick()
+          initializeNetwork()
+        }
+      } catch (error) {
+        console.error('加载图谱数据失败:', error)
+      }
     }
 
     // 获取节点大小
     const getNodeSize = (node) => {
       const baseSize = props.graphSettings.nodeSize || 10
-      // 根据节点的连接数调整大小
       const connections = node.connections || 0
       return Math.max(
         baseSize,
@@ -188,19 +174,18 @@ export default {
       )
     }
 
-    // 获取节点类型显示名
+    // 获取节点类型显示名称
     const getNodeTypeDisplay = (type) => {
-      return nodeTypeDisplay[type] || type
+      return getNodeLabel(type)
     }
 
     // 初始化网络图
     const initializeNetwork = async () => {
-      if (!networkContainer.value || !props.graphData.nodes) {
+      if (!networkContainer.value || !graphData.value.nodes.length) {
         return
       }
 
       try {
-        // 这里使用CDN导入vis-network
         if (!window.vis) {
           await loadVisNetwork()
         }
@@ -209,14 +194,12 @@ export default {
 
         // 处理节点数据
         const nodes = new DataSet(
-          props.graphData.nodes.map((node) => ({
+          graphData.value.nodes.map((node) => ({
             id: node.id,
             label: props.graphSettings.showLabels
               ? node.name || node.label
               : '',
-            title: `${node.name || node.label}\n类型: ${getNodeTypeDisplay(
-              node.type
-            )}\n${node.description || ''}`,
+            title: `${node.name || node.label}\n类型: ${getNodeLabel(node.type)}\n${node.description || ''}`,
             group: node.type,
             color: {
               background: getNodeColor(node.type),
@@ -237,7 +220,7 @@ export default {
 
         // 处理边数据
         const edges = new DataSet(
-          (props.graphData.edges || []).map((edge) => ({
+          (graphData.value.edges || []).map((edge) => ({
             id: edge.id,
             from: edge.source,
             to: edge.target,
@@ -321,13 +304,11 @@ export default {
         }
 
         const script = document.createElement('script')
-        script.src =
-          'https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js'
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js'
         script.onload = () => {
           const link = document.createElement('link')
           link.rel = 'stylesheet'
-          link.href =
-            'https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css'
+          link.href = 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css'
           document.head.appendChild(link)
           resolve()
         }
@@ -344,7 +325,7 @@ export default {
       network.value.on('selectNode', (params) => {
         if (params.nodes.length > 0) {
           const nodeId = params.nodes[0]
-          const nodeData = props.graphData.nodes.find((n) => n.id === nodeId)
+          const nodeData = graphData.value.nodes.find((n) => n.id === nodeId)
           if (nodeData) {
             emit('node-selected', nodeData)
           }
@@ -425,7 +406,7 @@ export default {
 
     // 搜索功能
     const searchNodes = (keyword) => {
-      if (!keyword || !props.graphData.nodes) {
+      if (!keyword || !graphData.value.nodes) {
         searchedNodes.value = []
         if (network.value) {
           network.value.selectNodes([])
@@ -433,7 +414,7 @@ export default {
         return
       }
 
-      const results = props.graphData.nodes.filter(
+      const results = graphData.value.nodes.filter(
         (node) =>
           (node.name || node.label || '')
             .toLowerCase()
@@ -452,6 +433,14 @@ export default {
       }
     }
 
+    // 清除搜索
+    const clearSearch = () => {
+      searchedNodes.value = []
+      if (network.value) {
+        network.value.selectNodes([])
+      }
+    }
+
     // 聚焦到指定节点
     const focusOnNode = (nodeId) => {
       if (network.value) {
@@ -466,21 +455,16 @@ export default {
       }
     }
 
-    // 清除搜索
-    const clearSearch = () => {
-      searchedNodes.value = []
-      if (network.value) {
-        network.value.selectNodes([])
-      }
+    // 重新加载数据 - 暴露给父组件调用
+    const reloadData = () => {
+      loadGraphData()
     }
 
-    // 监听器
+    // 监听器 - 监听过滤条件变化
     watch(
-      () => props.graphData,
+      () => props.selectedFilters,
       () => {
-        nextTick(() => {
-          initializeNetwork()
-        })
+        loadGraphData()
       },
       { deep: true }
     )
@@ -489,7 +473,6 @@ export default {
       () => props.graphSettings,
       () => {
         if (network.value) {
-          // 重新渲染图谱以应用新设置
           initializeNetwork()
         }
       },
@@ -498,9 +481,7 @@ export default {
 
     // 生命周期
     onMounted(() => {
-      nextTick(() => {
-        initializeNetwork()
-      })
+      loadGraphData()
     })
 
     onBeforeUnmount(() => {
@@ -510,21 +491,18 @@ export default {
     })
 
     // 暴露方法给父组件
-    const focusNode = focusOnNode
-
     return {
       // refs
-      graphContainer,
       networkContainer,
-
-      // 响应式数据
-      searchedNodes,
-      selectedNodeCount,
-      physicsEnabled,
 
       // 计算属性
       visibleNodes,
       visibleEdges,
+
+      // 状态
+      searchedNodes,
+      selectedNodeCount,
+      physicsEnabled,
 
       // 方法
       zoomIn,
@@ -534,15 +512,14 @@ export default {
       togglePhysics,
       exportImage,
       searchNodes,
-      focusOnNode,
       clearSearch,
+      focusOnNode,
+      reloadData,
       getNodeTypeDisplay,
-      focusNode,
     }
   },
 }
 </script>
-
 <style scoped>
 .graph-visualization {
   position: relative;

@@ -9,13 +9,11 @@
         </div>
         <div class="node-info">
           <h3 class="node-name">{{ node.label || node.name }}</h3>
-          <span class="node-type">{{ getNodeTypeLabel(node.type) }}</span>
-          <span v-if="node.subtype" class="node-subtype">{{
-            node.subtype
-          }}</span>
+          <span class="node-type">{{ getNodeLabel(node.type) }}</span>
+          <span v-if="node.subtype" class="node-subtype">{{ node.subtype }}</span>
         </div>
       </div>
-      <button class="close-btn" @click="$emit('close')" title="关闭">
+      <button class="close-btn" @click="closePanel" title="关闭">
         <i class="fas fa-times"></i>
       </button>
     </div>
@@ -41,29 +39,19 @@
             <label>严重程度：</label>
             <div class="severity-level">
               <div class="severity-bar">
-                <div
-                  class="severity-fill"
-                  :style="{ width: entityDetail.severity_level * 20 + '%' }"
-                  :class="getSeverityClass(entityDetail.severity_level)"
-                ></div>
+                <div class="severity-fill" :style="{ width: entityDetail.severity_level * 20 + '%' }"
+                  :class="getSeverityClass(entityDetail.severity_level)"></div>
               </div>
               <span>{{ entityDetail.severity_level }}/5</span>
             </div>
           </div>
-          <div
-            class="info-item"
-            v-if="
-              entityDetail?.properties &&
-              Object.keys(entityDetail.properties).length > 0
-            "
-          >
+          <div class="info-item" v-if="
+            entityDetail?.properties &&
+            Object.keys(entityDetail.properties).length > 0
+          ">
             <label>属性：</label>
             <div class="properties">
-              <div
-                v-for="(value, key) in entityDetail.properties"
-                :key="key"
-                class="property-item"
-              >
+              <div v-for="(value, key) in entityDetail.properties" :key="key" class="property-item">
                 <span class="property-key">{{ key }}:</span>
                 <span class="property-value">{{ value }}</span>
               </div>
@@ -124,13 +112,8 @@
 
         <!-- 关系类型标签 -->
         <div class="relation-tabs">
-          <button
-            v-for="tab in relationTabs"
-            :key="tab.key"
-            class="tab-btn"
-            :class="{ active: activeRelationTab === tab.key }"
-            @click="activeRelationTab = tab.key"
-          >
+          <button v-for="tab in relationTabs" :key="tab.key" class="tab-btn"
+            :class="{ active: activeRelationTab === tab.key }" @click="activeRelationTab = tab.key">
             {{ tab.label }} ({{ tab.count }})
           </button>
         </div>
@@ -141,18 +124,11 @@
             暂无{{ getActiveTabLabel() }}关系
           </div>
           <div v-else class="relations-list">
-            <div
-              v-for="relation in getCurrentRelations()"
-              :key="relation.id"
-              class="relation-item"
-              :class="{ verified: relation.is_verified }"
-            >
+            <div v-for="relation in getCurrentRelations()" :key="relation.id" class="relation-item"
+              :class="{ verified: relation.is_verified }">
               <div class="relation-header">
                 <div class="relation-path">
-                  <span
-                    class="entity-name"
-                    @click="focusEntity(getRelationSourceEntity(relation))"
-                  >
+                  <span class="entity-name" @click="focusEntity(getRelationSourceEntity(relation))">
                     {{ getRelationSourceEntity(relation).name }}
                   </span>
                   <i class="fas fa-arrow-right"></i>
@@ -160,55 +136,32 @@
                     relation.relationship?.name
                   }}</span>
                   <i class="fas fa-arrow-right"></i>
-                  <span
-                    class="entity-name"
-                    @click="focusEntity(getRelationTargetEntity(relation))"
-                  >
+                  <span class="entity-name" @click="focusEntity(getRelationTargetEntity(relation))">
                     {{ getRelationTargetEntity(relation).name }}
                   </span>
                 </div>
                 <div class="relation-badges">
-                  <span v-if="relation.is_verified" class="badge verified"
-                    >已验证</span
-                  >
-                  <span
-                    class="badge support-degree"
-                    :class="getSupportDegreeClass(relation.support_degree)"
-                  >
+                  <span v-if="relation.is_verified" class="badge verified">已验证</span>
+                  <span class="badge support-degree" :class="getSupportDegreeClass(relation.support_degree)">
                     支持度: {{ (relation.support_degree * 100).toFixed(0) }}%
                   </span>
                 </div>
               </div>
 
-              <div
-                class="relation-details"
-                v-if="relation.relationship?.description"
-              >
+              <div class="relation-details" v-if="relation.relationship?.description">
                 <p class="relation-description">
                   {{ relation.relationship.description }}
                 </p>
               </div>
 
-              <div
-                v-if="relation.supporting_literature"
-                class="relation-literature"
-              >
+              <div v-if="relation.supporting_literature" class="relation-literature">
                 <span class="literature-label">支持文献：</span>
-                <a
-                  href="#"
-                  class="literature-link"
-                  @click.prevent="
-                    $emit('view-article', relation.supporting_literature.id)
-                  "
-                >
+                <a href="#" class="literature-link" @click.prevent="viewArticle(relation.supporting_literature.id)">
                   {{ relation.supporting_literature.title }}
                 </a>
               </div>
 
-              <div
-                v-if="relation.verification_notes"
-                class="verification-notes"
-              >
+              <div v-if="relation.verification_notes" class="verification-notes">
                 <span class="notes-label">验证备注：</span>
                 <span>{{ relation.verification_notes }}</span>
               </div>
@@ -218,31 +171,22 @@
       </div>
 
       <!-- 相关实体 -->
-      <div
-        class="info-section"
-        v-if="entityDetail?.related_entities?.length > 0"
-      >
+      <div class="info-section" v-if="entityDetail?.related_entities?.length > 0">
         <h4 class="section-title">
           <i class="fas fa-sitemap"></i>
           相关实体
-          <span class="section-count"
-            >({{ entityDetail.related_entities.length }})</span
-          >
+          <span class="section-count">({{ entityDetail.related_entities.length }})</span>
         </h4>
         <div class="related-entities">
-          <div
-            v-for="entity in entityDetail.related_entities"
-            :key="entity.id"
-            class="related-entity-item"
-            @click="focusEntity(entity)"
-          >
+          <div v-for="entity in entityDetail.related_entities" :key="entity.id" class="related-entity-item"
+            @click="focusEntity(entity)">
             <div class="entity-icon" :class="`icon-${entity.entity_type}`">
               <i :class="getNodeIcon(entity.entity_type)"></i>
             </div>
             <div class="entity-info">
               <div class="entity-name">{{ entity.name }}</div>
               <div class="entity-type">
-                {{ getNodeTypeLabel(entity.entity_type) }}
+                {{ getNodeLabel(entity.entity_type) }}
               </div>
             </div>
           </div>
@@ -261,7 +205,8 @@
 </template>
 
 <script>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useNodeConfig } from '@/composables/useNodeConfig'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
 export default {
@@ -274,34 +219,12 @@ export default {
   },
   emits: ['close', 'view-article', 'focus-node'],
   setup(props, { emit }) {
+    const { getNodeLabel, getNodeIcon } = useNodeConfig()
+
     // 响应式数据
     const isLoading = ref(false)
     const entityDetail = ref(null)
     const activeRelationTab = ref('all')
-
-    // 节点类型映射
-    const nodeTypeMap = {
-      pathogen: '病原体',
-      infection_site: '感染部位',
-      clinical_symptom: '临床症状',
-      diagnosis_method: '诊断方法',
-      treatment_plan: '治疗方案',
-      prevention_strategy: '预防策略',
-      cirrhosis_stage: '肝硬化阶段',
-      complication: '并发症',
-    }
-
-    // 节点图标映射
-    const nodeIconMap = {
-      pathogen: 'fas fa-virus',
-      infection_site: 'fas fa-crosshairs',
-      clinical_symptom: 'fas fa-stethoscope',
-      diagnosis_method: 'fas fa-search',
-      treatment_plan: 'fas fa-pills',
-      prevention_strategy: 'fas fa-shield-alt',
-      cirrhosis_stage: 'fas fa-layer-group',
-      complication: 'fas fa-exclamation-triangle',
-    }
 
     // 计算属性：关系标签页
     const relationTabs = computed(() => {
@@ -350,14 +273,6 @@ export default {
       } finally {
         isLoading.value = false
       }
-    }
-
-    const getNodeTypeLabel = (type) => {
-      return nodeTypeMap[type] || type
-    }
-
-    const getNodeIcon = (type) => {
-      return nodeIconMap[type] || 'fas fa-circle'
     }
 
     const getSeverityClass = (level) => {
@@ -435,6 +350,14 @@ export default {
       }
     }
 
+    const closePanel = () => {
+      emit('close')
+    }
+
+    const viewArticle = (articleId) => {
+      emit('view-article', articleId)
+    }
+
     // 监听器
     watch(
       () => props.node,
@@ -462,7 +385,7 @@ export default {
       relationTabs,
 
       // 方法
-      getNodeTypeLabel,
+      getNodeLabel,
       getNodeIcon,
       getSeverityClass,
       getSupportDegreeClass,
@@ -473,6 +396,8 @@ export default {
       getRelationSourceEntity,
       getRelationTargetEntity,
       focusEntity,
+      closePanel,
+      viewArticle,
     }
   },
 }

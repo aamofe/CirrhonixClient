@@ -6,22 +6,14 @@
 
     <div class="graph-controls">
       <div class="search-filter">
-        <input
-          type="text"
-          :value="searchKeyword"
-          @input="$emit('update:searchKeyword', $event.target.value)"
-          placeholder="搜索节点..."
-        />
+        <input type="text" :value="searchKeyword" @input="handleSearchInput" placeholder="搜索节点..." />
       </div>
 
       <div class="view-toggles">
         <span>视图:</span>
-        <button
-          v-for="view in viewOptions"
-          :key="view.value"
+        <button v-for="view in viewOptions" :key="view.value"
           :class="['view-btn', currentView === view.value ? 'active' : '']"
-          @click="$emit('update:currentView', view.value)"
-        >
+          @click="$emit('update:currentView', view.value)">
           {{ view.label }}
         </button>
       </div>
@@ -31,15 +23,10 @@
       <div class="filter-group">
         <span class="filter-label">节点类型:</span>
         <div class="tag-options">
-          <span
-            v-for="type in nodeTypes"
-            :key="type.value"
-            :class="[
-              'filter-tag',
-              selectedNodeTypes.includes(type.value) ? 'active' : '',
-            ]"
-            @click="toggleNodeType(type.value)"
-          >
+          <span v-for="type in nodeTypes" :key="type.value" :class="[
+            'filter-tag',
+            selectedNodeTypes.includes(type.value) ? 'active' : '',
+          ]" @click="toggleNodeType(type.value)">
             {{ type.label }}
           </span>
         </div>
@@ -48,15 +35,10 @@
       <div class="filter-group">
         <span class="filter-label">关系类型:</span>
         <div class="tag-options">
-          <span
-            v-for="type in relationTypes"
-            :key="type.value"
-            :class="[
-              'filter-tag',
-              selectedRelationTypes.includes(type.value) ? 'active' : '',
-            ]"
-            @click="toggleRelationType(type.value)"
-          >
+          <span v-for="type in relationTypes" :key="type.value" :class="[
+            'filter-tag',
+            selectedRelationTypes.includes(type.value) ? 'active' : '',
+          ]" @click="toggleRelationType(type.value)">
             {{ type.label }}
           </span>
         </div>
@@ -81,6 +63,7 @@ export default {
     'update:currentView',
     'update:selectedNodeTypes',
     'update:selectedRelationTypes',
+    'search-keyword-change',
     'filter-change',
   ],
   setup(props, { emit }) {
@@ -89,6 +72,12 @@ export default {
       { label: '引用关系', value: 'citation' },
       { label: '时间轴', value: 'timeline' },
     ]
+
+    const handleSearchInput = (event) => {
+      const value = event.target.value
+      emit('update:searchKeyword', value)
+      emit('search-keyword-change', value)
+    }
 
     const toggleNodeType = (typeValue) => {
       const newTypes = [...props.selectedNodeTypes]
@@ -120,13 +109,13 @@ export default {
 
     return {
       viewOptions,
+      handleSearchInput,
       toggleNodeType,
       toggleRelationType,
     }
   },
 }
 </script>
-
 <style scoped>
 .graph-header {
   background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
