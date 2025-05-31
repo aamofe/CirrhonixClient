@@ -749,17 +749,16 @@ export default {
   position: relative;
   width: 100%;
   height: 600px;
-  background: #F5FBFF;
-  border: 2px solid #A8E6CF;
-  border-radius: 12px;
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(26, 145, 193, 0.1);
 }
 
 .graph-canvas {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #F5FBFF 0%, rgba(168, 230, 207, 0.1) 100%);
+  background: transparent;
 }
 
 .loading-overlay {
@@ -768,8 +767,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(245, 251, 255, 0.95);
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -780,15 +778,15 @@ export default {
 .spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid rgba(168, 230, 207, 0.3);
-  border-top: 4px solid #1A91C1;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #666;
   border-radius: 50%;
   animation: spin 1s ease-in-out infinite;
   margin-bottom: 20px;
 }
 
 .loading-text {
-  color: #1A91C1;
+  color: #666;
   font-size: 16px;
   font-weight: 500;
   margin: 0;
@@ -814,12 +812,11 @@ export default {
 .toolbar-group {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
+  background: white;
+  border-radius: 8px;
   padding: 8px;
-  box-shadow: 0 6px 24px rgba(26, 145, 193, 0.15);
-  border: 1px solid rgba(168, 230, 207, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ddd;
 }
 
 .toolbar-btn {
@@ -830,29 +827,27 @@ export default {
   height: 40px;
   border: none;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  color: #1A91C1;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #666;
+  transition: all 0.2s;
   margin: 0 2px;
 }
 
 .toolbar-btn:hover {
-  background: rgba(26, 145, 193, 0.1);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(26, 145, 193, 0.2);
+  background: #f5f5f5;
+  color: #333;
 }
 
 .toolbar-btn.active {
-  background: #1A91C1;
+  background: #333;
   color: white;
-  box-shadow: 0 4px 12px rgba(26, 145, 193, 0.3);
 }
 
 .toolbar-divider {
   width: 1px;
   height: 24px;
-  background: rgba(168, 230, 207, 0.5);
+  background: #ddd;
   margin: 0 8px;
 }
 
@@ -860,12 +855,11 @@ export default {
   position: absolute;
   bottom: 20px;
   left: 20px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: white;
   padding: 16px 20px;
-  border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(26, 145, 193, 0.15);
-  border: 1px solid rgba(168, 230, 207, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ddd;
   z-index: 100;
 }
 
@@ -881,14 +875,14 @@ export default {
 }
 
 .info-icon {
-  color: #1A91C1;
+  color: #666;
   font-size: 16px;
 }
 
 .info-value {
   font-weight: 600;
   font-size: 16px;
-  color: #1A91C1;
+  color: #333;
 }
 
 .info-label {
@@ -902,11 +896,10 @@ export default {
   left: 20px;
   width: 320px;
   max-height: 400px;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(12px);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(26, 145, 193, 0.2);
-  border: 1px solid rgba(168, 230, 207, 0.4);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ddd;
   z-index: 100;
   overflow: hidden;
 }
@@ -916,7 +909,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #1A91C1, #0F7BA0);
+  background: #333;
   color: white;
 }
 
@@ -936,7 +929,7 @@ export default {
   height: 28px;
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   color: white;
   cursor: pointer;
   transition: all 0.2s;
@@ -944,7 +937,6 @@ export default {
 
 .clear-btn:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
 }
 
 .search-list {
@@ -958,13 +950,12 @@ export default {
   align-items: center;
   padding: 16px 20px;
   cursor: pointer;
-  border-bottom: 1px solid rgba(168, 230, 207, 0.2);
-  transition: all 0.2s;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s;
 }
 
 .search-item:hover {
-  background: rgba(26, 145, 193, 0.05);
-  transform: translateX(4px);
+  background: #f9f9f9;
 }
 
 .search-item:last-child {
@@ -986,8 +977,8 @@ export default {
 
 .node-type {
   font-size: 12px;
-  color: #1A91C1;
-  background: rgba(168, 230, 207, 0.3);
+  color: #666;
+  background: #f5f5f5;
   padding: 2px 8px;
   border-radius: 12px;
   display: inline-block;
@@ -995,31 +986,30 @@ export default {
 }
 
 .arrow-icon {
-  color: #A8E6CF;
+  color: #ccc;
   font-size: 16px;
-  transition: all 0.2s;
+  transition: color 0.2s;
 }
 
 .search-item:hover .arrow-icon {
-  color: #1A91C1;
-  transform: translateX(2px);
+  color: #666;
 }
 
-/* 自定义滚动条 */
+/* 滚动条样式 */
 .search-list::-webkit-scrollbar {
   width: 6px;
 }
 
 .search-list::-webkit-scrollbar-track {
-  background: rgba(168, 230, 207, 0.1);
+  background: #f5f5f5;
 }
 
 .search-list::-webkit-scrollbar-thumb {
-  background: rgba(26, 145, 193, 0.3);
+  background: #ccc;
   border-radius: 3px;
 }
 
 .search-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 145, 193, 0.5);
+  background: #999;
 }
 </style>
