@@ -6,17 +6,9 @@
     <div class="history-filters">
       <div class="form-group">
         <label for="history-source">数据源:</label>
-        <select
-          id="history-source"
-          v-model="historyFilter.source_id"
-          class="select-input"
-        >
+        <select id="history-source" v-model="historyFilter.source_id" class="select-input">
           <option value="">全部</option>
-          <option
-            v-for="source in availableSources"
-            :key="source.id"
-            :value="source.id"
-          >
+          <option v-for="source in availableSources" :key="source.id" :value="source.id">
             {{ source.name }}
           </option>
         </select>
@@ -24,11 +16,7 @@
 
       <div class="form-group">
         <label for="history-status">任务状态:</label>
-        <select
-          id="history-status"
-          v-model="historyFilter.status"
-          class="select-input"
-        >
+        <select id="history-status" v-model="historyFilter.status" class="select-input">
           <option value="">全部</option>
           <option value="pending">等待中</option>
           <option value="running">运行中</option>
@@ -56,7 +44,6 @@
             <td>
               {{
                 (history.query_params && history.query_params.keywords) ||
-                history.query_params.fields_of_study ||
                 "无"
               }}
             </td>
@@ -77,19 +64,12 @@
 
     <!-- 分页 -->
     <div v-if="filteredHistory.length" class="pagination">
-      <button
-        class="pagination-btn prev"
-        @click="currentPage > 1 && changePage(currentPage - 1)"
-        :disabled="currentPage === 1"
-      >
+      <button class="pagination-btn prev" @click="currentPage > 1 && changePage(currentPage - 1)"
+        :disabled="currentPage === 1">
         上一页
       </button>
       <span class="page-info">第 {{ currentPage }} 页</span>
-      <button
-        class="pagination-btn next"
-        @click="hasNextPage && changePage(currentPage + 1)"
-        :disabled="!hasNextPage"
-      >
+      <button class="pagination-btn next" @click="hasNextPage && changePage(currentPage + 1)" :disabled="!hasNextPage">
         下一页
       </button>
     </div>
@@ -97,7 +77,7 @@
 </template>
 
 <script>
-import Crawler from "@/api/Crawler";
+import Crawler from "@/api/Crawler"
 
 export default {
   name: "CrawlerHistory",
@@ -116,49 +96,49 @@ export default {
       },
       currentPage: 1,
       pageSize: 10,
-    };
+    }
   },
   computed: {
     // 过滤后的历史记录
     filteredHistory() {
-      let filtered = this.crawlerHistory;
+      let filtered = this.crawlerHistory
 
       if (this.historyFilter.source_id) {
         filtered = filtered.filter(
           (item) => item.data_source.id === this.historyFilter.source_id
-        );
+        )
       }
 
       if (this.historyFilter.status) {
         filtered = filtered.filter(
           (item) => item.status === this.historyFilter.status
-        );
+        )
       }
 
       // 分页
-      const start = (this.currentPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
+      const start = (this.currentPage - 1) * this.pageSize
+      const end = start + this.pageSize
 
-      return filtered.slice(start, end);
+      return filtered.slice(start, end)
     },
 
     hasNextPage() {
       // 考虑筛选条件下的总记录数
       const filteredTotal = this.crawlerHistory.filter((item) => {
-        let match = true;
+        let match = true
 
         if (this.historyFilter.source_id) {
-          match = match && item.data_source.id === this.historyFilter.source_id;
+          match = match && item.data_source.id === this.historyFilter.source_id
         }
 
         if (this.historyFilter.status) {
-          match = match && item.status === this.historyFilter.status;
+          match = match && item.status === this.historyFilter.status
         }
 
-        return match;
-      }).length;
+        return match
+      }).length
 
-      return this.currentPage * this.pageSize < filteredTotal;
+      return this.currentPage * this.pageSize < filteredTotal
     },
   },
   methods: {
@@ -170,71 +150,71 @@ export default {
           this.historyFilter.source_id,
           this.currentPage,
           this.pageSize
-        );
+        )
 
         if (response.data && response.data.data) {
-          this.crawlerHistory = response.data.data;
+          this.crawlerHistory = response.data.data
         } else {
-          this.crawlerHistory = [];
+          this.crawlerHistory = []
         }
       } catch (error) {
-        console.error("获取爬取历史失败", error);
-        this.$message.error("获取爬取历史失败");
+        console.error("获取爬取历史失败", error)
+        this.$message.error("获取爬取历史失败")
       }
     },
 
     // 切换页码
     changePage(page) {
-      this.currentPage = page;
-      this.$emit("page-changed", page);
+      this.currentPage = page
+      this.$emit("page-changed", page)
     },
 
     // 格式化状态
     formatStatus(status) {
       switch (status) {
         case "completed":
-          return "已完成";
+          return "已完成"
         case "running":
-          return "运行中";
+          return "运行中"
         case "failed":
-          return "失败";
+          return "失败"
         case "pending":
-          return "等待中";
+          return "等待中"
         default:
-          return status;
+          return status
       }
     },
 
     // 格式化日期
     formatDate(dateString) {
-      if (!dateString) return "";
+      if (!dateString) return ""
 
-      const date = new Date(dateString);
+      const date = new Date(dateString)
       return date.toLocaleString("zh-CN", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
-      });
+      })
     },
   },
   created() {
     // 获取爬取历史
-    this.fetchCrawlerHistory();
+    this.fetchCrawlerHistory()
   },
   // 监听筛选条件变化
   watch: {
     "historyFilter.source_id"() {
-      this.currentPage = 1;
-      this.fetchCrawlerHistory();
+      this.currentPage = 1
+      this.fetchCrawlerHistory()
     },
     "historyFilter.status"() {
-      this.currentPage = 1;
-      this.fetchCrawlerHistory();
+      this.currentPage = 1
+      this.fetchCrawlerHistory()
     },
   },
-};
+}
 </script>
 
 <style scoped>

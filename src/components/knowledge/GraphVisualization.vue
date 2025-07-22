@@ -206,7 +206,6 @@ export default {
       if (!network.value) return false
 
       try {
-        // 方法1: 直接使用 selectNodes
         network.value.selectNodes(nodeIds)
         return true
       } catch (error) {
@@ -261,6 +260,16 @@ export default {
     }
 
     const loadGraphData = async () => {
+      if (props.isLoading === false) {
+        try {
+          initializeNetwork()
+        }
+        catch (error) {
+
+        }
+        return
+      }
+
       try {
         const params = {
           verified_only: false,
@@ -280,8 +289,6 @@ export default {
             nodes: response.data.data.nodes || [],
             edges: response.data.data.edges || [],
           }
-
-          // 重新初始化网络图
           await nextTick()
           initializeNetwork()
         }
@@ -307,6 +314,12 @@ export default {
 
     // 初始化网络图
     const initializeNetwork = async () => {
+      console.log('[GraphVisualization] 初始化网络图')
+      console.log('子组件中[GraphVisualization] :', graphData.value)
+      console.log('[GraphVisualization] 节点数量:', graphData.value.nodes?.length)
+      console.log('[GraphVisualization] 边数量:', graphData.value.edges?.length)
+      console.log('[GraphVisualization] 节点示例:', graphData.value.nodes?.slice(0, 3))
+
       if (!networkContainer.value || !graphData.value.nodes.length) {
         return
       }

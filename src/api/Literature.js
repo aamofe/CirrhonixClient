@@ -12,8 +12,26 @@ const url = {
   uploadSinglePaper: '/literature/upload',
   uploadBatchPaper: '/literature/batch',
   translate: '/literature/translate',
+  analyze: '/literature/analyze',
+  analyzeDetail: (atask_id) => `/literature/analyze/${atask_id}`,
+  analyzeList: '/literature/analyze/list',
 }
 export default class Literature {
+  static async analyzeLiterature(literature_id) {
+    return service.post(url.analyze, {
+      literature_id,
+    })
+  }
+  static async getAnalyzeList(status = null, literature_id = null) {
+    const params = {}
+    if (status) params.status = status
+    if (literature_id) params.literature_id = literature_id
+    return service.get(url.analyzeList, { params })
+  }
+  static async getAnalyzeDetail(atask_id) {
+    return service.get(url.analyzeDetail(atask_id))
+  }
+
   static async search(query, page = 1, size = 20, sortBy = 'relevance') {
     return service.get(url.search, {
       params: {
@@ -84,8 +102,9 @@ export default class Literature {
    * @returns {Promise} API响应
    */
   static async getInteraction(literatureId) {
-    return service.get(url.interactionDetail + literatureId)
+    return service.get(url.interactionDetail(literatureId))
   }
+
   static async getInteractions() {
     return service.get(url.interaction)
   }

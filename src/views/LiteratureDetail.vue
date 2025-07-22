@@ -31,53 +31,54 @@
 
         <h1>{{ showTranslation && translatedTitle ? translatedTitle : article.title }}</h1>
 
-        <div class="article-meta">
-          <div class="meta-row">
-            <span class="meta-label">作者:</span>
-            <span class="meta-value">
-              <span v-for="(author, index) in article.authors" :key="index" class="author-name">
-                {{ author }}{{ index < article.authors.length - 1 ? ", " : "" }} </span>
+        <div class="article-meta-section">
+          <div class="article-meta">
+            <div class="meta-row">
+              <span class="meta-label">作者:</span>
+              <span class="meta-value">
+                <span v-for="(author, index) in article.authors" :key="index" class="author-name">
+                  {{ author }}{{ index < article.authors.length - 1 ? ", " : "" }} </span>
+                </span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">期刊:</span>
+              <span class="meta-value">{{ article.source }}</span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">发表日期:</span>
+              <span class="meta-value">{{ formatDate(article.publication_date) }}</span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">DOI:</span>
+              <span class="meta-value">
+                <a :href="'https://doi.org/' + article.doi" target="_blank" class="doi-link">
+                  {{ article.doi }}
+                </a>
               </span>
-          </div>
+            </div>
 
-          <div class="meta-row">
-            <span class="meta-label">期刊:</span>
-            <span class="meta-value">{{ article.source }}</span>
-          </div>
+            <div class="meta-row">
+              <span class="meta-label">引用次数:</span>
+              <span class="meta-value">{{ article.citation_count || 0 }}</span>
+            </div>
 
-          <div class="meta-row">
-            <span class="meta-label">发表日期:</span>
-            <span class="meta-value">{{ formatDate(article.publication_date) }}</span>
-          </div>
+            <div class="meta-row">
+              <span class="meta-label">文献类型:</span>
+              <span class="meta-value">{{ article.publication_type || "研究文章" }}</span>
+            </div>
 
-          <div class="meta-row">
-            <span class="meta-label">DOI:</span>
-            <span class="meta-value">
-              <a :href="'https://doi.org/' + article.doi" target="_blank" class="doi-link">
-                {{ article.doi }}
-              </a>
-            </span>
-          </div>
+            <div class="meta-row" v-if="article.publisher">
+              <span class="meta-label">出版商:</span>
+              <span class="meta-value">{{ article.publisher || "N/A" }}</span>
+            </div>
 
-          <!-- 移动文章信息到这里 -->
-          <div class="meta-row">
-            <span class="meta-label">引用次数:</span>
-            <span class="meta-value">{{ article.citation_count || 0 }}</span>
-          </div>
-
-          <div class="meta-row">
-            <span class="meta-label">文献类型:</span>
-            <span class="meta-value">{{ article.publication_type || "研究文章" }}</span>
-          </div>
-
-          <div class="meta-row" v-if="article.publisher">
-            <span class="meta-label">出版商:</span>
-            <span class="meta-value">{{ article.publisher || "N/A" }}</span>
-          </div>
-
-          <div class="meta-row" v-if="article.journal">
-            <span class="meta-label">影响因子:</span>
-            <span class="meta-value">{{ article.journal.impact_factor || "N/A" }}</span>
+            <div class="meta-row" v-if="article.journal">
+              <span class="meta-label">影响因子:</span>
+              <span class="meta-value">{{ article.journal.impact_factor || "N/A" }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -110,6 +111,71 @@
             </div>
           </div>
 
+          <!-- 文献分析功能区域 - 移到这里 -->
+          <div class="section-card analysis-section">
+            <h2>文献分析</h2>
+            <primary-button @click="startAnalysis" :disabled="isAnalyzing" class="analysis-btn" :loading="isAnalyzing">
+              {{ isAnalyzing ? '分析中...' : '分析全文' }}
+            </primary-button>
+
+            <!-- 分析任务列表 -->
+            <div v-if="analysisTasks.length > 0" class="analysis-tasks">
+              <h3>分析任务</h3>
+
+              <!-- 小于4个：直接显示 -->
+              <div v-if="analysisTasks.length < 4" class="task-list-simple">
+                <div v-for="task in analysisTasks" :key="task.id" class="analysis-task-item"
+                  @click="showTaskDetail(task)">
+                  <div class="task-info">
+                    <div class="task-id">任务 #{{ task.id }}</div>
+                    <div class="task-status" :class="getStatusClass(task.status)">
+                      {{ getStatusText(task.status) }}
+                    </div>
+                  </div>
+                  <div class="task-time">
+                    {{ task.start_time ? formatDateTime(task.start_time) : '未开始' }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4-8个：显示成2列 -->
+              <div v-else-if="analysisTasks.length < 8" class="task-list-grid">
+                <div v-for="task in analysisTasks" :key="task.id" class="analysis-task-item"
+                  @click="showTaskDetail(task)">
+                  <div class="task-info">
+                    <div class="task-id">任务 #{{ task.id }}</div>
+                    <div class="task-status" :class="getStatusClass(task.status)">
+                      {{ getStatusText(task.status) }}
+                    </div>
+                  </div>
+                  <div class="task-time">
+                    {{ task.start_time ? formatDateTime(task.start_time) : '未开始' }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- 大于8个：2列+滑动框 -->
+              <div v-else class="task-list-scrollable">
+                <el-scrollbar height="300px" class="task-scrollbar">
+                  <div class="task-list-grid">
+                    <div v-for="task in analysisTasks" :key="task.id" class="analysis-task-item"
+                      @click="showTaskDetail(task)">
+                      <div class="task-info">
+                        <div class="task-id">任务 #{{ task.id }}</div>
+                        <div class="task-status" :class="getStatusClass(task.status)">
+                          {{ getStatusText(task.status) }}
+                        </div>
+                      </div>
+                      <div class="task-time">
+                        {{ task.start_time ? formatDateTime(task.start_time) : '未开始' }}
+                      </div>
+                    </div>
+                  </div>
+                </el-scrollbar>
+              </div>
+            </div>
+          </div>
+
           <div class="section-card" v-if="article.references && article.references.length > 0">
             <h2>参考文献</h2>
             <ul class="references-list">
@@ -124,7 +190,7 @@
         </div>
 
         <div class="sidebar">
-          <!-- 将个人笔记移动到这里作为第一个侧边栏组件 -->
+          <!-- 个人笔记 -->
           <div class="sidebar-card">
             <h3>个人笔记</h3>
             <textarea v-model="personalNotes" class="notes-textarea" placeholder="在此添加您的个人笔记..."></textarea>
@@ -174,16 +240,21 @@
     <CollectionDialog title="选择收藏夹" :visible.sync="collectionDialogVisible" :literature-id="articleId"
       :collections="collections" @collections-updated="onCollectionsUpdated"
       @cancel="collectionDialogVisible = false" />
+
+    <!-- 分析任务详情卡片 -->
+    <AnalysisResultCard :visible="showAnalysisCard" :task-id="taskId" @close-card="closeAnalysisCard" />
     <site-footer />
   </div>
 </template>
+
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
 import SiteFooter from "@/components/layout/SiteFooter.vue"
 import Literature from "@/api/Literature"
 import { Back } from "@element-plus/icons-vue"
 import AiAssistant from "@/components/AiAssistant.vue"
-import CollectionDialog from "@/components/layout/CollectionDialog.vue" // 导入新组件
+import CollectionDialog from "@/components/layout/CollectionDialog.vue"
+import AnalysisResultCard from "@/components/AnalysisResultCard.vue"
 
 export default {
   name: "LiteratureDetail",
@@ -192,7 +263,8 @@ export default {
     SiteFooter,
     Back,
     AiAssistant,
-    CollectionDialog
+    CollectionDialog,
+    AnalysisResultCard
   },
   data() {
     return {
@@ -227,9 +299,87 @@ export default {
       collectionDialogVisible: false,
       aiSummary: "",
       isGeneratingSummary: false,
+      isAnalyzing: false,
+      analysisTasks: [],
+      showAnalysisCard: false,
+      taskId: 0,
+      isSavingNote: false,
     }
   },
   methods: {
+    async loadAnalysisTasks() {
+      try {
+        const response = await Literature.getAnalyzeList()
+        this.analysisTasks = response.data.data || []
+      } catch (error) {
+        console.error("Error loading analysis tasks:", error)
+      }
+    },
+
+    async startAnalysis() {
+      if (!this.article.full_text) {
+        this.$message.warning('该文献暂无全文内容，无法进行分析')
+        return
+      }
+
+      this.isAnalyzing = true
+      try {
+        const response = await Literature.analyzeLiterature(this.articleId)
+        this.$message.success('分析任务已启动')
+
+        await this.loadAnalysisTasks()
+      } catch (error) {
+        console.error("Error starting analysis:", error)
+        this.$message.error(error.response?.data?.message || '启动分析失败')
+      } finally {
+        this.isAnalyzing = false
+      }
+    },
+
+    async showTaskDetail(task) {
+      try {
+        // console.log('点击任务:', task)
+        this.taskId = task.id
+        // console.log("父文件中id:", this.taskId)
+        await this.$nextTick()
+        this.showAnalysisCard = true
+
+        // console.log('卡片状态:', this.showAnalysisCard, 'TaskId:', this.taskId) // 调试日志
+      } catch (error) {
+        console.error("Error loading task detail:", error)
+        this.$message.error('加载任务详情失败')
+      }
+    },
+
+    closeAnalysisCard() {
+      this.showAnalysisCard = false
+      this.taskId = 0 // 清空 taskId
+    },
+
+    getStatusText(status) {
+      const statusMap = {
+        'pending': '等待中',
+        'running': '分析中',
+        'completed': '已完成',
+        'failed': '失败'
+      }
+      return statusMap[status] || status
+    },
+
+    getStatusClass(status) {
+      return `status-${status}`
+    },
+
+    formatDateTime(dateTimeStr) {
+      if (!dateTimeStr) return ''
+      const date = new Date(dateTimeStr)
+      return date.toLocaleString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    },
     async loadArticleDetail() {
       this.isLoading = true
       try {
@@ -238,11 +388,10 @@ export default {
         }
         const response = await Literature.detail(this.articleId)
         this.article = response.data.data
-        // console.log(this.article.authors)
         await this.loadUserInteraction()
 
         await this.loadUserCollections()
-
+        await this.loadAnalysisTasks()
         if (this.article.title) {
           this.translateText(this.article.title, 'title')
         }
@@ -312,6 +461,8 @@ export default {
       }
     },
     async saveNotes() {
+      if (this.isSavingNote) return
+      this.isSavingNote = true
       try {
         await Literature.createInteraction({
           literature_id: this.articleId,
@@ -321,6 +472,8 @@ export default {
       } catch (error) {
         console.error("Error saving notes:", error)
         this.$message.error('笔记保存失败')
+      } finally {
+        this.isSavingNote = false
       }
     },
     downloadPDF() {
@@ -477,11 +630,20 @@ export default {
   line-height: 1.4;
 }
 
+/* 调整作者信息区域，与主内容宽度一致 */
+.article-meta-section {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
 .article-meta {
+  flex: 1;
   background: white;
   border-radius: 8px;
-  padding: 15px 20px;
+  padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  /* 确保与摘要等卡片样式一致 */
 }
 
 .meta-row {
@@ -553,6 +715,126 @@ export default {
   font-weight: 500;
 }
 
+/* 分析功能区域样式 - 现在在主内容区 */
+.analysis-section h2 {
+  margin-bottom: 15px;
+}
+
+.analysis-btn {
+  width: 120px;
+  height: 36px;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.analysis-tasks h3 {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 15px;
+  font-weight: 500;
+}
+
+/* 直接显示样式（小于4个任务） */
+.task-list-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 网格显示样式（4-8个任务） */
+.task-list-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* 滚动显示样式（大于8个任务） */
+.task-list-scrollable {
+  border-radius: 6px;
+}
+
+.task-scrollbar {
+  border-radius: 6px;
+}
+
+.analysis-task-item {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.analysis-task-item:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.task-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.task-id {
+  font-weight: 500;
+  color: #111827;
+  font-size: 14px;
+}
+
+.task-status {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.status-running {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.status-completed {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.status-failed {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.task-time {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 自定义滚动条样式 */
+:deep(.el-scrollbar__thumb) {
+  background-color: rgba(144, 147, 153, 0.3);
+  border-radius: 4px;
+}
+
+:deep(.el-scrollbar__thumb:hover) {
+  background-color: rgba(144, 147, 153, 0.5);
+}
+
+:deep(.el-scrollbar__bar) {
+  right: 2px;
+  border-radius: 2px;
+}
+
+:deep(.el-scrollbar__wrap) {
+  overflow-x: hidden;
+}
+
 .keywords {
   display: flex;
   flex-wrap: wrap;
@@ -610,6 +892,17 @@ export default {
   resize: vertical;
 }
 
+/* 调整保存笔记按钮 */
+.notes-actions {
+  margin-top: 12px;
+}
+
+.save-notes-btn {
+  width: 100px;
+  height: 36px;
+  font-size: 14px;
+}
+
 .info-item {
   display: flex;
   margin-bottom: 12px;
@@ -634,6 +927,12 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.no-related {
+  color: #999;
+  text-align: center;
+  padding: 20px 0;
 }
 
 .related-article {
