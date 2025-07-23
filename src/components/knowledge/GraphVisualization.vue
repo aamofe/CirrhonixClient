@@ -10,8 +10,8 @@
     <!-- 图谱画布 -->
     <div class="graph-canvas" ref="networkContainer"></div>
 
-    <!-- 图谱工具栏 -->
-    <div class="graph-toolbar">
+    <!-- 图谱工具栏 - 仅在非taskId模式或有复杂需求时显示 -->
+    <div class="graph-toolbar" v-if="showComplexFeatures">
       <div class="toolbar-group">
         <el-tooltip content="放大" placement="bottom">
           <button @click="zoomIn" class="toolbar-btn">
@@ -65,8 +65,9 @@
       </div>
     </div>
 
-    <!-- 图谱信息面板 -->
-    <div class="graph-info-panel" v-if="graphData.nodes && graphData.nodes.length > 0">
+    <!-- 图谱信息面板 - 仅在有复杂需求时显示 -->
+    <div class="graph-info-panel"
+      v-if="showComplexFeatures && graphDataComputed.nodes && graphDataComputed.nodes.length > 0">
       <div class="info-row">
         <div class="info-item">
           <el-icon class="info-icon">
@@ -90,8 +91,9 @@
       </div>
     </div>
 
-    <!-- 搜索结果提示 -->
-    <div class="search-results" v-if="searchedNodes.length > 0">
+    <!-- 搜索结果提示 - 仅在有复杂需求时显示 -->
+    <div class="search-results"
+      v-if="showComplexFeatures && searchedNodes && Array.isArray(searchedNodes) && searchedNodes.length > 0">
       <div class="search-header">
         <div class="search-title">
           <el-icon>
@@ -108,7 +110,7 @@
       <div class="search-list">
         <div v-for="node in searchedNodes" :key="node.id" class="search-item" @click="focusOnNode(node.id)">
           <div class="node-info">
-            <span class="node-name">{{ node.label || node.name }}</span>
+            <span class="node-name">{{ node.label || node.name || '未命名节点' }}</span>
             <span class="node-type">{{ getNodeTypeDisplay(node.type) }}</span>
           </div>
           <el-icon class="arrow-icon">
@@ -141,6 +143,7 @@ import {
   Search,
   ArrowRight
 } from '@element-plus/icons-vue'
+import Literature from '@/api/Literature'
 
 export default {
   name: 'GraphVisualization',
@@ -178,6 +181,10 @@ export default {
     isLoading: {
       type: Boolean,
       default: false
+    },
+    taskId: {
+      type: [Number, String],
+      default: null
     }
   },
   emits: ['node-selected', 'node-deselected'],
@@ -187,19 +194,48 @@ export default {
     // 组件内部状态
     const networkContainer = ref(null)
     const network = ref(null)
-    const graphData = ref({ nodes: [], edges: [] })
+    const internalGraphData = ref({ nodes: [], edges: [] })
     const searchedNodes = ref([])
     const selectedNodeCount = ref(0)
     const physicsEnabled = ref(true)
 
+    // 判断是否显示复杂功能（工具栏、信息面板、搜索等）
+    const showComplexFeatures = computed(() => {
+      return !props.taskId || props.taskId === 0
+    })
+
+    // 根据模式选择数据源
+    const graphDataComputed = computed(() => {
+      if (props.taskId && props.taskId !== 0) {
+
+      }
+      return internalGraphData.value
+      return props.graphData || { nodes: [], edges: [] }
+    })
+
     // 计算属性
     const visibleNodes = computed(() => {
-      return graphData.value.nodes ? graphData.value.nodes.length : 0
+      return graphDataComputed.value.nodes ? graphDataComputed.value.nodes.length : 0
     })
 
     const visibleEdges = computed(() => {
-      return graphData.value.edges ? graphData.value.edges.length : 0
+      return graphDataComputed.value.edges ? graphDataComputed.value.edges.length : 0
     })
+
+    // 获取节点大小
+    const getNodeSize = (node) => {
+      const baseSize = props.graphSettings.nodeSize || 15
+      const connections = node.connections || 0
+      return Math.max(
+        baseSize,
+        Math.min(baseSize + connections * 1.5, baseSize * 2.5)
+      )
+    }
+
+    // 获取节点类型显示名称
+    const getNodeTypeDisplay = (type) => {
+      return getNodeLabel(type)
+    }
 
     // 安全的节点选择方法
     const safeSelectNodes = (nodeIds) => {
@@ -223,7 +259,7 @@ export default {
 
           // 方法3: 手动触发选择事件
           if (nodeIds.length > 0) {
-            const nodeData = graphData.value.nodes.find((n) => n.id === nodeIds[0])
+            const nodeData = graphDataComputed.value.nodes.find((n) => n.id === nodeIds[0])
             if (nodeData) {
               emit('node-selected', nodeData)
               selectedNodeCount.value = nodeIds.length
@@ -259,75 +295,73 @@ export default {
       }
     }
 
+    // 加载数据的方法
     const loadGraphData = async () => {
-      if (props.isLoading === false) {
+      // taskId 模式：从API加载数据
+      if (props.taskId && props.taskId !== 0) {
         try {
-          initializeNetwork()
-        }
-        catch (error) {
+          const response = await Literature.getAnalyzeDetail(props.taskId)
+          console.log("传入id ", props.taskId)
 
-        }
-        return
-      }
-
-      try {
-        const params = {
-          verified_only: false,
-          limit: 500,
-        }
-
-        if (props.selectedFilters.selectedNodeTypes?.length > 0) {
-          params.type = props.selectedFilters.selectedNodeTypes.join(',')
-        }
-        if (props.selectedFilters.selectedRelationTypes?.length > 0) {
-          params.relation_type = props.selectedFilters.selectedRelationTypes.join(',')
-        }
-
-        const response = await KnowledgeGraph.getGraph(params)
-        if (response.data.data) {
-          graphData.value = {
-            nodes: response.data.data.nodes || [],
-            edges: response.data.data.edges || [],
+          if (response.data.data) {
+            internalGraphData.value = {
+              nodes: response.data.data.nodes || [],
+              edges: response.data.data.edges || [],
+            }
+            console.log(response.data.data)
+            await nextTick()
+            initializeNetwork()
           }
-          await nextTick()
-          initializeNetwork()
+        } catch (error) {
+          console.error('加载任务数据失败:', error)
         }
-      } catch (error) {
-        console.error('加载图谱数据失败:', error)
       }
-    }
+      else {
+        try {
+          const params = {
+            verified_only: false,
+            limit: 500,
+          }
 
-    // 获取节点大小
-    const getNodeSize = (node) => {
-      const baseSize = props.graphSettings.nodeSize || 15
-      const connections = node.connections || 0
-      return Math.max(
-        baseSize,
-        Math.min(baseSize + connections * 1.5, baseSize * 2.5)
-      )
-    }
-
-    // 获取节点类型显示名称
-    const getNodeTypeDisplay = (type) => {
-      return getNodeLabel(type)
+          if (props.selectedFilters.selectedNodeTypes?.length > 0) {
+            params.type = props.selectedFilters.selectedNodeTypes.join(',')
+          }
+          if (props.selectedFilters.selectedRelationTypes?.length > 0) {
+            params.relation_type = props.selectedFilters.selectedRelationTypes.join(',')
+          }
+          console.log("采用方式2: ")
+          const response = await KnowledgeGraph.getGraph(params)
+          if (response.data.data) {
+            internalGraphData.value = {
+              nodes: response.data.data.nodes || [],
+              edges: response.data.data.edges || [],
+            }
+            console.log(response.data.data)
+            await nextTick()
+            initializeNetwork()
+          }
+        } catch (error) {
+          console.error('加载图谱数据失败:', error)
+        }
+      }
     }
 
     // 初始化网络图
     const initializeNetwork = async () => {
       console.log('[GraphVisualization] 初始化网络图')
-      console.log('子组件中[GraphVisualization] :', graphData.value)
-      console.log('[GraphVisualization] 节点数量:', graphData.value.nodes?.length)
-      console.log('[GraphVisualization] 边数量:', graphData.value.edges?.length)
-      console.log('[GraphVisualization] 节点示例:', graphData.value.nodes?.slice(0, 3))
+      console.log('子组件中[GraphVisualization] :', graphDataComputed.value)
+      console.log('[GraphVisualization] 节点数量:', graphDataComputed.value.nodes?.length)
+      console.log('[GraphVisualization] 边数量:', graphDataComputed.value.edges?.length)
+      console.log('[GraphVisualization] 节点示例:', graphDataComputed.value.nodes?.slice(0, 3))
 
-      if (!networkContainer.value || !graphData.value.nodes.length) {
+      if (!networkContainer.value || !graphDataComputed.value.nodes.length) {
         return
       }
 
       try {
         // 处理节点数据
         const nodes = new DataSet(
-          graphData.value.nodes.map((node) => ({
+          graphDataComputed.value.nodes.map((node) => ({
             id: node.id,
             label: props.graphSettings.showLabels
               ? node.name || node.label
@@ -361,7 +395,7 @@ export default {
 
         // 处理边数据
         const edges = new DataSet(
-          (graphData.value.edges || []).map((edge) => ({
+          (graphDataComputed.value.edges || []).map((edge) => ({
             id: edge.id,
             from: edge.source,
             to: edge.target,
@@ -483,7 +517,7 @@ export default {
       network.value.on('selectNode', (params) => {
         if (params.nodes.length > 0) {
           const nodeId = params.nodes[0]
-          const nodeData = graphData.value.nodes.find((n) => n.id === nodeId)
+          const nodeData = graphDataComputed.value.nodes.find((n) => n.id === nodeId)
           if (nodeData) {
             emit('node-selected', nodeData)
           }
@@ -612,13 +646,13 @@ export default {
 
     // 搜索功能 - 使用安全的选择方法
     const searchNodes = (keyword) => {
-      if (!keyword || !graphData.value.nodes) {
+      if (!keyword || !graphDataComputed.value.nodes) {
         searchedNodes.value = []
         safeClearSelection()
         return
       }
 
-      const results = graphData.value.nodes.filter(
+      const results = graphDataComputed.value.nodes.filter(
         (node) =>
           (node.name || node.label || '')
             .toLowerCase()
@@ -669,7 +703,7 @@ export default {
           const success = safeSelectNodes([nodeId])
           if (!success) {
             // 如果选择失败，手动触发选择事件
-            const nodeData = graphData.value.nodes.find((n) => n.id === nodeId)
+            const nodeData = graphDataComputed.value.nodes.find((n) => n.id === nodeId)
             if (nodeData) {
               emit('node-selected', nodeData)
               selectedNodeCount.value = 1
@@ -679,7 +713,7 @@ export default {
       } catch (error) {
         console.error('聚焦节点失败:', error)
         // 即使聚焦失败，也尝试触发选择事件
-        const nodeData = graphData.value.nodes.find((n) => n.id === nodeId)
+        const nodeData = graphDataComputed.value.nodes.find((n) => n.id === nodeId)
         if (nodeData) {
           emit('node-selected', nodeData)
           selectedNodeCount.value = 1
@@ -696,7 +730,9 @@ export default {
     watch(
       () => props.selectedFilters,
       () => {
-        loadGraphData()
+        if (!props.taskId || props.taskId === 0) {
+          loadGraphData()
+        }
       },
       { deep: true }
     )
@@ -711,9 +747,34 @@ export default {
       { deep: true }
     )
 
+    // 监听 graphData prop 变化 (用于第一种调用方式)
+    watch(
+      () => props.graphData,
+      () => {
+        if (props.taskId && props.taskId !== 0) {
+          // taskId 模式不监听 graphData prop
+          return
+        }
+        if (props.graphData && props.graphData.nodes) {
+          initializeNetwork()
+        }
+      },
+      { deep: true }
+    )
+
     // 生命周期
     onMounted(() => {
       loadGraphData()
+      // if (props.taskId && props.taskId !== 0) {
+      //   // taskId 模式：加载 API 数据
+      //   loadGraphData()
+      // } else if (props.graphData && props.graphData.nodes) {
+      //   // 普通模式：使用传入的 graphData
+      //   initializeNetwork()
+      // } else {
+      //   // 普通模式但没有传入数据：从 API 加载
+      //   loadGraphData()
+      // }
     })
 
     onBeforeUnmount(() => {
@@ -734,6 +795,8 @@ export default {
       // 计算属性
       visibleNodes,
       visibleEdges,
+      showComplexFeatures,
+      graphDataComputed,
 
       // 状态
       searchedNodes,
@@ -753,7 +816,7 @@ export default {
       reloadData,
       getNodeTypeDisplay,
     }
-  },
+  }
 }
 </script>
 

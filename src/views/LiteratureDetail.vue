@@ -242,7 +242,7 @@
       @cancel="collectionDialogVisible = false" />
 
     <!-- 分析任务详情卡片 -->
-    <AnalysisResultCard :visible="showAnalysisCard" :task-id="taskId" @close-card="closeAnalysisCard" />
+    <AnalysisResultCard :visible="showAnalysisCard" :task-id="taskId" @close="closeAnalysisCard" />
     <site-footer />
   </div>
 </template>
@@ -352,6 +352,7 @@ export default {
     },
 
     closeAnalysisCard() {
+      console.log('closeAnalysisCard called in parent')
       this.showAnalysisCard = false
       this.taskId = 0 // 清空 taskId
     },

@@ -55,57 +55,29 @@
             <div class="result-section">
               <h4>实体关系分析结果</h4>
 
-              <!-- 统计信息 -->
-              <div class="stats-row" v-if="analysisStats">
+              <!-- 统计信息 - 使用新的 statistics 字段 -->
+              <div class="stats-row" v-if="taskData.statistics">
                 <div class="stat-item">
-                  <span class="stat-number">{{ analysisStats.entityCount }}</span>
+                  <span class="stat-number">{{ taskData.statistics.total_entities }}</span>
                   <span class="stat-label">实体数量</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-number">{{ analysisStats.relationshipCount }}</span>
+                  <span class="stat-number">{{ taskData.statistics.total_relations }}</span>
                   <span class="stat-label">关系数量</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-number">{{ analysisStats.entityRelationCount }}</span>
-                  <span class="stat-label">实体关联数量</span>
+                  <span class="stat-number">{{ taskData.statistics.verified_relations }}</span>
+                  <span class="stat-label">已验证关系</span>
                 </div>
               </div>
 
-              <!-- 图谱可视化 - 使用自定义图谱组件或直接渲染 -->
-              <div class="graph-container" v-if="graphData.nodes && graphData.nodes.length > 0">
-                <!-- 方案1: 如果 GraphVisualization 支持传入自定义数据，确保不调用全局API -->
-                <GraphVisualization :graph-data="graphData" :graph-settings="graphSettings" :is-loading=false
-                  :current-view="'entity'" :use-custom-data="true" :disable-api-fetch="true" />
-
-                <!-- 方案2: 如果上面的props不支持，可以用简单的图谱展示 -->
-                <!-- <div class="simple-graph-display">
-                  <div class="graph-nodes">
-                    <h6>节点 ({{ graphData.nodes.length }})</h6>
-                    <div class="node-list">
-                      <div v-for="node in graphData.nodes.slice(0, 10)" :key="node.id" class="node-item">
-                        <span class="node-label">{{ node.label }}</span>
-                        <span class="node-type">{{ node.type }}</span>
-                      </div>
-                      <div v-if="graphData.nodes.length > 10" class="more-nodes">
-                        +{{ graphData.nodes.length - 10 }} 更多节点...
-                      </div>
-                    </div>
-                  </div>
-                  <div class="graph-edges">
-                    <h6>关系 ({{ graphData.edges.length }})</h6>
-                    <div class="edge-list">
-                      <div v-for="edge in graphData.edges.slice(0, 10)" :key="edge.id" class="edge-item">
-                        <span class="edge-label">{{ edge.label }}</span>
-                        <span class="edge-info">{{ getNodeNameById(edge.from) }} → {{ getNodeNameById(edge.to) }}</span>
-                      </div>
-                      <div v-if="graphData.edges.length > 10" class="more-edges">
-                        +{{ graphData.edges.length - 10 }} 更多关系...
-                      </div>
-                    </div>
-                  </div>
-                </div> -->
+              <!-- 图谱可视化 - 直接使用返回的 nodes 和 edges -->
+              <div class="graph-container" v-if="taskData.nodes && taskData.nodes.length > 0">
+                <GraphVisualization ref="graphVisualizationRef" :graph-data="graphDataForVisualization"
+                  :graph-settings="graphSettings" :selected-filters="selectedFilters || {}" :is-loading="isLoading"
+                  :current-view="'entity'" :task-id="taskId" @node-selected="handleNodeSelected"
+                  @node-deselected="handleNodeDeselected" />
               </div>
-
               <!-- 无数据提示 -->
               <div v-else class="no-data-placeholder">
                 <el-icon class="no-data-icon">
@@ -115,11 +87,11 @@
               </div>
             </div>
 
-            <!-- 实体列表 -->
-            <div class="entity-list-section" v-if="entities && entities.length > 0">
-              <h5>识别的实体 ({{ entities.length }})</h5>
+            <!-- 实体列表 - 使用返回的 entities 字段 -->
+            <div class="entity-list-section" v-if="taskData.entities && taskData.entities.length > 0">
+              <h5>识别的实体 ({{ taskData.entities.length }})</h5>
               <div class="entity-tags">
-                <el-tag v-for="entity in entities.slice(0, 20)" :key="entity.id" class="entity-tag"
+                <el-tag v-for="entity in taskData.entities.slice(0, 20)" :key="entity.id" class="entity-tag"
                   :type="getEntityTagType(entity.entity_type)" size="small">
                   <el-icon class="entity-icon">
                     <component :is="getNodeIcon(entity.entity_type)" />
@@ -127,35 +99,61 @@
                   {{ entity.name }}
                   <span class="entity-type">{{ entity.entity_type_display || getNodeLabel(entity.entity_type) }}</span>
                 </el-tag>
-                <el-tag v-if="entities.length > 20" type="info" size="small">
-                  +{{ entities.length - 20 }} 更多...
+                <el-tag v-if="taskData.entities.length > 20" type="info" size="small">
+                  +{{ taskData.entities.length - 20 }} 更多...
                 </el-tag>
               </div>
             </div>
 
-            <!-- 关系列表 -->
-            <div class="relationship-list-section" v-if="relationships && relationships.length > 0">
-              <h5>识别的关系 ({{ relationships.length }})</h5>
+            <!-- 关系列表 - 使用返回的 relationships 字段 -->
+            <div class="relationship-list-section" v-if="taskData.relationships && taskData.relationships.length > 0">
+              <h5>识别的关系 ({{ taskData.relationships.length }})</h5>
               <div class="relationship-cards">
-                <div v-for="relationship in relationships.slice(0, 10)" :key="relationship.id"
+                <div v-for="relationship in taskData.relationships.slice(0, 10)" :key="relationship.id"
                   class="relationship-card">
                   <div class="relationship-content">
                     <span class="relationship-name">{{ relationship.name }}</span>
                     <span class="relationship-type">{{ relationship.relation_type_display ||
                       getRelationLabel(relationship.relation_type) }}</span>
-                    <!-- 显示关联的实体 -->
-                    <div class="relationship-entities"
-                      v-if="relationship.source_entity_id && relationship.target_entity_id">
-                      <span class="entity-connection">
-                        {{ getEntityNameById(relationship.source_entity_id) }} → {{
-                          getEntityNameById(relationship.target_entity_id) }}
+                  </div>
+                </div>
+                <div v-if="taskData.relationships.length > 10" class="more-relationships">
+                  <el-tag type="info" size="small">
+                    +{{ taskData.relationships.length - 10 }} 更多关系...
+                  </el-tag>
+                </div>
+              </div>
+            </div>
+
+            <!-- 实体关系详情 -->
+            <div class="entity-relations-section"
+              v-if="taskData.entity_relations && taskData.entity_relations.length > 0">
+              <h5>实体关系详情 ({{ taskData.entity_relations.length }})</h5>
+              <div class="entity-relation-cards">
+                <div v-for="relation in taskData.entity_relations.slice(0, 10)" :key="relation.id"
+                  class="entity-relation-card">
+                  <div class="relation-content">
+                    <div class="relation-entities">
+                      <span class="source-entity">{{ getEntityNameFromRelation(relation, 'source') }}</span>
+                      <el-icon class="arrow-icon">
+                        <ArrowRight />
+                      </el-icon>
+                      <span class="target-entity">{{ getEntityNameFromRelation(relation, 'target') }}</span>
+                    </div>
+                    <div class="relation-info">
+                      <span class="relation-type">{{ relation.relationship?.name || '未知关系' }}</span>
+                      <span class="support-degree" v-if="relation.support_degree">
+                        (支持度: {{ relation.support_degree }})
+                      </span>
+                      <span class="verified-badge" v-if="relation.is_verified">
+                        <el-tag type="success" size="mini">已验证</el-tag>
                       </span>
                     </div>
                   </div>
                 </div>
-                <div v-if="relationships.length > 10" class="more-relationships">
+                <div v-if="taskData.entity_relations.length > 10" class="more-relations">
                   <el-tag type="info" size="small">
-                    +{{ relationships.length - 10 }} 更多关系...
+                    +{{ taskData.entity_relations.length - 10 }} 更多关系...
                   </el-tag>
                 </div>
               </div>
@@ -187,7 +185,7 @@ import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
 import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
 import Literature from '@/api/Literature'
 import { useNodeConfig } from '@/composables/useNodeConfig'
-import { Close, Document, Loading, SuccessFilled, WarningFilled, CircleCloseFilled } from '@element-plus/icons-vue'
+import { Close, Document, Loading, SuccessFilled, WarningFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -200,7 +198,8 @@ export default {
     Loading,
     SuccessFilled,
     WarningFilled,
-    CircleCloseFilled
+    CircleCloseFilled,
+    ArrowRight
   },
   props: {
     visible: {
@@ -219,16 +218,9 @@ export default {
     // 响应式数据
     const taskData = ref(null)
     const isLoading = ref(false)
-    const isGraphLoading = ref(false)
-    const entities = ref([])
-    const relationships = ref([])
-    const entityRelations = ref([])
-    const graphData = ref({
-      nodes: [],
-      edges: []
-    })
 
     const graphSettings = ref({
+      showLabels: true,
       physics: {
         enabled: true,
         solver: 'forceAtlas2Based',
@@ -258,50 +250,50 @@ export default {
       }
     })
 
-    // 计算属性
-    const analysisStats = computed(() => {
-      if (!taskData.value || taskData.value.status !== 'completed') {
-        return null
+    // 计算属性 - 将后端返回的数据格式转换为图谱组件需要的格式
+    const graphDataForVisualization = computed(() => {
+      if (!taskData.value || !taskData.value.nodes) {
+        return { nodes: [], edges: [] }
       }
-      return {
-        entityCount: entities.value.length,
-        relationshipCount: relationships.value.length,
-        entityRelationCount: entityRelations.value.length
-      }
+
+      // 转换节点格式
+      const nodes = taskData.value.nodes.map(node => ({
+        id: node.id,
+        label: node.label,
+        type: node.type,
+        title: `实体: ${node.label}\n类型: ${node.subtype || node.type}${node.description ? '\n描述: ' + node.description : ''}`,
+        color: getNodeColor(node.type),
+        size: 20,
+        font: { size: 12 }
+      }))
+
+      // 转换边格式
+      const edges = (taskData.value.edges || []).map(edge => ({
+        id: edge.id,
+        from: edge.source,
+        to: edge.target,
+        label: edge.label,
+        title: `关系: ${edge.label}\n类型: ${edge.type}${edge.support_degree ? '\n支持度: ' + edge.support_degree : ''}`,
+        color: { color: '#999999' },
+        width: 2
+      }))
+
+      return { nodes, edges }
     })
+
     const loadTaskDetail = async () => {
       if (!props.taskId) return
 
-      console.log('Loading task detail for:', props.taskId) // 调试日志
+      console.log('Loading task detail for:', props.taskId)
       isLoading.value = true
 
       try {
         const response = await Literature.getAnalyzeDetail(props.taskId)
-        console.log('Task detail response:', response) // 调试日志
+        console.log('Task detail response:', response)
 
         if (response.data && response.data.data) {
           taskData.value = response.data.data
-
-          // 确保使用任务特定的数据，而不是全局数据
-          entities.value = taskData.value.entities || []
-          relationships.value = taskData.value.relationships || []
-          entityRelations.value = taskData.value.entity_relations || []
-
-          console.log('Loaded entities:', entities.value.length) // 调试日志
-          console.log('Loaded relationships:', relationships.value.length) // 调试日志
-
-          if (taskData.value.status === 'completed') {
-            isGraphLoading.value = true
-            try {
-              await nextTick() // 等待DOM更新
-              buildGraphData()
-            } catch (error) {
-              console.error("Error loading analysis results:", error)
-              ElMessage.error('加载分析结果失败')
-            } finally {
-              isGraphLoading.value = false
-            }
-          }
+          console.log('Loaded task data:', taskData.value)
         }
       } catch (error) {
         console.error("Error loading task detail:", error)
@@ -310,21 +302,17 @@ export default {
         isLoading.value = false
       }
     }
+
     const resetData = () => {
       taskData.value = null
-      entities.value = []
-      relationships.value = []
-      entityRelations.value = []
-      graphData.value = { nodes: [], edges: [] }
       isLoading.value = false
-      isGraphLoading.value = false
     }
+
     // 监听器
     watch(() => props.visible, (newVal) => {
       if (newVal && props.taskId) {
         loadTaskDetail()
       } else if (!newVal) {
-        // 清理数据
         resetData()
       }
     }, { immediate: true })
@@ -337,63 +325,31 @@ export default {
 
     // 方法
     const handleCloseCard = () => {
-      console.log('handleCloseCard called') // 调试日志
+      console.log('handleCloseCard called')
       emit('close')
     }
 
     const handleOverlayClick = () => {
-      console.log('handleOverlayClick called') // 调试日志
+      console.log('handleOverlayClick called')
       emit('close')
     }
 
+    // 从实体关系中获取实体名称
+    const getEntityNameFromRelation = (relation, type) => {
+      if (type === 'source' && relation.source_entity) {
+        return relation.source_entity.name || `实体${relation.source_entity.id}`
+      } else if (type === 'target' && relation.target_entity) {
+        return relation.target_entity.name || `实体${relation.target_entity.id}`
+      }
 
+      // 如果没有嵌套的实体信息，尝试从entities数组中查找
+      if (taskData.value && taskData.value.entities) {
+        const entityId = type === 'source' ? relation.source_entity_id : relation.target_entity_id
+        const entity = taskData.value.entities.find(e => e.id === entityId)
+        return entity ? entity.name : `实体${entityId}`
+      }
 
-
-
-    const buildGraphData = () => {
-      console.log('Building graph data...') // 调试日志
-
-      // 构建节点数据 - 只使用当前任务的实体
-      const nodes = entities.value.map(entity => ({
-        id: entity.id,
-        label: entity.name,
-        type: entity.entity_type || 'default',
-        title: `实体: ${entity.name}\n类型: ${entity.entity_type_display || entity.entity_type || '未知'}`,
-        color: getNodeColor(entity.entity_type),
-        size: 20,
-        font: { size: 12 }
-      }))
-
-      // 构建边数据 - 只使用当前任务的关系
-      const edges = relationships.value.filter(relation => {
-        // 确保关系的两端实体都在当前任务的实体列表中
-        const hasSourceEntity = entities.value.some(e => e.id === relation.source_entity_id)
-        const hasTargetEntity = entities.value.some(e => e.id === relation.target_entity_id)
-        return hasSourceEntity && hasTargetEntity
-      }).map((relation, index) => ({
-        id: relation.id || `rel_${index}`,
-        from: relation.source_entity_id || relation.from,
-        to: relation.target_entity_id || relation.to,
-        label: relation.relation_type_display || getRelationLabel(relation.relation_type) || '关联',
-        title: `关系: ${relation.name || ''}\n类型: ${relation.relation_type_display || relation.relation_type || '关联'}`,
-        color: { color: '#999999' },
-        width: 2
-      }))
-
-      graphData.value = { nodes, edges }
-      console.log('父组件中Graph data built:', { nodes: nodes.length, edges: edges.length }) // 调试日志
-    }
-
-    // 根据实体ID获取实体名称
-    const getEntityNameById = (entityId) => {
-      const entity = entities.value.find(e => e.id === entityId)
-      return entity ? entity.name : `实体${entityId}`
-    }
-
-    // 根据节点ID获取节点名称（用于图谱显示）
-    const getNodeNameById = (nodeId) => {
-      const node = graphData.value.nodes.find(n => n.id === nodeId)
-      return node ? node.label : `节点${nodeId}`
+      return type === 'source' ? '源实体' : '目标实体'
     }
 
     const getEntityTagType = (entityType) => {
@@ -453,24 +409,17 @@ export default {
       // 数据
       taskData,
       isLoading,
-      isGraphLoading,
-      entities,
-      relationships,
-      entityRelations,
-      graphData,
       graphSettings,
 
       // 计算属性
-      analysisStats,
+      graphDataForVisualization,
 
       // 方法
       handleCloseCard,
       handleOverlayClick,
       resetData,
       loadTaskDetail,
-      buildGraphData,
-      getEntityNameById,
-      getNodeNameById,
+      getEntityNameFromRelation,
       getEntityTagType,
       getStatusText,
       getStatusClass,
