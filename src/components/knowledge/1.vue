@@ -221,8 +221,8 @@ export default {
 
     // 层级配置 - 扩大半径让节点更舒展
     const levelConfig = [
-      { level: 1, name: '疾病状态', color: '#FF6B6B', radius: 40 },      // 中心区域半径扩大
-      { level: 2, name: '免疫细胞', color: '#4ECDC4', radius: 150 },     // 第一圆环半径扩大
+      { level: 1, name: '疾病状态', color: '#FF6B6B', radius: 80 },      // 中心区域半径扩大
+      { level: 2, name: '免疫细胞', color: '#4ECDC4', radius: 280 },     // 第一圆环半径扩大
       { level: 3, name: '病原体', color: '#45B7D1', radius: 0 }          // Level 3 不限制在圆形内
     ]
 
@@ -899,19 +899,6 @@ export default {
       }
     }
 
-    // 存储选中的节点ID（用于替代有问题的getSelectedNodes）
-    const selectedNodeIds = ref([])
-
-    // 安全获取选中节点的方法
-    const safeGetSelectedNodes = () => {
-      try {
-        return network.value.getSelectedNodes() || []
-      } catch (error) {
-        console.warn('getSelectedNodes失败，使用备用方法:', error)
-        return selectedNodeIds.value
-      }
-    }
-
     // 设置事件监听器
     const setupEventListeners = () => {
       if (!network.value) return
@@ -920,25 +907,21 @@ export default {
       network.value.on('dragEnd', (params) => {
         if (params.nodes.length > 0) {
           const nodeId = params.nodes[0]
-          try {
-            const positions = network.value.getPositions([nodeId])
-            const currentPosition = positions[nodeId]
+          const positions = network.value.getPositions([nodeId])
+          const currentPosition = positions[nodeId]
 
-            // 应用位置约束
-            const constrainedPosition = constrainNodePosition(nodeId, currentPosition)
+          // 应用位置约束
+          const constrainedPosition = constrainNodePosition(nodeId, currentPosition)
 
-            // 如果位置被调整，更新节点位置
-            if (constrainedPosition.x !== currentPosition.x || constrainedPosition.y !== currentPosition.y) {
-              network.value.moveNode(nodeId, constrainedPosition.x, constrainedPosition.y)
-            }
+          // 如果位置被调整，更新节点位置
+          if (constrainedPosition.x !== currentPosition.x || constrainedPosition.y !== currentPosition.y) {
+            network.value.moveNode(nodeId, constrainedPosition.x, constrainedPosition.y)
+          }
 
-            // 更新圆圈位置（特别是当Level 1节点被拖拽时）
-            const entity = graphDataComputed.value.nodes.find(n => n.name === nodeId)
-            if (entity && entity.level === 1) {
-              setTimeout(updateCirclePositions, 50)
-            }
-          } catch (error) {
-            console.warn('处理拖拽结束事件失败:', error)
+          // 更新圆圈位置（特别是当Level 1节点被拖拽时）
+          const entity = graphDataComputed.value.nodes.find(n => n.name === nodeId)
+          if (entity && entity.level === 1) {
+            setTimeout(updateCirclePositions, 50)
           }
         }
       })
@@ -959,6 +942,15 @@ export default {
         setTimeout(updateCirclePositions, 10)
       })
 
+      network.value.on('dragStart', () => {
+        // 开始拖拽视图时
+      })
+
+      network.value.on('dragEnd', () => {
+        // 结束拖拽视图时更新圆圈位置
+        setTimeout(updateCirclePositions, 10)
+      })
+
       // 监听画布移动
       network.value.on('animationFinished', () => {
         updateCirclePositions()
@@ -966,7 +958,6 @@ export default {
 
       // 实体选择事件
       network.value.on('selectNode', (params) => {
-        selectedNodeIds.value = params.nodes || []
         if (params.nodes.length > 0) {
           const entityId = params.nodes[0]
           const entityData = graphDataComputed.value.nodes.find((n) => n.name === entityId)
@@ -979,7 +970,6 @@ export default {
 
       // 实体取消选择事件
       network.value.on('deselectNode', () => {
-        selectedNodeIds.value = []
         emit('entity-deselected')
         selectedEntityCount.value = 0
       })
@@ -1000,56 +990,33 @@ export default {
       }
 
       // 使用Canvas的原生事件来监听视图变化
-      try {
-        if (network.value.canvas && network.value.canvas.frame && network.value.canvas.frame.canvas) {
-          const canvas = network.value.canvas.frame.canvas
+      if (network.value.canvas && network.value.canvas.frame && network.value.canvas.frame.canvas) {
+        const canvas = network.value.canvas.frame.canvas
 
-          // 监听鼠标滚轮（缩放）
-          canvas.addEventListener('wheel', throttledUpdate)
+        // 监听鼠标滚轮（缩放）
+        canvas.addEventListener('wheel', throttledUpdate)
 
-          // 监听鼠标拖拽（平移）
-          let isDragging = false
-          let dragStartTime = 0
+        // 监听鼠标拖拽（平移）
+        let isDragging = false
+        canvas.addEventListener('mousedown', (e) => {
+          // 只有在没有选中节点时才认为是拖拽视图
+          if (network.value.getSelectedNodes().length === 0) {
+            isDragging = true
+          }
+        })
 
-          canvas.addEventListener('mousedown', (e) => {
-            dragStartTime = Date.now()
-            // 延迟判断是否为视图拖拽，避免与节点拖拽冲突
-            setTimeout(() => {
-              const selectedNodes = safeGetSelectedNodes()
-              if (selectedNodes.length === 0 && Date.now() - dragStartTime > 50) {
-                isDragging = true
-              }
-            }, 100)
-          })
+        canvas.addEventListener('mousemove', (e) => {
+          if (isDragging) {
+            throttledUpdate()
+          }
+        })
 
-          canvas.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-              throttledUpdate()
-            }
-          })
-
-          canvas.addEventListener('mouseup', () => {
-            if (isDragging) {
-              isDragging = false
-              updateCirclePositions()
-            }
-            dragStartTime = 0
-          })
-
-          // 监听触摸事件（移动端支持）
-          canvas.addEventListener('touchstart', () => {
-            dragStartTime = Date.now()
-          })
-
-          canvas.addEventListener('touchmove', throttledUpdate)
-
-          canvas.addEventListener('touchend', () => {
+        canvas.addEventListener('mouseup', () => {
+          if (isDragging) {
+            isDragging = false
             updateCirclePositions()
-            dragStartTime = 0
-          })
-        }
-      } catch (error) {
-        console.warn('设置Canvas事件监听器失败:', error)
+          }
+        })
       }
     }
 
@@ -1103,7 +1070,7 @@ export default {
     const centerGraph = () => {
       if (network.value) {
         try {
-          const entityIds = safeGetSelectedNodes()
+          const entityIds = network.value.getSelectedNodes()
           if (entityIds.length > 0) {
             network.value.focus(entityIds[0], {
               scale: 1.2,
@@ -1299,7 +1266,6 @@ export default {
       selectedEntityCount,
       physicsEnabled,
       showLevelCircles,
-      selectedNodeIds,
 
       // 方法
       zoomIn,
@@ -1317,13 +1283,13 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 .graph-visualization {
   position: relative;
   width: 100%;
-  height: 1000px;
-  background: transparent;
-  border: 1px solid #ddd;
+  height: 100%;
+  background: #f8f9fa;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -1331,7 +1297,7 @@ export default {
 .graph-canvas {
   width: 100%;
   height: 100%;
-  background: transparent;
+  position: relative;
 }
 
 .loading-overlay {
@@ -1349,13 +1315,12 @@ export default {
 }
 
 .spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #666;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e1e5e9;
+  border-left: 4px solid #4ECDC4;
   border-radius: 50%;
-  animation: spin 1s ease-in-out infinite;
-  margin-bottom: 20px;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -1369,149 +1334,144 @@ export default {
 }
 
 .loading-text {
+  margin-top: 16px;
   color: #666;
-  font-size: 16px;
-  font-weight: 500;
-  margin: 0;
+  font-size: 14px;
 }
 
 
 
 .graph-toolbar {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 16px;
+  left: 16px;
   z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .toolbar-group {
   display: flex;
   align-items: center;
-  background: white;
-  border-radius: 8px;
-  padding: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ddd;
+  gap: 4px;
 }
 
 .toolbar-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: none;
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
   color: #666;
-  transition: all 0.2s;
-  margin: 0 2px;
 }
 
 .toolbar-btn:hover {
-  background: #f5f5f5;
-  color: #333;
+  background: rgba(78, 205, 196, 0.1);
+  color: #4ECDC4;
 }
 
 .toolbar-btn.active {
-  background: #333;
+  background: #4ECDC4;
   color: white;
 }
 
 .toolbar-divider {
   width: 1px;
   height: 24px;
-  background: #ddd;
-  margin: 0 8px;
+  background: #e1e5e9;
+  margin: 0 4px;
 }
 
 .graph-info-panel {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: white;
-  padding: 16px 20px;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
+  padding: 12px 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ddd;
+  backdrop-filter: blur(10px);
   z-index: 100;
 }
 
 .info-row {
   display: flex;
-  gap: 24px;
+  gap: 16px;
+  align-items: center;
 }
 
 .info-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  font-size: 14px;
 }
 
 .info-icon {
-  color: #666;
-  font-size: 16px;
+  color: #4ECDC4;
 }
 
 .info-value {
   font-weight: 600;
-  font-size: 16px;
   color: #333;
 }
 
 .info-label {
   color: #666;
-  font-size: 14px;
 }
 
 .search-results {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 320px;
+  top: 80px;
+  left: 16px;
+  width: 280px;
   max-height: 400px;
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ddd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
   z-index: 100;
   overflow: hidden;
 }
 
 .search-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: between;
   align-items: center;
-  padding: 16px 20px;
-  background: #333;
-  color: white;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e1e5e9;
 }
 
 .search-title {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: #333;
   font-weight: 500;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .clear-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.2);
   border: none;
-  border-radius: 4px;
-  color: white;
+  background: transparent;
   cursor: pointer;
-  transition: all 0.2s;
+  color: #999;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 .clear-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 107, 107, 0.1);
+  color: #FF6B6B;
 }
 
 .search-list {
@@ -1523,14 +1483,14 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #eee;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f5f5f5;
 }
 
 .search-item:hover {
-  background: #f9f9f9;
+  background: rgba(78, 205, 196, 0.05);
 }
 
 .search-item:last-child {
@@ -1539,35 +1499,29 @@ export default {
 
 .entity-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .entity-name {
+  display: block;
   font-weight: 500;
   color: #333;
   font-size: 14px;
+  margin-bottom: 2px;
 }
 
 .entity-level {
   font-size: 12px;
   color: #666;
-  background: #f5f5f5;
-  padding: 2px 8px;
-  border-radius: 12px;
-  display: inline-block;
-  width: fit-content;
 }
 
 .arrow-icon {
   color: #ccc;
-  font-size: 16px;
-  transition: color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .search-item:hover .arrow-icon {
-  color: #666;
+  color: #4ECDC4;
+  transform: translateX(2px);
 }
 
 .level-legend {
@@ -1613,24 +1567,7 @@ export default {
   color: #666;
 }
 
-/* 滚动条样式 */
-.search-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.search-list::-webkit-scrollbar-track {
-  background: #f5f5f5;
-}
-
-.search-list::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 3px;
-}
-
-.search-list::-webkit-scrollbar-thumb:hover {
-  background: #999;
-}
-
+/* 响应式设计 */
 @media (max-width: 768px) {
   .graph-toolbar {
     top: 8px;
