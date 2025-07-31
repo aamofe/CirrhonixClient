@@ -74,7 +74,7 @@
             <Connection />
           </el-icon>
           <span class="info-value">{{ visibleNodes }}</span>
-          <span class="info-label">节点</span>
+          <span class="info-label">实体</span>
         </div>
         <div class="info-item">
           <el-icon class="info-icon">
@@ -83,9 +83,9 @@
           <span class="info-value">{{ visibleEdges }}</span>
           <span class="info-label">关系</span>
         </div>
-        <div class="info-item" v-if="selectedNodeCount > 0">
+        <div class="info-item" v-if="selectedEntityCount > 0">
           <el-icon class="info-icon"><Select /></el-icon>
-          <span class="info-value">{{ selectedNodeCount }}</span>
+          <span class="info-value">{{ selectedEntityCount }}</span>
           <span class="info-label">已选</span>
         </div>
       </div>
@@ -93,13 +93,13 @@
 
     <!-- 搜索结果提示 - 仅在有复杂需求时显示 -->
     <div class="search-results"
-      v-if="showComplexFeatures && searchedNodes && Array.isArray(searchedNodes) && searchedNodes.length > 0">
+      v-if="showComplexFeatures && searchedEntities && Array.isArray(searchedEntities) && searchedEntities.length > 0">
       <div class="search-header">
         <div class="search-title">
           <el-icon>
             <Search />
           </el-icon>
-          <span>搜索结果 ({{ searchedNodes.length }})</span>
+          <span>搜索结果 ({{ searchedEntities.length }})</span>
         </div>
         <button @click="clearSearch" class="clear-btn">
           <el-icon size="14">
@@ -108,14 +108,25 @@
         </button>
       </div>
       <div class="search-list">
-        <div v-for="node in searchedNodes" :key="node.id" class="search-item" @click="focusOnNode(node.id)">
-          <div class="node-info">
-            <span class="node-name">{{ node.label || node.name || '未命名节点' }}</span>
-            <span class="node-type">{{ getNodeTypeDisplay(node.type) }}</span>
+        <div v-for="entity in searchedEntities" :key="entity.id" class="search-item" @click="focusOnEntity(entity.id)">
+          <div class="entity-info">
+            <span class="entity-name">{{ entity.name || '未命名实体' }}</span>
+            <span class="entity-level">Level {{ entity.level }}</span>
           </div>
           <el-icon class="arrow-icon">
             <ArrowRight />
           </el-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- 层级图例 -->
+    <div class="level-legend" v-if="showComplexFeatures">
+      <div class="legend-title">层级图例</div>
+      <div class="legend-items">
+        <div class="legend-item" v-for="level in levelConfig" :key="level.level">
+          <div class="legend-color" :style="{ backgroundColor: level.color }"></div>
+          <span class="legend-text">Level {{ level.level }}: {{ level.name }}</span>
         </div>
       </div>
     </div>
@@ -125,7 +136,6 @@
 <script>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Network, DataSet } from 'vis-network/standalone'
-import { useNodeConfig } from '@/composables/useNodeConfig'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
 // 导入Element Plus图标
@@ -187,17 +197,24 @@ export default {
       default: null
     }
   },
-  emits: ['node-selected', 'node-deselected'],
+  emits: ['entity-selected', 'entity-deselected'],
   setup(props, { emit }) {
-    const { getNodeColor, getNodeLabel } = useNodeConfig()
 
     // 组件内部状态
     const networkContainer = ref(null)
     const network = ref(null)
     const internalGraphData = ref({ nodes: [], edges: [] })
-    const searchedNodes = ref([])
-    const selectedNodeCount = ref(0)
-    const physicsEnabled = ref(true)
+    const searchedEntities = ref([])
+    const selectedEntityCount = ref(0)
+    const physicsEnabled = ref(false) // 树形布局通常不需要物理引擎
+
+    // 层级配置
+    // 更新的层级配置（需要替换原来的 levelConfig）
+    const levelConfig = [
+      { level: 1, name: '疾病状态', color: '#FF6B6B', y: -400 },
+      { level: 2, name: '免疫细胞', color: '#4ECDC4', y: -100 },
+      { level: 3, name: '病原体', color: '#45B7D1', y: 300 }
+    ]
 
     // 判断是否显示复杂功能（工具栏、信息面板、搜索等）
     const showComplexFeatures = computed(() => {
@@ -206,11 +223,7 @@ export default {
 
     // 根据模式选择数据源
     const graphDataComputed = computed(() => {
-      if (props.taskId && props.taskId !== 0) {
-
-      }
       return internalGraphData.value
-      return props.graphData || { nodes: [], edges: [] }
     })
 
     // 计算属性
@@ -222,51 +235,139 @@ export default {
       return graphDataComputed.value.edges ? graphDataComputed.value.edges.length : 0
     })
 
-    // 获取节点大小
-    const getNodeSize = (node) => {
-      const baseSize = props.graphSettings.nodeSize || 15
-      const connections = node.connections || 0
-      return Math.max(
-        baseSize,
-        Math.min(baseSize + connections * 1.5, baseSize * 2.5)
-      )
+    // 获取层级配置
+    const getLevelConfig = (level) => {
+      return levelConfig.find(config => config.level === level) || levelConfig[1]
     }
 
-    // 获取节点类型显示名称
-    const getNodeTypeDisplay = (type) => {
-      return getNodeLabel(type)
+    // 获取实体大小（根据层级调整）
+    const getEntitySize = (entity) => {
+      const baseSize = props.graphSettings.nodeSize || 20
+      switch (entity.level) {
+        case 1: return baseSize * 1.5  // 疾病状态节点最大
+        case 2: return baseSize        // 免疫细胞节点中等
+        case 3: return baseSize * 0.8  // 病原体节点较小
+        default: return baseSize
+      }
     }
 
-    // 安全的节点选择方法
-    const safeSelectNodes = (nodeIds) => {
+    // 计算树形布局位置
+    // 计算树形布局位置（支持多行布局，美观优化版）
+    const calculateTreeLayout = (entities) => {
+      const layout = {}
+      const levelGroups = {}
+
+      // 按层级分组
+      entities.forEach(entity => {
+        if (!levelGroups[entity.level]) {
+          levelGroups[entity.level] = []
+        }
+        levelGroups[entity.level].push(entity)
+      })
+
+      // 重新定义层级Y坐标，确保有足够空间
+      const levelYPositions = {
+        1: -400,    // 疾病状态（顶部）
+        2: -100,    // 免疫细胞（中上）
+        3: 300      // 病原体（底部）
+      }
+
+      // 为每个层级计算位置
+      Object.keys(levelGroups).forEach(level => {
+        const levelEntities = levelGroups[level]
+        const baseY = levelYPositions[parseInt(level)] || 0
+        const levelNum = parseInt(level)
+
+        // Level 1 保持单行布局，稍微错开增加美感
+        if (levelNum === 1) {
+          const totalWidth = 600
+          const spacing = totalWidth / (levelEntities.length + 1)
+
+          levelEntities.forEach((entity, index) => {
+            const x = -totalWidth / 2 + spacing * (index + 1)
+            // 添加轻微的垂直偏移，创造更自然的感觉
+            const yOffset = Math.sin(index * 0.5) * 15
+            layout[entity.name] = { x, y: baseY + yOffset }
+          })
+        }
+        // Level 2 和 3 支持多行布局
+        else if (levelNum === 2 || levelNum === 3) {
+          const entitiesPerRow = 5 // 每行最多5个实体
+          const totalRows = Math.ceil(levelEntities.length / entitiesPerRow)
+          const rowSpacing = 100 // 增加行间距
+          const totalWidth = 900 // 增加总宽度
+
+          levelEntities.forEach((entity, index) => {
+            const rowIndex = Math.floor(index / entitiesPerRow)
+            const colIndex = index % entitiesPerRow
+            const entitiesInCurrentRow = Math.min(entitiesPerRow, levelEntities.length - rowIndex * entitiesPerRow)
+
+            // 计算当前行的Y坐标，从baseY开始向下排列
+            const rowY = baseY + rowIndex * rowSpacing
+
+            // 计算当前实体的X坐标（居中对齐）
+            const rowWidth = Math.min(800, entitiesInCurrentRow * 150) // 根据实体数量调整行宽
+            const spacing = rowWidth / (entitiesInCurrentRow + 1)
+            let x = -rowWidth / 2 + spacing * (colIndex + 1)
+
+            // 为奇数行添加轻微偏移，创造更自然的布局
+            if (rowIndex % 2 === 1) {
+              x += 30 // 奇数行右偏移
+            }
+
+            // 添加轻微的随机偏移增加美感（但保持相对位置）
+            const xOffset = Math.sin(index * 0.3) * 20
+            const yOffset = Math.cos(index * 0.4) * 10
+
+            layout[entity.name] = {
+              x: x + xOffset,
+              y: rowY + yOffset
+            }
+          })
+        }
+        // 其他层级保持原有逻辑
+        else {
+          const totalWidth = 800
+          const spacing = totalWidth / (levelEntities.length + 1)
+
+          levelEntities.forEach((entity, index) => {
+            const x = -totalWidth / 2 + spacing * (index + 1)
+            layout[entity.name] = { x, y: baseY }
+          })
+        }
+      })
+
+      return layout
+    }
+
+    // 安全的实体选择方法
+    const safeSelectEntities = (entityIds) => {
       if (!network.value) return false
 
       try {
-        network.value.selectNodes(nodeIds)
+        network.value.selectNodes(entityIds)
         return true
       } catch (error) {
         console.warn('selectNodes 失败，尝试替代方法:', error)
 
         try {
-          // 方法2: 使用 setSelection
           network.value.setSelection({
-            nodes: nodeIds,
+            nodes: entityIds,
             edges: []
           })
           return true
         } catch (error2) {
           console.warn('setSelection 也失败了，使用手动触发:', error2)
 
-          // 方法3: 手动触发选择事件
-          if (nodeIds.length > 0) {
-            const nodeData = graphDataComputed.value.nodes.find((n) => n.id === nodeIds[0])
-            if (nodeData) {
-              emit('node-selected', nodeData)
-              selectedNodeCount.value = nodeIds.length
+          if (entityIds.length > 0) {
+            const entityData = graphDataComputed.value.nodes.find((n) => n.id === entityIds[0])
+            if (entityData) {
+              emit('entity-selected', entityData)
+              selectedEntityCount.value = entityIds.length
             }
           } else {
-            emit('node-deselected')
-            selectedNodeCount.value = 0
+            emit('entity-deselected')
+            selectedEntityCount.value = 0
           }
           return false
         }
@@ -287,9 +388,8 @@ export default {
           return true
         } catch (error2) {
           console.warn('setSelection 清除也失败了:', error2)
-          // 手动触发取消选择事件
-          emit('node-deselected')
-          selectedNodeCount.value = 0
+          emit('entity-deselected')
+          selectedEntityCount.value = 0
           return false
         }
       }
@@ -323,12 +423,10 @@ export default {
             limit: 500,
           }
 
-          if (props.selectedFilters.selectedNodeTypes?.length > 0) {
-            params.type = props.selectedFilters.selectedNodeTypes.join(',')
+          if (props.selectedFilters.selectedEntityTypes?.length > 0) {
+            params.entity_type = props.selectedFilters.selectedEntityTypes.join(',')
           }
-          if (props.selectedFilters.selectedRelationTypes?.length > 0) {
-            params.relation_type = props.selectedFilters.selectedRelationTypes.join(',')
-          }
+
           console.log("采用方式2: ")
           const response = await KnowledgeGraph.getGraph(params)
           if (response.data.data) {
@@ -350,78 +448,89 @@ export default {
     const initializeNetwork = async () => {
       console.log('[GraphVisualization] 初始化网络图')
       console.log('子组件中[GraphVisualization] :', graphDataComputed.value)
-      console.log('[GraphVisualization] 节点数量:', graphDataComputed.value.nodes?.length)
-      console.log('[GraphVisualization] 边数量:', graphDataComputed.value.edges?.length)
-      console.log('[GraphVisualization] 节点示例:', graphDataComputed.value.nodes?.slice(0, 3))
+      console.log('[GraphVisualization] 实体数量:', graphDataComputed.value.nodes?.length)
+      console.log('[GraphVisualization] 关系数量:', graphDataComputed.value.edges?.length)
 
       if (!networkContainer.value || !graphDataComputed.value.nodes.length) {
         return
       }
 
       try {
+        // 计算树形布局
+        const layout = calculateTreeLayout(graphDataComputed.value.nodes)
+
         // 处理节点数据
         const nodes = new DataSet(
-          graphDataComputed.value.nodes.map((node) => ({
-            id: node.id,
-            label: props.graphSettings.showLabels
-              ? node.name || node.label
-              : '',
-            title: `${node.name || node.label}\n类型: ${getNodeLabel(node.type)}\n${node.description || ''}`,
-            group: node.type,
-            color: {
-              background: getNodeColor(node.type) || '#A8E6CF',
-              border: '#1A91C1',
-              highlight: {
-                background: '#1A91C1',
-                border: '#0F7BA0',
+          graphDataComputed.value.nodes.map((entity) => {
+            const levelConfig = getLevelConfig(entity.level)
+            const position = layout[entity.name] || { x: 0, y: 0 }
+
+            return {
+              id: entity.name, // 使用name作为id
+              label: props.graphSettings.showLabels ? entity.name : '',
+              title: `${entity.name}\n层级: Level ${entity.level}\n类型: ${entity.entity_type || '未分类'}\n子类型: ${entity.subtype || '无'}`,
+              group: `level-${entity.level}`,
+              x: position.x,
+              y: position.y,
+              fixed: true, // 固定节点位置以保持树形结构
+              color: {
+                background: levelConfig.color,
+                border: '#ffffff',
+                highlight: {
+                  background: levelConfig.color,
+                  border: '#333333',
+                },
               },
-            },
-            size: getNodeSize(node),
-            font: {
-              size: 12,
-              color: '#333',
-              face: 'Arial, sans-serif'
-            },
-            borderWidth: 2,
-            shadow: {
-              enabled: true,
-              color: 'rgba(26, 145, 193, 0.2)',
-              size: 8,
-              x: 2,
-              y: 2
+              size: getEntitySize(entity),
+              font: {
+                size: 14,
+                color: '#333',
+                face: 'Arial, sans-serif',
+                bold: entity.level === 1 // 第一层级加粗
+              },
+              borderWidth: 2,
+              shadow: {
+                enabled: true,
+                color: 'rgba(0, 0, 0, 0.1)',
+                size: 5,
+                x: 2,
+                y: 2
+              }
             }
-          }))
+          })
         )
 
         // 处理边数据
         const edges = new DataSet(
-          (graphDataComputed.value.edges || []).map((edge) => ({
-            id: edge.id,
-            from: edge.source,
-            to: edge.target,
-            label: edge.label || '',
-            title: `关系: ${edge.label}\n支持度: ${edge.support_degree || 0}%`,
+          (graphDataComputed.value.edges || []).map((edge, index) => ({
+            id: `edge-${index}`,
+            from: edge.source_entity.name,
+            to: edge.target_entity.name,
+            label: edge.factor ? edge.factor.factor_name : '',
+            title: `因子: ${edge.factor?.factor_name || '未知'}\n类型: ${edge.factor?.factor_type || '未知'}\n效应: ${edge.factor?.effect || '未知'}\n描述: ${edge.factor?.description || '无描述'}`,
             width: props.graphSettings.edgeWidth || 2,
             color: {
-              color: edge.is_verified ? '#1A91C1' : '#A8E6CF',
-              highlight: '#0F7BA0',
-              opacity: edge.is_verified ? 0.8 : 0.5,
+              color: '#666666',
+              highlight: '#333333',
+              opacity: 0.7,
             },
             smooth: {
-              type: 'continuous',
+              type: 'cubicBezier',
+              forceDirection: 'vertical',
+              roundness: 0.4
             },
             arrows: {
               to: {
                 enabled: true,
-                scaleFactor: 0.8,
+                scaleFactor: 1,
                 type: 'arrow'
               },
             },
             font: {
               size: 10,
-              color: '#666',
+              color: '#444',
               strokeWidth: 2,
-              strokeColor: '#F5FBFF'
+              strokeColor: '#ffffff'
             }
           }))
         )
@@ -429,20 +538,7 @@ export default {
         // 网络配置
         const options = {
           physics: {
-            enabled: physicsEnabled.value,
-            stabilization: {
-              iterations: 200,
-              updateInterval: 25
-            },
-            solver: 'forceAtlas2Based',
-            forceAtlas2Based: {
-              gravitationalConstant: -80,
-              centralGravity: 0.005,
-              springLength: 150,
-              springConstant: 0.18,
-              damping: 0.4,
-              avoidOverlap: 0.5
-            },
+            enabled: false, // 禁用物理引擎以保持树形布局
           },
           interaction: {
             hover: true,
@@ -450,29 +546,30 @@ export default {
             selectConnectedEdges: false,
             tooltipDelay: 300,
             zoomView: true,
-            dragView: true
+            dragView: true,
+            dragNodes: false // 禁止拖拽节点以保持布局
           },
           nodes: {
             borderWidth: 2,
             shadow: true,
             font: {
-              size: 12,
+              size: 14,
               face: 'Arial, sans-serif'
             },
             chosen: {
               node: function (values, id, selected, hovering) {
                 values.shadow = true
-                values.shadowSize = 12
-                values.shadowColor = 'rgba(26, 145, 193, 0.4)'
+                values.shadowSize = 10
+                values.shadowColor = 'rgba(0, 0, 0, 0.3)'
               }
             }
           },
           edges: {
             shadow: false,
             smooth: {
-              type: 'continuous',
-              forceDirection: 'none',
-              roundness: 0.1
+              type: 'cubicBezier',
+              forceDirection: 'vertical',
+              roundness: 0.4
             },
             chosen: {
               edge: function (values, id, selected, hovering) {
@@ -481,8 +578,7 @@ export default {
             }
           },
           layout: {
-            improvedLayout: true,
-            clusterThreshold: 150
+            hierarchical: false // 使用自定义位置而不是内置层次布局
           }
         }
 
@@ -504,6 +600,12 @@ export default {
 
         // 添加事件监听器
         setupEventListeners()
+
+        // 自动适应画面
+        setTimeout(() => {
+          resetZoom()
+        }, 100)
+
       } catch (error) {
         console.error('初始化网络图失败:', error)
       }
@@ -513,36 +615,29 @@ export default {
     const setupEventListeners = () => {
       if (!network.value) return
 
-      // 节点选择事件
+      // 实体选择事件
       network.value.on('selectNode', (params) => {
         if (params.nodes.length > 0) {
-          const nodeId = params.nodes[0]
-          const nodeData = graphDataComputed.value.nodes.find((n) => n.id === nodeId)
-          if (nodeData) {
-            emit('node-selected', nodeData)
+          const entityId = params.nodes[0]
+          const entityData = graphDataComputed.value.nodes.find((n) => n.name === entityId)
+          if (entityData) {
+            emit('entity-selected', entityData)
           }
         }
-        selectedNodeCount.value = params.nodes.length
+        selectedEntityCount.value = params.nodes.length
       })
 
-      // 节点取消选择事件
+      // 实体取消选择事件
       network.value.on('deselectNode', () => {
-        emit('node-deselected')
-        selectedNodeCount.value = 0
+        emit('entity-deselected')
+        selectedEntityCount.value = 0
       })
 
-      // 双击节点事件
+      // 双击实体事件
       network.value.on('doubleClick', (params) => {
         if (params.nodes.length > 0) {
-          const nodeId = params.nodes[0]
-          focusOnNode(nodeId)
-        }
-      })
-
-      // 稳定化完成事件
-      network.value.on('stabilizationIterationsDone', () => {
-        if (physicsEnabled.value) {
-          network.value.setOptions({ physics: { enabled: false } })
+          const entityId = params.nodes[0]
+          focusOnEntity(entityId)
         }
       })
     }
@@ -594,9 +689,9 @@ export default {
     const centerGraph = () => {
       if (network.value) {
         try {
-          const nodeIds = network.value.getSelectedNodes()
-          if (nodeIds.length > 0) {
-            network.value.focus(nodeIds[0], {
+          const entityIds = network.value.getSelectedNodes()
+          if (entityIds.length > 0) {
+            network.value.focus(entityIds[0], {
               scale: 1.2,
               animation: {
                 duration: 800,
@@ -644,53 +739,51 @@ export default {
       }
     }
 
-    // 搜索功能 - 使用安全的选择方法
-    const searchNodes = (keyword) => {
+    // 搜索功能
+    const searchEntities = (keyword) => {
       if (!keyword || !graphDataComputed.value.nodes) {
-        searchedNodes.value = []
+        searchedEntities.value = []
         safeClearSelection()
         return
       }
 
       const results = graphDataComputed.value.nodes.filter(
-        (node) =>
-          (node.name || node.label || '')
+        (entity) =>
+          (entity.name || '')
             .toLowerCase()
             .includes(keyword.toLowerCase()) ||
-          (node.description || '').toLowerCase().includes(keyword.toLowerCase())
+          (entity.entity_type || '').toLowerCase().includes(keyword.toLowerCase()) ||
+          (entity.subtype || '').toLowerCase().includes(keyword.toLowerCase())
       )
 
-      searchedNodes.value = results.slice(0, 10) // 限制显示数量
+      searchedEntities.value = results.slice(0, 10)
 
       if (network.value && results.length > 0) {
-        const nodeIds = results.map((node) => node.id)
-        const success = safeSelectNodes(nodeIds)
+        const entityIds = results.map((entity) => entity.name)
+        const success = safeSelectEntities(entityIds)
 
         if (success && results.length === 1) {
-          // 延迟聚焦以确保选择完成
           setTimeout(() => {
-            focusOnNode(results[0].id)
+            focusOnEntity(results[0].name)
           }, 100)
         } else if (!success && results.length === 1) {
-          // 如果选择失败，直接聚焦
-          focusOnNode(results[0].id)
+          focusOnEntity(results[0].name)
         }
       }
     }
 
-    // 清除搜索 - 使用安全的清除方法
+    // 清除搜索
     const clearSearch = () => {
-      searchedNodes.value = []
+      searchedEntities.value = []
       safeClearSelection()
     }
 
-    // 聚焦到指定节点 - 修复版本
-    const focusOnNode = (nodeId) => {
+    // 聚焦到指定实体
+    const focusOnEntity = (entityId) => {
       if (!network.value) return
 
       try {
-        // 先聚焦到节点
-        network.value.focus(nodeId, {
+        network.value.focus(entityId, {
           scale: 1.5,
           animation: {
             duration: 800,
@@ -698,30 +791,27 @@ export default {
           },
         })
 
-        // 延迟选择节点以避免并发问题
         setTimeout(() => {
-          const success = safeSelectNodes([nodeId])
+          const success = safeSelectEntities([entityId])
           if (!success) {
-            // 如果选择失败，手动触发选择事件
-            const nodeData = graphDataComputed.value.nodes.find((n) => n.id === nodeId)
-            if (nodeData) {
-              emit('node-selected', nodeData)
-              selectedNodeCount.value = 1
+            const entityData = graphDataComputed.value.nodes.find((n) => n.name === entityId)
+            if (entityData) {
+              emit('entity-selected', entityData)
+              selectedEntityCount.value = 1
             }
           }
         }, 200)
       } catch (error) {
-        console.error('聚焦节点失败:', error)
-        // 即使聚焦失败，也尝试触发选择事件
-        const nodeData = graphDataComputed.value.nodes.find((n) => n.id === nodeId)
-        if (nodeData) {
-          emit('node-selected', nodeData)
-          selectedNodeCount.value = 1
+        console.error('聚焦实体失败:', error)
+        const entityData = graphDataComputed.value.nodes.find((n) => n.name === entityId)
+        if (entityData) {
+          emit('entity-selected', entityData)
+          selectedEntityCount.value = 1
         }
       }
     }
 
-    // 重新加载数据 - 暴露给父组件调用
+    // 重新加载数据
     const reloadData = () => {
       loadGraphData()
     }
@@ -747,34 +837,9 @@ export default {
       { deep: true }
     )
 
-    // 监听 graphData prop 变化 (用于第一种调用方式)
-    watch(
-      () => props.graphData,
-      () => {
-        if (props.taskId && props.taskId !== 0) {
-          // taskId 模式不监听 graphData prop
-          return
-        }
-        if (props.graphData && props.graphData.nodes) {
-          initializeNetwork()
-        }
-      },
-      { deep: true }
-    )
-
     // 生命周期
     onMounted(() => {
       loadGraphData()
-      // if (props.taskId && props.taskId !== 0) {
-      //   // taskId 模式：加载 API 数据
-      //   loadGraphData()
-      // } else if (props.graphData && props.graphData.nodes) {
-      //   // 普通模式：使用传入的 graphData
-      //   initializeNetwork()
-      // } else {
-      //   // 普通模式但没有传入数据：从 API 加载
-      //   loadGraphData()
-      // }
     })
 
     onBeforeUnmount(() => {
@@ -797,10 +862,11 @@ export default {
       visibleEdges,
       showComplexFeatures,
       graphDataComputed,
+      levelConfig,
 
       // 状态
-      searchedNodes,
-      selectedNodeCount,
+      searchedEntities,
+      selectedEntityCount,
       physicsEnabled,
 
       // 方法
@@ -810,16 +876,14 @@ export default {
       centerGraph,
       togglePhysics,
       exportImage,
-      searchNodes,
+      searchEntities,
       clearSearch,
-      focusOnNode,
+      focusOnEntity,
       reloadData,
-      getNodeTypeDisplay,
     }
   }
 }
 </script>
-
 <style scoped>
 .graph-visualization {
   position: relative;

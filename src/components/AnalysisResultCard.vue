@@ -250,7 +250,6 @@ export default {
       }
     })
 
-    // 计算属性 - 将后端返回的数据格式转换为图谱组件需要的格式
     const graphDataForVisualization = computed(() => {
       if (!taskData.value || !taskData.value.nodes) {
         return { nodes: [], edges: [] }

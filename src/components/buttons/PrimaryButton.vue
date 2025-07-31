@@ -1,11 +1,6 @@
 <!-- src/components/PrimaryButton.vue -->
 <template>
-  <button
-    :type="type"
-    class="btn-primary"
-    :class="{ 'full-width': fullWidth }"
-    @click="$emit('click', $event)"
-  >
+  <button :type="type" class="btn-primary" :class="{ 'full-width': fullWidth }" @click="$emit('click', $event)">
     <span>
       <slot>按钮</slot>
     </span>
@@ -26,7 +21,7 @@ export default {
       default: true,
     },
   },
-};
+}
 </script>
 
 <style scoped>

@@ -309,7 +309,7 @@ export default {
   methods: {
     async loadAnalysisTasks() {
       try {
-        const response = await Literature.getAnalyzeList()
+        const response = await Literature.getAnalyzeList(null, this.articleId)
         this.analysisTasks = response.data.data || []
       } catch (error) {
         console.error("Error loading analysis tasks:", error)

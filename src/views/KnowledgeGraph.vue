@@ -40,7 +40,7 @@ import GraphHeader from '@/components/knowledge/GraphHeader.vue'
 import GraphSidebar from '@/components/knowledge/GraphSidebar.vue'
 import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
 import NodeDetailPanel from '@/components/knowledge/NodeDetailPanel.vue'
-import SiteFooter from '@/components/layout/SiteFooter.vue' // 假设你的页脚组件路径
+import SiteFooter from '@/components/layout/SiteFooter.vue'
 
 export default {
   name: 'KnowledgeGraph',
