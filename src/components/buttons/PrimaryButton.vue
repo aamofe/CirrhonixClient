@@ -1,6 +1,6 @@
-<!-- src/components/PrimaryButton.vue -->
+<!-- PrimaryButton.vue -->
 <template>
-  <button :type="type" class="btn-primary" :class="{ 'full-width': fullWidth }" @click="$emit('click', $event)">
+  <button class="btn-primary" v-bind="$attrs">
     <span>
       <slot>按钮</slot>
     </span>
@@ -11,18 +11,10 @@
 <script>
 export default {
   name: "PrimaryButton",
-  props: {
-    type: {
-      type: String,
-      default: "button",
-    },
-    fullWidth: {
-      type: Boolean,
-      default: true,
-    },
-  },
+  inheritAttrs: false
 }
 </script>
+
 
 <style scoped>
 .btn-primary {

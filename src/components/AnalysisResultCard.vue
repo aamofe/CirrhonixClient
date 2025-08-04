@@ -1,11 +1,11 @@
 <!-- src/components/AnalysisResultCard.vue -->
 <template>
-  <div class="analysis-result-card" v-if="visible" @click.self="handleOverlayClick">
-    <div class="card-overlay" @click.self="handleOverlayClick">
+  <div class="analysis-result-card" v-if="visible" @click.self="handleClose">
+    <div class="card-overlay" @click.self="handleClose">
       <div class="card-content" @click.stop>
         <div class="card-header">
           <h3>分析任务详情</h3>
-          <button class="close-btn" @click="handleCloseCard">
+          <button class="close-btn" @click="handleClose">
             <el-icon>
               <Close />
             </el-icon>
@@ -14,71 +14,31 @@
 
         <div class="card-body">
           <!-- 加载状态 -->
-          <div v-if="isLoading" class="loading-container">
-            <el-card v-loading="isLoading" class="loading-container">
-              <p class="loading-text">正在加载任务详情...</p>
-            </el-card>
-          </div>
+          <el-card v-if="isLoading" v-loading="isLoading" class="loading-container">
+            <p class="loading-text">正在加载任务详情...</p>
+          </el-card>
 
           <!-- 任务信息 -->
           <div v-else-if="taskData" class="task-info">
-            <div class="info-row">
-              <span class="label">任务ID:</span>
-              <span class="value">{{ taskData.id }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">状态:</span>
-              <span class="value" :class="getStatusClass(taskData.status)">
-                {{ getStatusText(taskData.status) }}
-              </span>
-            </div>
-            <div class="info-row" v-if="taskData.literature">
-              <span class="label">文献:</span>
-              <span class="value">{{ taskData.literature.title || '未命名文献' }}</span>
-            </div>
-            <div class="info-row" v-if="taskData.start_time">
-              <span class="label">开始时间:</span>
-              <span class="value">{{ formatDateTime(taskData.start_time) }}</span>
-            </div>
-            <div class="info-row" v-if="taskData.end_time">
-              <span class="label">结束时间:</span>
-              <span class="value">{{ formatDateTime(taskData.end_time) }}</span>
-            </div>
-            <div class="info-row" v-if="taskData.error_message">
-              <span class="label">错误信息:</span>
-              <span class="value error-text">{{ taskData.error_message }}</span>
+            <div class="info-row" v-for="info in taskInfoList" :key="info.label">
+              <span class="label">{{ info.label }}:</span>
+              <span class="value" :class="info.class">{{ info.value }}</span>
             </div>
           </div>
 
           <!-- 分析结果 -->
-          <div class="analysis-results" v-if="taskData && taskData.status === 'completed'">
+          <div class="analysis-results" v-if="taskData?.status === 'completed'">
             <div class="result-section">
               <h4>实体关系分析结果</h4>
 
-              <!-- 统计信息 - 使用新的 statistics 字段 -->
+              <!-- 统计信息 -->
               <div class="stats-row" v-if="taskData.statistics">
-                <div class="stat-item">
-                  <span class="stat-number">{{ taskData.statistics.total_entities }}</span>
-                  <span class="stat-label">实体数量</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-number">{{ taskData.statistics.total_relations }}</span>
-                  <span class="stat-label">关系数量</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-number">{{ taskData.statistics.verified_relations }}</span>
-                  <span class="stat-label">已验证关系</span>
+                <div class="stat-item" v-for="stat in statisticsList" :key="stat.label">
+                  <span class="stat-number">{{ stat.value }}</span>
+                  <span class="stat-label">{{ stat.label }}</span>
                 </div>
               </div>
 
-              <!-- 图谱可视化 - 直接使用返回的 nodes 和 edges -->
-              <div class="graph-container" v-if="taskData.nodes && taskData.nodes.length > 0">
-                <GraphVisualization ref="graphVisualizationRef" :graph-data="graphDataForVisualization"
-                  :graph-settings="graphSettings" :selected-filters="selectedFilters || {}" :is-loading="isLoading"
-                  :current-view="'entity'" :task-id="taskId" @node-selected="handleNodeSelected"
-                  @node-deselected="handleNodeDeselected" />
-              </div>
-              <!-- 无数据提示 -->
               <div v-else class="no-data-placeholder">
                 <el-icon class="no-data-icon">
                   <Document />
@@ -87,8 +47,8 @@
               </div>
             </div>
 
-            <!-- 实体列表 - 使用返回的 entities 字段 -->
-            <div class="entity-list-section" v-if="taskData.entities && taskData.entities.length > 0">
+            <!-- 实体列表 -->
+            <div class="entity-list-section" v-if="taskData.entities?.length">
               <h5>识别的实体 ({{ taskData.entities.length }})</h5>
               <div class="entity-tags">
                 <el-tag v-for="entity in taskData.entities.slice(0, 20)" :key="entity.id" class="entity-tag"
@@ -105,8 +65,8 @@
               </div>
             </div>
 
-            <!-- 关系列表 - 使用返回的 relationships 字段 -->
-            <div class="relationship-list-section" v-if="taskData.relationships && taskData.relationships.length > 0">
+            <!-- 关系列表 -->
+            <div class="relationship-list-section" v-if="taskData.relationships?.length">
               <h5>识别的关系 ({{ taskData.relationships.length }})</h5>
               <div class="relationship-cards">
                 <div v-for="relationship in taskData.relationships.slice(0, 10)" :key="relationship.id"
@@ -118,16 +78,13 @@
                   </div>
                 </div>
                 <div v-if="taskData.relationships.length > 10" class="more-relationships">
-                  <el-tag type="info" size="small">
-                    +{{ taskData.relationships.length - 10 }} 更多关系...
-                  </el-tag>
+                  <el-tag type="info" size="small">+{{ taskData.relationships.length - 10 }} 更多关系...</el-tag>
                 </div>
               </div>
             </div>
 
             <!-- 实体关系详情 -->
-            <div class="entity-relations-section"
-              v-if="taskData.entity_relations && taskData.entity_relations.length > 0">
+            <div class="entity-relations-section" v-if="taskData.entity_relations?.length">
               <h5>实体关系详情 ({{ taskData.entity_relations.length }})</h5>
               <div class="entity-relation-cards">
                 <div v-for="relation in taskData.entity_relations.slice(0, 10)" :key="relation.id"
@@ -142,19 +99,14 @@
                     </div>
                     <div class="relation-info">
                       <span class="relation-type">{{ relation.relationship?.name || '未知关系' }}</span>
-                      <span class="support-degree" v-if="relation.support_degree">
-                        (支持度: {{ relation.support_degree }})
-                      </span>
-                      <span class="verified-badge" v-if="relation.is_verified">
-                        <el-tag type="success" size="mini">已验证</el-tag>
-                      </span>
+                      <span class="support-degree" v-if="relation.support_degree">(支持度: {{ relation.support_degree
+                      }})</span>
+                      <el-tag v-if="relation.is_verified" type="success" size="mini">已验证</el-tag>
                     </div>
                   </div>
                 </div>
                 <div v-if="taskData.entity_relations.length > 10" class="more-relations">
-                  <el-tag type="info" size="small">
-                    +{{ taskData.entity_relations.length - 10 }} 更多关系...
-                  </el-tag>
+                  <el-tag type="info" size="small">+{{ taskData.entity_relations.length - 10 }} 更多关系...</el-tag>
                 </div>
               </div>
             </div>
@@ -172,7 +124,7 @@
         </div>
 
         <div class="card-footer">
-          <primary-button @click="handleCloseCard" class="close-button">关闭</primary-button>
+          <primary-button @click="handleClose" class="close-button">关闭</primary-button>
         </div>
       </div>
     </div>
@@ -180,19 +132,37 @@
 </template>
 
 <script>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
-import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
 import Literature from '@/api/Literature'
 import { useNodeConfig } from '@/composables/useNodeConfig'
 import { Close, Document, Loading, SuccessFilled, WarningFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
+// 常量定义
+const STATUS_CONFIG = {
+  pending: { text: '等待中', icon: 'Loading', description: '任务正在等待执行中，请稍候...' },
+  running: { text: '分析中', icon: 'Loading', description: '任务正在分析中，请耐心等待...' },
+  completed: { text: '已完成', icon: 'SuccessFilled', description: '' },
+  failed: { text: '失败', icon: 'CircleCloseFilled', description: '任务执行失败，请检查错误信息或重新提交' }
+}
+
+const ENTITY_TAG_TYPES = {
+  pathogen: 'danger',
+  infection_site: 'success',
+  clinical_symptom: 'primary',
+  diagnosis_method: 'warning',
+  treatment_plan: 'success',
+  prevention_strategy: 'info',
+  cirrhosis_stage: 'warning',
+  complication: 'danger',
+  default: 'info'
+}
+
 export default {
   name: 'AnalysisResultCard',
   components: {
     PrimaryButton,
-    GraphVisualization,
     Close,
     Document,
     Loading,
@@ -202,97 +172,60 @@ export default {
     ArrowRight
   },
   props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    taskId: {
-      type: [Number, String],
-      required: true
-    }
+    visible: Boolean,
+    taskId: [Number, String]
   },
   emits: ['close'],
   setup(props, { emit }) {
     const { getNodeColor, getNodeLabel, getNodeIcon, getRelationLabel } = useNodeConfig()
 
-    // 响应式数据
     const taskData = ref(null)
     const isLoading = ref(false)
 
-    const graphSettings = ref({
-      showLabels: true,
-      physics: {
-        enabled: true,
-        solver: 'forceAtlas2Based',
-        forceAtlas2Based: {
-          gravitationalConstant: -50,
-          centralGravity: 0.01,
-          springLength: 100,
-          springConstant: 0.08,
-          damping: 0.4,
-          avoidOverlap: 1
-        },
-        stabilization: { iterations: 150 }
-      },
-      layout: {
-        improvedLayout: true
-      },
-      nodes: {
-        borderWidth: 2,
-        shadow: true,
-        font: { color: '#333333' }
-      },
-      edges: {
-        arrows: 'to',
-        smooth: true,
-        shadow: true,
-        font: { color: '#333333', size: 12 }
-      }
-    })
+    // 计算属性
+    const taskInfoList = computed(() => {
+      if (!taskData.value) return []
 
-    const graphDataForVisualization = computed(() => {
-      if (!taskData.value || !taskData.value.nodes) {
-        return { nodes: [], edges: [] }
+      const info = [
+        { label: '任务ID', value: taskData.value.id },
+        { label: '状态', value: getStatusText(taskData.value.status), class: getStatusClass(taskData.value.status) }
+      ]
+
+      if (taskData.value.literature?.title) {
+        info.push({ label: '文献', value: taskData.value.literature.title })
+      }
+      if (taskData.value.start_time) {
+        info.push({ label: '开始时间', value: formatDateTime(taskData.value.start_time) })
+      }
+      if (taskData.value.end_time) {
+        info.push({ label: '结束时间', value: formatDateTime(taskData.value.end_time) })
+      }
+      if (taskData.value.error_message) {
+        info.push({ label: '错误信息', value: taskData.value.error_message, class: 'error-text' })
       }
 
-      // 转换节点格式
-      const nodes = taskData.value.nodes.map(node => ({
-        id: node.id,
-        label: node.label,
-        type: node.type,
-        title: `实体: ${node.label}\n类型: ${node.subtype || node.type}${node.description ? '\n描述: ' + node.description : ''}`,
-        color: getNodeColor(node.type),
-        size: 20,
-        font: { size: 12 }
-      }))
-
-      // 转换边格式
-      const edges = (taskData.value.edges || []).map(edge => ({
-        id: edge.id,
-        from: edge.source,
-        to: edge.target,
-        label: edge.label,
-        title: `关系: ${edge.label}\n类型: ${edge.type}${edge.support_degree ? '\n支持度: ' + edge.support_degree : ''}`,
-        color: { color: '#999999' },
-        width: 2
-      }))
-
-      return { nodes, edges }
+      return info
     })
 
+    const statisticsList = computed(() => {
+      if (!taskData.value?.statistics) return []
+
+      return [
+        { label: '实体数量', value: taskData.value.statistics.total_entities },
+        { label: '关系数量', value: taskData.value.statistics.total_relations },
+        { label: '已验证关系', value: taskData.value.statistics.verified_relations }
+      ]
+    })
+
+    // API调用
     const loadTaskDetail = async () => {
       if (!props.taskId) return
 
-      console.log('Loading task detail for:', props.taskId)
       isLoading.value = true
-
       try {
         const response = await Literature.getAnalyzeDetail(props.taskId)
-        console.log('Task detail response:', response)
-
-        if (response.data && response.data.data) {
+        if (response.data?.data) {
           taskData.value = response.data.data
-          console.log('Loaded task data:', taskData.value)
         }
       } catch (error) {
         console.error("Error loading task detail:", error)
@@ -302,122 +235,46 @@ export default {
       }
     }
 
-    const resetData = () => {
-      taskData.value = null
-      isLoading.value = false
-    }
-
     // 监听器
-    watch(() => props.visible, (newVal) => {
-      if (newVal && props.taskId) {
+    watch(() => [props.visible, props.taskId], ([visible, taskId]) => {
+      if (visible && taskId) {
         loadTaskDetail()
-      } else if (!newVal) {
-        resetData()
+      } else if (!visible) {
+        taskData.value = null
+        isLoading.value = false
       }
     }, { immediate: true })
 
-    watch(() => props.taskId, (newVal) => {
-      if (newVal && props.visible) {
-        loadTaskDetail()
-      }
-    }, { immediate: true })
+    // 工具方法
+    const handleClose = () => emit('close')
 
-    // 方法
-    const handleCloseCard = () => {
-      console.log('handleCloseCard called')
-      emit('close')
-    }
-
-    const handleOverlayClick = () => {
-      console.log('handleOverlayClick called')
-      emit('close')
-    }
-
-    // 从实体关系中获取实体名称
     const getEntityNameFromRelation = (relation, type) => {
-      if (type === 'source' && relation.source_entity) {
-        return relation.source_entity.name || `实体${relation.source_entity.id}`
-      } else if (type === 'target' && relation.target_entity) {
-        return relation.target_entity.name || `实体${relation.target_entity.id}`
-      }
+      const entity = type === 'source' ? relation.source_entity : relation.target_entity
+      if (entity?.name) return entity.name
 
-      // 如果没有嵌套的实体信息，尝试从entities数组中查找
-      if (taskData.value && taskData.value.entities) {
+      // 从entities数组中查找
+      if (taskData.value?.entities) {
         const entityId = type === 'source' ? relation.source_entity_id : relation.target_entity_id
-        const entity = taskData.value.entities.find(e => e.id === entityId)
-        return entity ? entity.name : `实体${entityId}`
+        const foundEntity = taskData.value.entities.find(e => e.id === entityId)
+        if (foundEntity) return foundEntity.name
       }
 
       return type === 'source' ? '源实体' : '目标实体'
     }
 
-    const getEntityTagType = (entityType) => {
-      const typeMap = {
-        'pathogen': 'danger',
-        'infection_site': 'success',
-        'clinical_symptom': 'primary',
-        'diagnosis_method': 'warning',
-        'treatment_plan': 'success',
-        'prevention_strategy': 'info',
-        'cirrhosis_stage': 'warning',
-        'complication': 'danger',
-        'default': 'info'
-      }
-      return typeMap[entityType] || typeMap.default
-    }
-
-    const getStatusText = (status) => {
-      const statusMap = {
-        'pending': '等待中',
-        'running': '分析中',
-        'completed': '已完成',
-        'failed': '失败'
-      }
-      return statusMap[status] || status
-    }
-
-    const getStatusClass = (status) => {
-      return `status-${status}`
-    }
-
-    const getStatusIcon = (status) => {
-      const iconMap = {
-        'pending': 'Loading',
-        'running': 'Loading',
-        'completed': 'SuccessFilled',
-        'failed': 'CircleCloseFilled'
-      }
-      return iconMap[status] || 'Loading'
-    }
-
-    const getStatusDescription = (status) => {
-      const descMap = {
-        'pending': '任务正在等待执行中，请稍候...',
-        'running': '任务正在分析中，请耐心等待...',
-        'failed': '任务执行失败，请检查错误信息或重新提交'
-      }
-      return descMap[status] || ''
-    }
-
-    const formatDateTime = (dateTime) => {
-      if (!dateTime) return ''
-      return new Date(dateTime).toLocaleString('zh-CN')
-    }
+    const getEntityTagType = (entityType) => ENTITY_TAG_TYPES[entityType] || ENTITY_TAG_TYPES.default
+    const getStatusText = (status) => STATUS_CONFIG[status]?.text || status
+    const getStatusClass = (status) => `status-${status}`
+    const getStatusIcon = (status) => STATUS_CONFIG[status]?.icon || 'Loading'
+    const getStatusDescription = (status) => STATUS_CONFIG[status]?.description || ''
+    const formatDateTime = (dateTime) => dateTime ? new Date(dateTime).toLocaleString('zh-CN') : ''
 
     return {
-      // 数据
       taskData,
       isLoading,
-      graphSettings,
-
-      // 计算属性
-      graphDataForVisualization,
-
-      // 方法
-      handleCloseCard,
-      handleOverlayClick,
-      resetData,
-      loadTaskDetail,
+      taskInfoList,
+      statisticsList,
+      handleClose,
       getEntityNameFromRelation,
       getEntityTagType,
       getStatusText,
@@ -547,10 +404,7 @@ export default {
 }
 
 /* 状态样式 */
-.status-pending {
-  color: #f59e0b;
-}
-
+.status-pending,
 .status-running {
   color: #3b82f6;
 }
@@ -610,63 +464,6 @@ export default {
   margin-top: 4px;
 }
 
-/* 图谱容器 */
-.graph-container {
-  height: 400px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  overflow: hidden;
-}
-
-/* 简单图谱展示样式 */
-.simple-graph-display {
-  padding: 20px;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-
-.graph-nodes,
-.graph-edges {
-  margin-bottom: 20px;
-}
-
-.graph-nodes h6,
-.graph-edges h6 {
-  margin: 0 0 10px 0;
-  font-weight: 600;
-  color: #374151;
-}
-
-.node-list,
-.edge-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.node-item,
-.edge-item {
-  padding: 8px 12px;
-  background: white;
-  border-radius: 6px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.node-label,
-.edge-label {
-  font-weight: 500;
-  color: #374151;
-}
-
-.node-type,
-.edge-info {
-  font-size: 12px;
-  color: #6b7280;
-}
-
 /* 无数据提示 */
 .no-data-placeholder {
   display: flex;
@@ -685,13 +482,17 @@ export default {
 }
 
 /* 实体标签 */
-.entity-list-section {
+.entity-list-section,
+.relationship-list-section,
+.entity-relations-section {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #f3f4f6;
 }
 
-.entity-list-section h5 {
+.entity-list-section h5,
+.relationship-list-section h5,
+.entity-relations-section h5 {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
@@ -722,33 +523,23 @@ export default {
 }
 
 /* 关系列表 */
-.relationship-list-section {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #f3f4f6;
-}
-
-.relationship-list-section h5 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.relationship-cards {
+.relationship-cards,
+.entity-relation-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 12px;
 }
 
-.relationship-card {
+.relationship-card,
+.entity-relation-card {
   padding: 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background-color: #fafafa;
 }
 
-.relationship-content {
+.relationship-content,
+.relation-content {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -765,19 +556,42 @@ export default {
   color: #6b7280;
 }
 
-.relationship-entities {
-  margin-top: 4px;
+.relation-entities {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.entity-connection {
-  font-size: 10px;
+.source-entity,
+.target-entity {
+  font-weight: 500;
+  color: #374151;
+}
+
+.arrow-icon {
   color: #6b7280;
-  background: #f0f0f0;
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
-.more-relationships {
+.relation-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.relation-type {
+  font-weight: 500;
+  color: #374151;
+}
+
+.support-degree {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.more-relationships,
+.more-relations {
   grid-column: 1 / -1;
   text-align: center;
   padding: 8px;
