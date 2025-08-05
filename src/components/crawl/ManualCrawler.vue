@@ -41,7 +41,7 @@
         开始爬取
         <template #icon>
           <el-icon v-if="!manualCrawling">
-            <Spider />
+            <Search />
           </el-icon>
           <el-icon v-else class="spinner">
             <Loading />
@@ -51,30 +51,30 @@
     </div>
 
     <!-- 爬取进度 -->
-    <div v-if="manualCrawling" class="crawling-progress">
+    <!-- <div v-if="manualCrawling" class="crawling-progress">
       <div class="progress-bar">
         <div class="progress-value" :style="{ width: `${manualProgress}%` }"></div>
       </div>
       <div class="progress-text">
         {{ manualProgress }}% - 已爬取 {{ crawledCount }} 篇文献
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import { Spider, Loading } from "@element-plus/icons-vue"
-
-// 导入爬虫API
+import { Search, Loading } from '@element-plus/icons-vue'
+import { ElIcon } from 'element-plus'
 import Crawler from "@/api/Crawler"
 
 export default {
   name: "ManualCrawler",
   components: {
     PrimaryButton,
-    Spider,
+    Search,
     Loading,
+    ElIcon,
   },
   props: {
     availableSources: {
@@ -93,7 +93,7 @@ export default {
       },
       manualCrawling: false,
       manualProgress: 0,
-      crawledCount: 0,
+      // crawledCount: 0,
       messageShown: false, // 添加消息标志位
     }
   },
@@ -118,8 +118,6 @@ export default {
       this.messageShown = true
       this.lastMessage = content
       this.$message[type](content)
-
-      // 重置消息状态标志（可选，根据实际需求决定是否需要）
       setTimeout(() => {
         this.messageShown = false
       }, 500)
@@ -137,7 +135,7 @@ export default {
       try {
         this.manualCrawling = true
         this.manualProgress = 5 // 初始进度
-        this.crawledCount = 0
+        // this.crawledCount = 0
 
         const queryParams = {
           keywords: this.manualCrawler.keywords,
@@ -147,33 +145,27 @@ export default {
         }
 
         // 创建任务
-        this.showMessage('info', "爬取任务已创建，请等待完成")
+
         const response = await Crawler.createTask(
           this.manualCrawler.source_id,
           queryParams
         )
 
-        if (response.data && response.data.data) {
-          const taskId = response.data.data.task_id
-          this.manualProgress = 50
+        if (response.data && response.data.task) {
+          const task = response.data.task
+          const status = task.status
+          // const taskResponse = await Crawler.getCrawlDetail(taskId)
 
-          // 获取任务详情
-          const taskResponse = await Crawler.getCrawlDetail(taskId)
-
-          if (taskResponse.data && taskResponse.data.data) {
-            const { status, results_count } = taskResponse.data.data
-            this.crawledCount = results_count
-
-            if (status === "completed") {
-              this.manualProgress = 100
-              this.showMessage('success', `爬取任务完成，共获取${results_count}篇文献`)
-            } else if (status === "failed") {
-              this.manualProgress = 0
-              this.showMessage('error', "爬取任务失败")
-            } else {
-              this.manualProgress = 75
-              this.showMessage('info', "爬取任务正在进行中，请稍后查看历史记录")
-            }
+          console.log("爬虫状态:", status)
+          if (status === "completed") {
+            this.manualProgress = 100
+            this.showMessage('success', `爬取任务完成，共获取${results_count}篇文献`)
+          } else if (status === "failed") {
+            this.manualProgress = 0
+            this.showMessage('error', "爬取任务失败")
+          } else {
+            this.manualProgress = 75
+            this.showMessage('info', "爬取任务正在进行中，请稍后查看历史记录")
           }
         } else {
           throw new Error("创建任务失败")
@@ -183,7 +175,6 @@ export default {
         this.showMessage('error', "启动爬取任务失败")
       } finally {
         this.manualCrawling = false
-        this.$emit("crawl-completed")
       }
     },
 

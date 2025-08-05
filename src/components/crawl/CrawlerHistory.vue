@@ -35,6 +35,7 @@
             <th>关键词</th>
             <th>爬取数量</th>
             <th>状态</th>
+            <th>备注</th>
           </tr>
         </thead>
         <tbody>
@@ -48,10 +49,13 @@
               }}
             </td>
             <td>
-              {{ history.results_count === 0 ? 100 : history.results_count }}
+              {{ history.results_count }}
             </td>
             <td :class="history.status">
               {{ formatStatus(history.status) }}
+            </td>
+            <td>
+              {{ history.error_message }}
             </td>
           </tr>
         </tbody>

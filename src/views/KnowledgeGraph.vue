@@ -22,8 +22,7 @@
           @node-selected="handleNodeSelected" @node-deselected="handleNodeDeselected" />
 
         <!-- 节点详情面板 -->
-        <NodeDetailPanel v-if="globalState.selectedNode" :node="globalState.selectedNode" @close="handleCloseNodeDetail"
-          @view-article="handleViewArticle" @focus-node="handleFocusNode" />
+
       </div>
     </div>
 
@@ -39,7 +38,7 @@ import { useNodeConfig } from '@/composables/useNodeConfig'
 import GraphHeader from '@/components/knowledge/GraphHeader.vue'
 import GraphSidebar from '@/components/knowledge/GraphSidebar.vue'
 import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
-import NodeDetailPanel from '@/components/knowledge/NodeDetailPanel.vue'
+// import NodeDetailPanel from '@/components/knowledge/NodeDetailPanel.vue'
 import SiteFooter from '@/components/layout/SiteFooter.vue'
 
 export default {
@@ -48,7 +47,7 @@ export default {
     GraphHeader,
     GraphSidebar,
     GraphVisualization,
-    NodeDetailPanel,
+    // NodeDetailPanel,
     SiteFooter,
   },
   setup() {

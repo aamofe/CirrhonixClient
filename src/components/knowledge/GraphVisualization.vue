@@ -6,6 +6,26 @@
       <p class="loading-text">加载知识图谱中...</p>
     </div>
 
+    <!-- 背景网格 -->
+    <div class="background-grid">
+      <svg class="grid-svg" width="100%" height="100%" viewBox="0 0 800 800">
+        <!-- 同心圆 -->
+        <circle cx="400" cy="400" r="50" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <circle cx="400" cy="400" r="130" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <circle cx="400" cy="400" r="200" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <circle cx="400" cy="400" r="270" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <circle cx="400" cy="400" r="340" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
+
+        <!-- 扇形分割线 -->
+        <line x1="400" y1="400" x2="400" y2="60" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <line x1="400" y1="400" x2="694.6" y2="230" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <line x1="400" y1="400" x2="694.6" y2="570" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <line x1="400" y1="400" x2="400" y2="740" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <line x1="400" y1="400" x2="105.4" y2="570" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <line x1="400" y1="400" x2="105.4" y2="230" stroke="#ddd" stroke-width="2" opacity="0.8" />
+      </svg>
+    </div>
+
     <!-- 图谱画布 -->
     <div class="graph-canvas" ref="networkContainer"></div>
 
@@ -38,6 +58,8 @@
           </el-icon>
         </button>
       </div>
+
+
     </div>
 
     <!-- 图谱信息面板 -->
@@ -81,11 +103,11 @@ export default {
     const internalGraphData = ref({ nodes: [], edges: [] })
     const physicsEnabled = ref(false)
 
-    // 层级配置 - 调整半径以适应新的分散分布
+    // 层级配置 - 恢复原始颜色
     const levelConfig = [
       { level: 1, name: '疾病状态', color: '#FF6B6B', radius: 30 },
-      { level: 2, name: '免疫细胞', color: '#4ECDC4', radius: 160 },
-      { level: 3, name: '病原体', color: '#45B7D1', radius: 500 }
+      { level: 2, name: '免疫细胞', color: '#4ECDC4', radius: 130 },
+      { level: 3, name: '病原体', color: '#45B7D1', radius: 200 }
     ]
 
     const graphDataComputed = computed(() => internalGraphData.value)
@@ -108,8 +130,8 @@ export default {
       }
     }
 
-    // 计算美化的扇形分布布局
-    const calculateCircularLayout = (entities) => {
+    // 计算优化的布局
+    const calculateOptimizedLayout = (entities) => {
       const layout = {}
       const levelGroups = {}
 
@@ -119,20 +141,14 @@ export default {
         levelGroups[entity.level].push(entity)
       })
 
-      console.log('Level groups:', {
-        level1: levelGroups[1]?.length || 0,
-        level2: levelGroups[2]?.length || 0,
-        level3: levelGroups[3]?.length || 0
-      })
-
-      // Level 1: 中心区域
+      // Level 1: 中心位置
       if (levelGroups[1]) {
         levelGroups[1].forEach((entity, index) => {
           if (levelGroups[1].length === 1) {
             layout[entity.name] = { x: 0, y: 0 }
           } else {
             const angle = (index * 2 * Math.PI) / levelGroups[1].length
-            const radius = Math.random() * 20 + 5
+            const radius = 15
             layout[entity.name] = {
               x: radius * Math.cos(angle),
               y: radius * Math.sin(angle)
@@ -141,88 +157,55 @@ export default {
         })
       }
 
-      // Level 2: 圆环区域，严格6扇形分布
+      // Level 2: 对称的六扇形分布
       if (levelGroups[2]) {
-        const innerRadius = 100
-        const outerRadius = 160
-        const sectorCount = 6
-        const sectorAngle = (2 * Math.PI) / sectorCount // 60度每个扇形
-
-        // 将节点分配到6个扇形中
-        const sectorsDistribution = Array(sectorCount).fill(0).map(() => [])
-        levelGroups[2].forEach((entity, index) => {
-          const sectorIndex = index % sectorCount
-          sectorsDistribution[sectorIndex].push(entity)
-        })
-
-        sectorsDistribution.forEach((sectorEntities, sectorIndex) => {
-          const sectorStartAngle = sectorIndex * sectorAngle
-          const sectorCenterAngle = sectorStartAngle + sectorAngle / 2
-
-          sectorEntities.forEach((entity, indexInSector) => {
-            // 在扇形内分布：如果只有1个节点放中心，多个节点则均匀分布
-            let angleInSector
-            if (sectorEntities.length === 1) {
-              angleInSector = sectorCenterAngle
-            } else {
-              // 在扇形的70%范围内均匀分布
-              const spreadAngle = sectorAngle * 0.7
-              const startSpread = sectorCenterAngle - spreadAngle / 2
-              angleInSector = startSpread + (indexInSector * spreadAngle) / (sectorEntities.length - 1)
-            }
-
-            // 半径在圆环内随机分布
-            const radiusRatio = 0.2 + Math.random() * 0.8
-            const radius = innerRadius + (outerRadius - innerRadius) * radiusRatio
-
-            layout[entity.name] = {
-              x: radius * Math.cos(angleInSector),
-              y: radius * Math.sin(angleInSector)
-            }
-          })
-        })
-      }
-
-      // Level 3: 最外层，6扇形分布，大幅分散
-      if (levelGroups[3]) {
-        const minRadius = 220
-        const maxRadius = 500
+        const baseRadius = 130
         const sectorCount = 6
         const sectorAngle = (2 * Math.PI) / sectorCount
 
-        // 将节点分配到6个扇形中
-        const sectorsDistribution = Array(sectorCount).fill(0).map(() => [])
-        levelGroups[3].forEach((entity, index) => {
+        levelGroups[2].forEach((entity, index) => {
           const sectorIndex = index % sectorCount
-          sectorsDistribution[sectorIndex].push(entity)
+          const layerIndex = Math.floor(index / sectorCount)
+
+          // 扇形中心角度
+          const sectorCenterAngle = sectorIndex * sectorAngle
+
+          // 多层分布，每层半径递增
+          const currentRadius = baseRadius + layerIndex * 25
+
+          // 在扇形内的角度偏移
+          const maxInSector = Math.ceil(levelGroups[2].length / sectorCount)
+          const posInSector = Math.floor(index / sectorCount)
+          const angleOffset = maxInSector > 1 ?
+            (sectorAngle * 0.6) * (posInSector / (maxInSector - 1) - 0.5) : 0
+
+          const finalAngle = sectorCenterAngle + angleOffset
+
+          layout[entity.name] = {
+            x: currentRadius * Math.cos(finalAngle),
+            y: currentRadius * Math.sin(finalAngle)
+          }
         })
+      }
 
-        sectorsDistribution.forEach((sectorEntities, sectorIndex) => {
-          const sectorStartAngle = sectorIndex * sectorAngle
+      // Level 3: 多圆环分布，每圆环10-15个节点
+      if (levelGroups[3]) {
+        const nodesPerRing = 12 // 每圆环12个节点
+        const startRadius = 200
+        const ringSpacing = 35
 
-          sectorEntities.forEach((entity, indexInSector) => {
-            // 在扇形内更加随机和分散的分布
-            const angleSpread = sectorAngle * 0.85 // 使用85%的扇形空间
-            const baseAngleInSector = sectorStartAngle + angleSpread * 0.1 + // 10%边距
-              (indexInSector / Math.max(1, sectorEntities.length - 1)) * angleSpread * 0.8 // 80%分布空间
+        levelGroups[3].forEach((entity, index) => {
+          const ringIndex = Math.floor(index / nodesPerRing)
+          const posInRing = index % nodesPerRing
 
-            // 添加角度随机偏移
-            const angleRandomOffset = (Math.random() - 0.5) * sectorAngle * 0.3
-            const finalAngle = baseAngleInSector + angleRandomOffset
+          const currentRadius = startRadius + ringIndex * ringSpacing
+          const angleStep = (2 * Math.PI) / nodesPerRing
+          const angle = posInRing * angleStep
 
-            // 半径大幅变化，让节点充分分散
-            const baseRadiusRatio = 0.3 + Math.random() * 0.7
-            const baseRadius = minRadius + (maxRadius - minRadius) * baseRadiusRatio
-
-            // 添加大幅径向偏移
-            const radiusRandomOffset = (Math.random() - 0.5) * 120
-            const finalRadius = Math.max(minRadius, Math.min(maxRadius, baseRadius + radiusRandomOffset))
-
-            layout[entity.name] = {
-              x: finalRadius * Math.cos(finalAngle),
-              y: finalRadius * Math.sin(finalAngle)
-            }
-          })
+          layout[entity.name] = {
+            x: currentRadius * Math.cos(angle),
+            y: currentRadius * Math.sin(angle)
+          }
         })
       }
 
@@ -274,7 +257,7 @@ export default {
       if (!networkContainer.value || !graphDataComputed.value.nodes.length) return
 
       try {
-        const layout = calculateCircularLayout(graphDataComputed.value.nodes)
+        const layout = calculateOptimizedLayout(graphDataComputed.value.nodes)
 
         // 处理节点数据
         const nodes = new DataSet(
@@ -316,7 +299,7 @@ export default {
           }))
         )
 
-        // 网络配置 - 增大画布以适应更大的分布范围
+        // 网络配置
         const options = {
           physics: { enabled: false },
           interaction: {
@@ -331,16 +314,16 @@ export default {
           nodes: {
             borderWidth: 2,
             shadow: true,
-            font: { size: 14, face: 'Arial, sans-serif' }
+            font: { face: 'Arial, sans-serif' }
           },
           edges: {
             shadow: false,
-            smooth: { type: 'curvedCW', roundness: 0.15 }, // 稍微调整边的弯曲度
-            length: 120 // 增加边的默认长度
+            smooth: { type: 'curvedCW', roundness: 0.15 },
+            length: 120
           },
           layout: {
             hierarchical: false,
-            randomSeed: 42 // 固定随机种子让布局更稳定
+            randomSeed: 42
           }
         }
 
@@ -503,18 +486,33 @@ export default {
 .graph-visualization {
   position: relative;
   width: 100%;
-  height: 1400px;
-  /* 进一步增加高度以适应更分散的节点分布 */
+  height: 800px;
   background: transparent;
   border: 1px solid #ddd;
   border-radius: 8px;
   overflow: hidden;
 }
 
-.graph-canvas {
+.background-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  background: transparent;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grid-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.graph-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
 }
 
 .loading-overlay {
@@ -523,7 +521,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -563,6 +561,9 @@ export default {
   top: 20px;
   right: 20px;
   z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .toolbar-group {
@@ -573,6 +574,11 @@ export default {
   padding: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #ddd;
+}
+
+.layout-controls {
+  display: flex;
+  gap: 5px;
 }
 
 .toolbar-btn {
@@ -599,6 +605,8 @@ export default {
   background: #333;
   color: white;
 }
+
+
 
 .graph-info-panel {
   position: absolute;
@@ -636,20 +644,18 @@ export default {
 
 @media (max-width: 768px) {
   .graph-toolbar {
-    top: 8px;
-    right: 8px;
-    padding: 6px;
-  }
-
-  .toolbar-btn {
-    width: 32px;
-    height: 32px;
+    top: 10px;
+    right: 10px;
   }
 
   .graph-info-panel {
-    bottom: 8px;
-    left: 8px;
-    padding: 8px 12px;
+    bottom: 10px;
+    left: 10px;
+    padding: 12px 16px;
+  }
+
+  .info-row {
+    gap: 16px;
   }
 }
 </style>

@@ -107,7 +107,7 @@ export default {
             ? response.data.data
             : [response.data.data]
 
-          console.log("成功获取数据源:", this.availableSources)
+          // console.log("成功获取数据源:", this.availableSources)
         } else {
           console.error("API返回的数据结构不符合预期:", response)
           this.$message.error("获取数据源列表返回的数据格式有误")
