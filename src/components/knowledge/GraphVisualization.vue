@@ -9,12 +9,14 @@
     <!-- 背景网格 -->
     <div class="background-grid">
       <svg class="grid-svg" width="100%" height="100%" viewBox="0 0 800 800">
-        <!-- 同心圆 -->
+        <!-- 同心圆 - 增加更多圆圈 -->
         <circle cx="400" cy="400" r="50" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
         <circle cx="400" cy="400" r="130" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
         <circle cx="400" cy="400" r="200" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
         <circle cx="400" cy="400" r="270" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
         <circle cx="400" cy="400" r="340" fill="none" stroke="#ddd" stroke-width="2" opacity="0.8" />
+        <circle cx="400" cy="400" r="410" fill="none" stroke="#ddd" stroke-width="1" opacity="0.8" />
+        <circle cx="400" cy="400" r="480" fill="none" stroke="#ddd" stroke-width="1" opacity="0.8" />
 
         <!-- 扇形分割线 -->
         <line x1="400" y1="400" x2="400" y2="60" stroke="#ddd" stroke-width="2" opacity="0.8" />
@@ -130,7 +132,7 @@ export default {
       }
     }
 
-    // 计算优化的布局
+    // 计算优化的布局 - 避免重合，Level 3更散更整齐
     const calculateOptimizedLayout = (entities) => {
       const layout = {}
       const levelGroups = {}
@@ -141,76 +143,168 @@ export default {
         levelGroups[entity.level].push(entity)
       })
 
-      // Level 1: 中心位置
+      // Level 1: 中心区域 - 松散分布
       if (levelGroups[1]) {
-        levelGroups[1].forEach((entity, index) => {
-          if (levelGroups[1].length === 1) {
-            layout[entity.name] = { x: 0, y: 0 }
-          } else {
-            const angle = (index * 2 * Math.PI) / levelGroups[1].length
-            const radius = 15
+        const nodes = levelGroups[1]
+
+        if (nodes.length === 1) {
+          layout[nodes[0].name] = { x: 0, y: 0 }
+        } else if (nodes.length === 2) {
+          // 两个节点水平分布
+          layout[nodes[0].name] = { x: -40, y: 0 }
+          layout[nodes[1].name] = { x: 40, y: 0 }
+        } else {
+          // 多个节点圆形分布，增大半径
+          const radius = Math.max(50, nodes.length * 12)
+          nodes.forEach((entity, index) => {
+            const angle = (index * 2 * Math.PI) / nodes.length
             layout[entity.name] = {
               x: radius * Math.cos(angle),
               y: radius * Math.sin(angle)
             }
-          }
-        })
+          })
+        }
       }
 
-      // Level 2: 对称的六扇形分布
+      // Level 2: 中间层 - 更松散的圆环分布
       if (levelGroups[2]) {
-        const baseRadius = 130
-        const sectorCount = 6
-        const sectorAngle = (2 * Math.PI) / sectorCount
+        const nodes = levelGroups[2]
+        const baseRadius = 180  // 增大基础半径
+        const minAngle = Math.PI / 8  // 最小角度间距 (22.5度)
 
-        levelGroups[2].forEach((entity, index) => {
-          const sectorIndex = index % sectorCount
-          const layerIndex = Math.floor(index / sectorCount)
+        // 计算每环最大节点数
+        const maxNodesPerRing = Math.floor((2 * Math.PI) / minAngle)
+        const ringCount = Math.ceil(nodes.length / maxNodesPerRing)
 
-          // 扇形中心角度
-          const sectorCenterAngle = sectorIndex * sectorAngle
+        let nodeIndex = 0
+        for (let ring = 0; ring < ringCount; ring++) {
+          const nodesInRing = Math.min(maxNodesPerRing, nodes.length - nodeIndex)
+          const currentRadius = baseRadius + ring * 60  // 环间距60px
 
-          // 多层分布，每层半径递增
-          const currentRadius = baseRadius + layerIndex * 25
+          // 为每环添加随机角度偏移，避免对齐
+          const angleOffset = ring * (Math.PI / 6) + Math.random() * (Math.PI / 12)
 
-          // 在扇形内的角度偏移
-          const maxInSector = Math.ceil(levelGroups[2].length / sectorCount)
-          const posInSector = Math.floor(index / sectorCount)
-          const angleOffset = maxInSector > 1 ?
-            (sectorAngle * 0.6) * (posInSector / (maxInSector - 1) - 0.5) : 0
+          for (let i = 0; i < nodesInRing; i++) {
+            const entity = nodes[nodeIndex + i]
+            const angle = (i * 2 * Math.PI) / nodesInRing + angleOffset
 
-          const finalAngle = sectorCenterAngle + angleOffset
+            // 添加小幅随机偏移，增加自然感
+            const radiusJitter = (Math.random() - 0.5) * 20
+            const angleJitter = (Math.random() - 0.5) * (Math.PI / 16)
 
-          layout[entity.name] = {
-            x: currentRadius * Math.cos(finalAngle),
-            y: currentRadius * Math.sin(finalAngle)
+            const finalRadius = currentRadius + radiusJitter
+            const finalAngle = angle + angleJitter
+
+            layout[entity.name] = {
+              x: finalRadius * Math.cos(finalAngle),
+              y: finalRadius * Math.sin(finalAngle)
+            }
           }
-        })
+
+          nodeIndex += nodesInRing
+        }
       }
 
-      // Level 3: 多圆环分布，每圆环10-15个节点
+      // Level 3: 外层 - 超松散的多环螺旋分布
       if (levelGroups[3]) {
-        const nodesPerRing = 12 // 每圆环12个节点
-        const startRadius = 200
-        const ringSpacing = 35
+        const nodes = levelGroups[3]
+        const startRadius = 320  // 增大起始半径
+        const ringSpacing = 70   // 增大环间距
+        const minNodeDistance = 50  // 增大最小节点间距
 
-        levelGroups[3].forEach((entity, index) => {
-          const ringIndex = Math.floor(index / nodesPerRing)
-          const posInRing = index % nodesPerRing
+        // 动态计算每环节点数
+        const calculateOptimalNodesPerRing = (radius) => {
+          const circumference = 2 * Math.PI * radius
+          const optimalNodes = Math.floor(circumference / minNodeDistance)
+          return Math.max(6, Math.min(optimalNodes, 16)) // 限制范围 6-16
+        }
 
+        let remainingNodes = nodes.length
+        let currentIndex = 0
+        let ringIndex = 0
+
+        while (remainingNodes > 0) {
           const currentRadius = startRadius + ringIndex * ringSpacing
-          const angleStep = (2 * Math.PI) / nodesPerRing
-          const angle = posInRing * angleStep
+          const maxNodesThisRing = calculateOptimalNodesPerRing(currentRadius)
+          const nodesThisRing = Math.min(remainingNodes, maxNodesThisRing)
 
-          layout[entity.name] = {
-            x: currentRadius * Math.cos(angle),
-            y: currentRadius * Math.sin(angle)
+          // 每环随机起始角度
+          const baseAngle = Math.random() * Math.PI
+
+          for (let i = 0; i < nodesThisRing; i++) {
+            const entity = nodes[currentIndex + i]
+            const angle = baseAngle + (i * 2 * Math.PI) / nodesThisRing
+
+            // 增加更大的随机偏移
+            const radiusJitter = (Math.random() - 0.5) * 30
+            const angleJitter = (Math.random() - 0.5) * (Math.PI / 12)
+
+            const finalRadius = currentRadius + radiusJitter
+            const finalAngle = angle + angleJitter
+
+            layout[entity.name] = {
+              x: finalRadius * Math.cos(finalAngle),
+              y: finalRadius * Math.sin(finalAngle)
+            }
           }
-        })
+
+          currentIndex += nodesThisRing
+          remainingNodes -= nodesThisRing
+          ringIndex++
+        }
       }
 
       return layout
     }
+
+    // 简化的冲突检测和解决
+    const resolveLayoutConflicts = (layout) => {
+      const positions = Object.entries(layout)
+      const minDistance = 35 // 最小安全距离
+      const resolved = { ...layout }
+
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          const [name1, pos1] = positions[i]
+          const [name2, pos2] = positions[j]
+
+          const dx = pos2.x - pos1.x
+          const dy = pos2.y - pos1.y
+          const distance = Math.sqrt(dx * dx + dy * dy)
+
+          if (distance < minDistance && distance > 0) {
+            // 计算推开向量
+            const pushDistance = (minDistance - distance) / 2
+            const pushX = (dx / distance) * pushDistance
+            const pushY = (dy / distance) * pushDistance
+
+            resolved[name1] = {
+              x: pos1.x - pushX,
+              y: pos1.y - pushY
+            }
+            resolved[name2] = {
+              x: pos2.x + pushX,
+              y: pos2.y + pushY
+            }
+          }
+        }
+      }
+
+      return resolved
+    }
+
+    // 主布局函数 - 简洁版本
+    const calculateFinalLayout = (entities) => {
+      const initialLayout = calculateOptimizedLayout(entities)
+      const finalLayout = resolveLayoutConflicts(initialLayout)
+
+      console.log(`布局计算完成，处理了 ${entities.length} 个节点`)
+
+      return finalLayout
+    }
+
+
+
 
     // 加载数据
     const loadGraphData = async () => {
@@ -257,7 +351,7 @@ export default {
       if (!networkContainer.value || !graphDataComputed.value.nodes.length) return
 
       try {
-        const layout = calculateOptimizedLayout(graphDataComputed.value.nodes)
+        const layout = calculateFinalLayout(graphDataComputed.value.nodes)
 
         // 处理节点数据
         const nodes = new DataSet(
@@ -326,7 +420,38 @@ export default {
             randomSeed: 42
           }
         }
-
+        const optimizedNetworkOptions = {
+          physics: { enabled: false },
+          interaction: {
+            hover: true,
+            hoverConnectedEdges: true,
+            selectConnectedEdges: false,
+            tooltipDelay: 200,
+            zoomView: true,
+            dragView: true,
+            dragNodes: true
+          },
+          nodes: {
+            borderWidth: 2,
+            shadow: true,  // 简化阴影配置
+            font: {
+              face: 'Arial, sans-serif',
+              color: '#333'  // 恢复原来的字体颜色，去掉白色描边
+            }
+          },
+          edges: {
+            shadow: false,
+            smooth: {
+              type: 'curvedCW',
+              roundness: 0.15  // 恢复原来的弯曲度
+            },
+            length: 120
+          },
+          layout: {
+            hierarchical: false,
+            randomSeed: 42
+          }
+        }
         // 销毁旧实例
         if (network.value) {
           try {
@@ -337,7 +462,7 @@ export default {
         }
 
         // 创建网络
-        network.value = new Network(networkContainer.value, { nodes, edges }, options)
+        network.value = new Network(networkContainer.value, { nodes, edges }, optimizedNetworkOptions)
         setupEventListeners()
 
         // 自动适应画面
