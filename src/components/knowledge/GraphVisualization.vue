@@ -60,9 +60,11 @@
           </el-icon>
         </button>
       </div>
-
-
     </div>
+
+    <!-- 边信息卡片 -->
+    <EdgeInfoCard :visible="showEdgeCard" :edge-data="selectedEdgeData" :position="cardPosition"
+      @close="closeEdgeCard" />
 
     <!-- 图谱信息面板 -->
     <!-- <div class="graph-info-panel" v-if="(!taskId || taskId === 0) && graphDataComputed.nodes?.length > 0">
@@ -86,10 +88,11 @@ import { Network, DataSet } from 'vis-network/standalone'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 import Literature from '@/api/Literature'
 import { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick } from '@element-plus/icons-vue'
+import EdgeInfoCard from './EdgeInfoCard.vue'
 
 export default {
   name: 'GraphVisualization',
-  components: { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick },
+  components: { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick, EdgeInfoCard },
   props: {
     currentView: { type: String, default: 'concept' },
     graphData: { type: Object, default: () => ({ nodes: [], edges: [] }) },
@@ -106,6 +109,12 @@ export default {
     const internalGraphData = ref({ nodes: [], edges: [] })
     const physicsEnabled = ref(false)
     const highlightedNodes = ref([])
+
+    // 边卡片相关状态
+    const showEdgeCard = ref(false)
+    const selectedEdgeData = ref({})
+    const cardPosition = ref({ x: 0, y: 0 })
+
     const debounce = (func, wait) => {
       let timeout
       return function executedFunction(...args) {
@@ -140,6 +149,48 @@ export default {
         case 3: return baseSize
         default: return baseSize
       }
+    }
+
+    // 边卡片相关方法
+    const showEdgeInfo = (edgeData, position) => {
+      selectedEdgeData.value = edgeData
+
+      // 计算卡片位置，确保不会超出屏幕边界
+      const cardWidth = 480
+      const cardHeight = 600
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+
+      let x = position.x
+      let y = position.y
+
+      // 右边界检查
+      if (x + cardWidth > screenWidth) {
+        x = screenWidth - cardWidth - 20
+      }
+
+      // 左边界检查
+      if (x < 20) {
+        x = 20
+      }
+
+      // 下边界检查
+      if (y + cardHeight > screenHeight) {
+        y = screenHeight - cardHeight - 20
+      }
+
+      // 上边界检查
+      if (y < 20) {
+        y = 20
+      }
+
+      cardPosition.value = { x, y }
+      showEdgeCard.value = true
+    }
+
+    const closeEdgeCard = () => {
+      showEdgeCard.value = false
+      selectedEdgeData.value = {}
     }
 
     // 计算优化的布局 - 避免重合，Level 3更散更整齐
@@ -313,7 +364,6 @@ export default {
       return finalLayout
     }
 
-
     const handleSearch = (keyword) => {
       if (!network.value) return
 
@@ -372,7 +422,9 @@ export default {
         console.log('未找到匹配的节点')
       }
     }
+
     const debouncedSearch = debounce(handleSearch, 300)
+
     // 清除高亮
     const clearHighlight = () => {
       if (!network.value || highlightedNodes.value.length === 0) return
@@ -490,7 +542,7 @@ export default {
           })
         )
 
-        // 处理边数据
+        // 处理边数据 - 存储原始数据以便点击时使用
         const edges = new DataSet(
           (graphDataComputed.value.edges || []).map((edge, index) => ({
             id: `edge-${index}`,
@@ -501,47 +553,19 @@ export default {
             color: { color: '#888888', highlight: '#333333', opacity: 0.6 },
             smooth: { type: 'curvedCW', roundness: 0.2 },
             arrows: { to: { enabled: true, scaleFactor: 1.2 } },
-            font: { size: 10, color: '#555' }
+            font: { size: 10, color: '#555' },
+            // 存储原始边数据
+            originalData: edge
           }))
         )
 
         // 网络配置
-        const options = {
-          physics: { enabled: false },
-          interaction: {
-            hover: true,
-            hoverConnectedEdges: true,
-            selectConnectedEdges: false,
-            tooltipDelay: 300,
-            zoomView: true,
-            dragView: true,
-            dragNodes: true,
-            multiselect: false,    // 禁用多选，避免选择问题
-            keyboard: {
-              enabled: false       // 禁用键盘快捷键，避免冲突
-            }
-          },
-          nodes: {
-            borderWidth: 2,
-            shadow: true,
-            font: { face: 'Arial, sans-serif' }
-          },
-          edges: {
-            shadow: false,
-            smooth: { type: 'curvedCW', roundness: 0.15 },
-            length: 120
-          },
-          layout: {
-            hierarchical: false,
-            randomSeed: 42
-          }
-        }
         const optimizedNetworkOptions = {
           physics: { enabled: false },
           interaction: {
             hover: true,
             hoverConnectedEdges: true,
-            selectConnectedEdges: false,
+            selectConnectedEdges: true, // 启用边选择
             tooltipDelay: 200,
             zoomView: true,
             dragView: true,
@@ -549,17 +573,17 @@ export default {
           },
           nodes: {
             borderWidth: 2,
-            shadow: true,  // 简化阴影配置
+            shadow: true,
             font: {
               face: 'Arial, sans-serif',
-              color: '#333'  // 恢复原来的字体颜色，去掉白色描边
+              color: '#333'
             }
           },
           edges: {
             shadow: false,
             smooth: {
               type: 'curvedCW',
-              roundness: 0.15  // 恢复原来的弯曲度
+              roundness: 0.15
             },
             length: 120
           },
@@ -568,6 +592,7 @@ export default {
             randomSeed: 42
           }
         }
+
         // 销毁旧实例
         if (network.value) {
           try {
@@ -593,6 +618,7 @@ export default {
     const setupEventListeners = () => {
       if (!network.value) return
 
+      // 节点点击事件
       network.value.on('selectNode', (params) => {
         if (params.nodes.length > 0) {
           const entityId = params.nodes[0]
@@ -603,6 +629,31 @@ export default {
 
       network.value.on('deselectNode', () => {
         emit('entity-deselected')
+      })
+
+      // 边点击事件
+      network.value.on('selectEdge', (params) => {
+        if (params.edges.length > 0) {
+          const edgeId = params.edges[0]
+          const edges = network.value.body.data.edges
+          const edgeData = edges.get(edgeId)
+
+          if (edgeData && edgeData.originalData) {
+            // 获取点击位置
+            const canvasPosition = network.value.canvasToDOM(params.pointer.canvas)
+            showEdgeInfo(edgeData.originalData, {
+              x: canvasPosition.x,
+              y: canvasPosition.y
+            })
+          }
+        }
+      })
+
+      // 点击空白处关闭卡片
+      network.value.on('click', (params) => {
+        if (params.nodes.length === 0 && params.edges.length === 0) {
+          closeEdgeCard()
+        }
       })
 
       network.value.on('doubleClick', (params) => {
@@ -671,12 +722,8 @@ export default {
             scale: 1.5,
             animation: { duration: 800 }
           })
-          // 删除有问题的 selectNodes 调用
-          // setTimeout(() => {
-          //   network.value.selectNodes([entityId])
-          // }, 850)
 
-          // 可选：使用安全的选择方法
+          // 安全的选择方法
           setTimeout(() => {
             try {
               network.value.setSelection({ nodes: [entityId], edges: [] })
@@ -713,6 +760,7 @@ export default {
         }
       }
     })
+
     expose({
       handleSearch,
       focusOnNode: focusOnEntity
@@ -724,12 +772,16 @@ export default {
       visibleEdges,
       graphDataComputed,
       physicsEnabled,
+      showEdgeCard,
+      selectedEdgeData,
+      cardPosition,
       zoomIn,
       zoomOut,
       resetZoom,
       centerGraph,
       togglePhysics,
-      focusOnEntity
+      focusOnEntity,
+      closeEdgeCard
     }
   }
 }
@@ -858,8 +910,6 @@ export default {
   background: #333;
   color: white;
 }
-
-
 
 .graph-info-panel {
   position: absolute;
