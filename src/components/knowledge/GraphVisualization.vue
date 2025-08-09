@@ -65,7 +65,7 @@
     </div>
 
     <!-- 图谱信息面板 -->
-    <div class="graph-info-panel" v-if="(!taskId || taskId === 0) && graphDataComputed.nodes?.length > 0">
+    <!-- <div class="graph-info-panel" v-if="(!taskId || taskId === 0) && graphDataComputed.nodes?.length > 0">
       <div class="info-row">
         <div class="info-item">
           <span class="info-value">{{ visibleNodes }}</span>
@@ -76,7 +76,7 @@
           <span class="info-label">关系</span>
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -94,18 +94,30 @@ export default {
     currentView: { type: String, default: 'concept' },
     graphData: { type: Object, default: () => ({ nodes: [], edges: [] }) },
     graphSettings: { type: Object, required: true },
-    selectedFilters: { type: Object, default: () => ({}) },
+    // selectedFilters: { type: Object, default: () => ({}) },
     isLoading: { type: Boolean, default: false },
-    taskId: { type: [Number, String], default: null }
+    taskId: { type: [Number, String], default: null },
+    searchKeyword: { type: String, default: '' },
   },
   emits: ['entity-selected', 'entity-deselected'],
-  setup(props, { emit }) {
+  setup(props, { emit, expose }) {
     const networkContainer = ref(null)
     const network = ref(null)
     const internalGraphData = ref({ nodes: [], edges: [] })
     const physicsEnabled = ref(false)
+    const highlightedNodes = ref([])
+    const debounce = (func, wait) => {
+      let timeout
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout)
+          func(...args)
+        }
+        clearTimeout(timeout)
+        timeout = setTimeout(later, wait)
+      }
+    }
 
-    // 层级配置 - 恢复原始颜色
     const levelConfig = [
       { level: 1, name: '疾病状态', color: '#FF6B6B', radius: 30 },
       { level: 2, name: '免疫细胞', color: '#4ECDC4', radius: 130 },
@@ -116,12 +128,10 @@ export default {
     const visibleNodes = computed(() => graphDataComputed.value.nodes?.length || 0)
     const visibleEdges = computed(() => graphDataComputed.value.edges?.length || 0)
 
-    // 获取层级配置
     const getLevelConfig = (level) => {
       return levelConfig.find(config => config.level === level) || levelConfig[2]
     }
 
-    // 获取实体大小
     const getEntitySize = (entity) => {
       const baseSize = props.graphSettings.nodeSize || 20
       switch (entity.level) {
@@ -304,7 +314,105 @@ export default {
     }
 
 
+    const handleSearch = (keyword) => {
+      if (!network.value) return
 
+      // 清除之前的高亮
+      clearHighlight()
+
+      if (!keyword.trim()) {
+        // 搜索为空时，恢复到全图视图
+        try {
+          network.value.fit({ animation: { duration: 800 } })
+        } catch (error) {
+          console.warn('恢复全图视图时出错:', error)
+        }
+        return
+      }
+
+      // 查找匹配的节点
+      const matchingNodes = graphDataComputed.value.nodes.filter(node =>
+        node.name && node.name.toLowerCase().includes(keyword.toLowerCase())
+      )
+
+      if (matchingNodes.length > 0) {
+        // 高亮匹配的节点
+        const nodeIds = matchingNodes.map(node => node.name)
+        highlightedNodes.value = nodeIds
+
+        // 更新节点样式
+        const nodes = network.value.body.data.nodes
+        const updates = matchingNodes.map(node => {
+          return {
+            id: node.name,
+            color: {
+              background: '#FFD700',
+              border: '#FF6B00',
+              highlight: { background: '#FFD700', border: '#FF6B00' }
+            },
+            borderWidth: 4
+          }
+        })
+
+        nodes.update(updates)
+
+        // 聚焦处理
+        if (matchingNodes.length === 1) {
+          focusOnEntity(matchingNodes[0].name)
+        } else {
+          // 多个匹配节点时，聚焦到第一个
+          network.value.focus(nodeIds[0], {
+            scale: 1.0,
+            animation: { duration: 800 }
+          })
+        }
+
+        console.log(`找到 ${matchingNodes.length} 个匹配节点:`, nodeIds)
+      } else {
+        console.log('未找到匹配的节点')
+      }
+    }
+    const debouncedSearch = debounce(handleSearch, 300)
+    // 清除高亮
+    const clearHighlight = () => {
+      if (!network.value || highlightedNodes.value.length === 0) return
+
+      try {
+        const nodes = network.value.body.data.nodes
+        const updates = highlightedNodes.value.map(nodeId => {
+          const originalNode = graphDataComputed.value.nodes.find(n => n.name === nodeId)
+          if (originalNode) {
+            const levelConfig = getLevelConfig(originalNode.level)
+            return {
+              id: nodeId,
+              color: {
+                background: levelConfig.color,
+                border: '#ffffff',
+                highlight: { background: levelConfig.color, border: '#333333' }
+              },
+              borderWidth: originalNode.level === 1 ? 3 : 2
+            }
+          }
+          return null
+        }).filter(Boolean)
+
+        if (updates.length > 0) {
+          nodes.update(updates)
+        }
+
+        // 清除选择状态，恢复正常交互
+        try {
+          network.value.setSelection({ nodes: [], edges: [] })
+        } catch (error) {
+          console.warn('清除选择时出错:', error)
+        }
+
+        highlightedNodes.value = []
+      } catch (error) {
+        console.warn('清除高亮时出错:', error)
+        highlightedNodes.value = []
+      }
+    }
 
     // 加载数据
     const loadGraphData = async () => {
@@ -325,12 +433,12 @@ export default {
       } else {
         try {
           const params = {
-            verified_only: false,
+            // verified_only: false,
             limit: 500,
           }
-          if (props.selectedFilters.selectedEntityTypes?.length > 0) {
-            params.entity_type = props.selectedFilters.selectedEntityTypes.join(',')
-          }
+          // if (props.selectedFilters.selectedEntityTypes?.length > 0) {
+          //   params.entity_type = props.selectedFilters.selectedEntityTypes.join(',')
+          // }
           const response = await KnowledgeGraph.getGraph(params)
           if (response.data.data) {
             internalGraphData.value = {
@@ -362,7 +470,11 @@ export default {
             return {
               id: entity.name,
               label: props.graphSettings.showLabels ? entity.name : '',
-              title: `${entity.name}\n层级: Level ${entity.level}\n类型: ${entity.entity_type || '未分类'}`,
+              title: `${entity.name}${entity.level > 2
+                ? `\n层级: Level ${entity.level}\n类型: ${entity.entity_type || '未分类'}`
+                : ''
+                }`,
+
               x: position.x,
               y: position.y,
               color: {
@@ -403,7 +515,11 @@ export default {
             tooltipDelay: 300,
             zoomView: true,
             dragView: true,
-            dragNodes: true
+            dragNodes: true,
+            multiselect: false,    // 禁用多选，避免选择问题
+            keyboard: {
+              enabled: false       // 禁用键盘快捷键，避免冲突
+            }
           },
           nodes: {
             borderWidth: 2,
@@ -555,8 +671,18 @@ export default {
             scale: 1.5,
             animation: { duration: 800 }
           })
+          // 删除有问题的 selectNodes 调用
+          // setTimeout(() => {
+          //   network.value.selectNodes([entityId])
+          // }, 850)
+
+          // 可选：使用安全的选择方法
           setTimeout(() => {
-            network.value.selectNodes([entityId])
+            try {
+              network.value.setSelection({ nodes: [entityId], edges: [] })
+            } catch (error) {
+              console.warn('选择节点时出错:', error)
+            }
           }, 850)
         } catch (error) {
           console.error('聚焦实体失败:', error)
@@ -565,11 +691,9 @@ export default {
     }
 
     // 监听器
-    watch(() => props.selectedFilters, () => {
-      if (!props.taskId || props.taskId === 0) {
-        loadGraphData()
-      }
-    }, { deep: true })
+    watch(() => props.searchKeyword, (newKeyword) => {
+      debouncedSearch(newKeyword)
+    })
 
     watch(() => props.graphSettings, () => {
       if (network.value) initializeNetwork()
@@ -588,6 +712,10 @@ export default {
           console.warn('销毁网络实例时出错:', error)
         }
       }
+    })
+    expose({
+      handleSearch,
+      focusOnNode: focusOnEntity
     })
 
     return {

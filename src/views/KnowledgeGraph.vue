@@ -1,12 +1,12 @@
-<!-- src/views/KnowledgeGraph.vue -->
 <template>
   <div class="knowledge-graph">
-    <!-- 页面头部 -->
-    <GraphHeader v-model:search-keyword="globalState.searchKeyword" v-model:current-view="globalState.currentView"
-      v-model:selected-node-types="globalState.selectedNodeTypes"
-      v-model:selected-relation-types="globalState.selectedRelationTypes" :node-types="nodeTypes"
-      :relation-types="relationTypes" @search-keyword-change="handleSearchKeywordChange"
-      @filter-change="handleFilterChange" />
+    <!-- 顶部搜索栏 -->
+    <div class="graph-search-bar">
+      <!-- <h1>肝硬化知识图谱</h1> -->
+      <!-- <p>可视化展示肝硬化相关研究的关键概念、文献间的引用关系及研究进展脉络</p> -->
+      <input type="text" v-model="globalState.searchKeyword" @input="handleSearchKeywordChange($event.target.value)"
+        placeholder="搜索节点..." />
+    </div>
 
     <!-- 主要内容区域 -->
     <div class="graph-container">
@@ -19,10 +19,7 @@
       <div class="graph-main">
         <GraphVisualization ref="graphVisualizationRef" :current-view="globalState.currentView" :graph-data="graphData"
           :graph-settings="globalState.graphSettings" :selected-filters="selectedFilters" :is-loading="isLoading"
-          @node-selected="handleNodeSelected" @node-deselected="handleNodeDeselected" />
-
-        <!-- 节点详情面板 -->
-
+          :searchKeyword="searchKeyword" @node-selected="handleNodeSelected" @node-deselected="handleNodeDeselected" />
       </div>
     </div>
 
@@ -35,26 +32,21 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNodeConfig } from '@/composables/useNodeConfig'
-import GraphHeader from '@/components/knowledge/GraphHeader.vue'
 import GraphSidebar from '@/components/knowledge/GraphSidebar.vue'
 import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
-// import NodeDetailPanel from '@/components/knowledge/NodeDetailPanel.vue'
 import SiteFooter from '@/components/layout/SiteFooter.vue'
 
 export default {
   name: 'KnowledgeGraph',
   components: {
-    GraphHeader,
     GraphSidebar,
     GraphVisualization,
-    // NodeDetailPanel,
     SiteFooter,
   },
   setup() {
     const router = useRouter()
     const { nodeTypes, relationTypes } = useNodeConfig()
 
-    // 全局状态管理
     const globalState = reactive({
       searchKeyword: '',
       currentView: 'concept',
@@ -67,9 +59,9 @@ export default {
         showLabels: true,
         physics: true,
       }
-    })
 
-    // 数据状态
+    })
+    const searchKeyword = computed(() => globalState.searchKeyword)
     const graphData = ref({ nodes: [], edges: [] })
     const isLoading = ref(false)
     const graphStats = ref({
@@ -81,16 +73,13 @@ export default {
     const popularConcepts = ref([])
     const keyPapers = ref([])
 
-    // 组件引用
     const graphVisualizationRef = ref(null)
 
-    // 计算属性 - 构建过滤条件对象
     const selectedFilters = computed(() => ({
       selectedNodeTypes: globalState.selectedNodeTypes,
       selectedRelationTypes: globalState.selectedRelationTypes
     }))
 
-    // 事件处理
     const handleNodeSelected = (node) => {
       globalState.selectedNode = node
     }
@@ -99,14 +88,8 @@ export default {
       globalState.selectedNode = null
     }
 
-    const handleCloseNodeDetail = () => {
-      globalState.selectedNode = null
-    }
-
     const handleFocusNode = (nodeId) => {
-      if (graphVisualizationRef.value) {
-        graphVisualizationRef.value.focusOnNode(nodeId)
-      }
+      graphVisualizationRef.value?.focusOnNode(nodeId)
     }
 
     const handleViewArticle = (articleId) => {
@@ -115,16 +98,7 @@ export default {
 
     const handleSearchKeywordChange = (keyword) => {
       globalState.searchKeyword = keyword
-      if (graphVisualizationRef.value) {
-        graphVisualizationRef.value.searchNodes(keyword)
-      }
-    }
-
-    const handleFilterChange = () => {
-      // 通知子组件重新加载数据
-      if (graphVisualizationRef.value) {
-        graphVisualizationRef.value.reloadData()
-      }
+      graphVisualizationRef.value?.handleSearch(keyword)
     }
 
     const handleSettingsChange = (settings) => {
@@ -141,32 +115,22 @@ export default {
     }
 
     return {
-      // 状态
+      searchKeyword,
       globalState,
       graphData,
       isLoading,
       graphStats,
       popularConcepts,
       keyPapers,
-
-      // 配置
       nodeTypes,
       relationTypes,
-
-      // 计算属性
       selectedFilters,
-
-      // 引用
       graphVisualizationRef,
-
-      // 事件处理方法
       handleNodeSelected,
       handleNodeDeselected,
-      handleCloseNodeDetail,
       handleFocusNode,
       handleViewArticle,
       handleSearchKeywordChange,
-      handleFilterChange,
       handleSettingsChange,
       handleResetSettings,
     }
@@ -178,6 +142,30 @@ export default {
 .knowledge-graph {
   background-color: #f5fbff;
   min-height: 100vh;
+}
+
+.graph-search-bar {
+  padding: 30px 5%;
+  background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
+  color: white;
+}
+
+.graph-search-bar h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.graph-search-bar p {
+  margin-bottom: 20px;
+  max-width: 800px;
+}
+
+.graph-search-bar input {
+  width: 300px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .graph-container {

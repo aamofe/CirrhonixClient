@@ -98,7 +98,8 @@
                       <span class="target-entity">{{ getEntityNameFromRelation(relation, 'target') }}</span>
                     </div>
                     <div class="relation-info">
-                      <span class="relation-type">{{ relation.relationship?.name || '未知关系' }}</span>
+                      <span class="relation-type">作用因子：{{ relation.factor?.factor_name || '未知关系' }}</span>
+                      <!-- {{ relation }} -->
                       <span class="support-degree" v-if="relation.support_degree">(支持度: {{ relation.support_degree
                       }})</span>
                       <el-tag v-if="relation.is_verified" type="success" size="mini">已验证</el-tag>

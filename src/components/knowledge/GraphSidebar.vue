@@ -31,33 +31,6 @@
       </div>
     </div>
 
-    <!-- 热门概念 -->
-    <div class="sidebar-card">
-      <h3>热门概念</h3>
-      <div class="popular-list">
-        <div v-for="concept in popularConcepts" :key="concept.id" class="popular-item"
-          @click="focusOnConcept(concept.id)">
-          <span class="item-name">{{ concept.name }}</span>
-          <span class="item-count">{{ concept.count }}</span>
-        </div>
-      </div>
-      <div v-if="popularConcepts.length === 0" class="empty-state">
-        暂无数据
-      </div>
-    </div>
-
-    <!-- 核心文献 -->
-    <div class="sidebar-card">
-      <h3>核心文献</h3>
-      <div class="popular-list">
-        <div v-for="paper in keyPapers" :key="paper.id" class="popular-item" @click="viewArticle(paper.id)">
-          <span class="item-name">{{ paper.title }}</span>
-          <span class="item-count">{{ paper.citation_count }}</span>
-        </div>
-      </div>
-      <div v-if="keyPapers.length === 0" class="empty-state">暂无数据</div>
-    </div>
-
     <!-- 图谱设置 -->
     <div class="sidebar-card">
       <h3>图谱设置</h3>
