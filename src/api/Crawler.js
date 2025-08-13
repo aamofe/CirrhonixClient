@@ -9,7 +9,6 @@ const url = {
 }
 
 export default class Crawling {
-
   static async getSourceList() {
     return service.get(url.sourceList)
   }
@@ -34,10 +33,13 @@ export default class Crawling {
     return service.get(`${url.crawlDetail}/${taskId}`)
   }
 
-  static async createTask(requestData)
-  {
+  static async createTask(requestData) {
     return service.post(url.createTask, {
-      requestData
+      data_source_ids: requestData.data_source_ids,
+      end_date: requestData.end_date,
+      start_date: requestData.start_date,
+      keywords: requestData.keywords,
+      max_results: requestData.max_results,
     })
   }
 }

@@ -37,7 +37,7 @@
       </div>
 
       <div class="form-group">
-        <label for="max-results">最大结果数:</label>
+        <label for="max-results">单数据源结果上限:</label>
         <input type="number" id="max-results" v-model="manualCrawler.maxResults" class="form-input" min="1" max="500" />
       </div>
     </div>
@@ -60,30 +60,49 @@
     <div v-if="currentTask" class="task-status">
       <div class="status-header">
         <h4>当前任务状态</h4>
-        <span :class="['status-badge', `status-${currentTask.status}`]">
-          {{ getStatusText(currentTask.status) }}
-        </span>
+        <div class="status-actions">
+          <span :class="['status-badge', `status-${currentTask.status}`]">
+            {{ getStatusText(currentTask.status) }}
+          </span>
+          <!-- 如果有记忆的任务，显示清除按钮 -->
+          <button v-if="isRestoredTask" @click="clearMemoryTask" class="clear-memory-btn">
+            清除记忆任务
+          </button>
+        </div>
       </div>
 
       <div class="task-info">
-        <p><strong>任务ID:</strong> {{ currentTask.id }}</p>
-        <p><strong>数据源:</strong> {{ currentTask.data_sources.join(', ') }}</p>
+        <!-- <p><strong>任务ID:</strong> {{ currentTask.id }}</p> -->
+        <p><strong>数据源:</strong> {{ currentTask.data_sources?.join(', ') }}</p>
         <p><strong>关键词:</strong> {{ currentTask.keywords?.keywords || '无' }}</p>
-        <p v-if="currentTask.results_count > 0">
+        <!-- <p><strong>进度:</strong> {{ currentTask.progress || '0%' }}</p> -->
+        <p><strong>预计用时:</strong> 3min</p>
+
+        <!-- <p v-if="currentTask.results_count > 0">
           <strong>已获取文献:</strong> {{ currentTask.results_count }} 篇
-        </p>
+        </p> -->
         <p v-if="currentTask.error_message">
           <strong>错误信息:</strong>
           <span class="error-text">{{ currentTask.error_message }}</span>
+        </p>
+        <!-- 显示任务恢复信息 -->
+        <p v-if="isRestoredTask" class="restore-info">
+          <el-icon>
+            <InfoFilled />
+          </el-icon>
+          已从记忆中恢复此任务
         </p>
       </div>
 
       <!-- 轮询进度条 -->
       <div v-if="isPolling" class="polling-progress">
         <div class="progress-bar">
-          <div class="progress-value polling-animation"></div>
+          <div class="progress-value" :class="{ 'polling-animation': !currentTask.progress }"
+            :style="{ width: getProgressWidth() }"></div>
         </div>
-        <div class="progress-text">正在获取爬取结果，请稍候...</div>
+        <div class="progress-text">
+          {{ getProgressText() }}
+        </div>
       </div>
     </div>
 
@@ -98,7 +117,7 @@
 
       <div class="literature-list">
         <literature-item v-for="article in paginatedResults" :key="article.id" :article="article"
-          @view-detail="viewArticleDetail(id)" />
+          @view-detail="viewArticleDetail(article.id)" />
       </div>
 
       <!-- 分页控件 -->
@@ -130,7 +149,7 @@
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
 import LiteratureItem from "@/components/layout/LiteratureItem.vue"
-import { Search, Loading } from '@element-plus/icons-vue'
+import { Search, Loading, InfoFilled } from '@element-plus/icons-vue'
 import { ElIcon } from 'element-plus'
 import Crawler from "@/api/Crawler"
 
@@ -141,6 +160,7 @@ export default {
     LiteratureItem,
     Search,
     Loading,
+    InfoFilled,
     ElIcon,
   },
   props: {
@@ -168,6 +188,8 @@ export default {
       // 分页相关
       currentPage: 1,
       itemsPerPage: 10,
+      // 记忆功能相关
+      isRestoredTask: false, // 标记是否为从记忆中恢复的任务
     }
   },
   computed: {
@@ -181,7 +203,6 @@ export default {
       const end = start + this.itemsPerPage
       return this.crawlResults.slice(start, end)
     },
-    // 显示的页码
     displayedPages() {
       const total = this.totalPages
       const current = this.currentPage
@@ -234,13 +255,118 @@ export default {
     // 监听爬取结果变化，重置到第一页
     crawlResults() {
       this.currentPage = 1
+    },
+    // 监听当前任务变化，保存到sessionStorage
+    currentTask: {
+      handler(newTask) {
+        if (newTask && newTask.id) {
+          this.saveTaskToMemory(newTask.id)
+        }
+      },
+      deep: true
     }
+  },
+  created() {
+    // 组件创建时尝试恢复任务
+    this.restoreTaskFromMemory()
   },
   beforeUnmount() {
     // 组件销毁时清除轮询定时器
     this.stopPolling()
   },
   methods: {
+    // =============== 记忆功能相关方法 ===============
+
+    // 保存任务ID到sessionStorage
+    saveTaskToMemory(taskId) {
+      if (taskId) {
+        sessionStorage.setItem('manualCrawlerTaskId', taskId)
+        sessionStorage.setItem('manualCrawlerCurrentPage', this.currentPage.toString())
+      }
+    },
+
+    // 从sessionStorage获取保存的任务ID
+    getSavedTaskId() {
+      return sessionStorage.getItem('manualCrawlerTaskId')
+    },
+
+    // 从sessionStorage获取保存的页码
+    getSavedCurrentPage() {
+      const savedPage = sessionStorage.getItem('manualCrawlerCurrentPage')
+      return savedPage ? parseInt(savedPage) : 1
+    },
+
+    // 从记忆中恢复任务
+    async restoreTaskFromMemory() {
+      const savedTaskId = this.getSavedTaskId()
+      const savedPage = this.getSavedCurrentPage()
+
+      if (savedTaskId) {
+        try {
+          console.log('尝试恢复任务:', savedTaskId)
+          await this.loadTaskById(savedTaskId)
+
+          if (this.currentTask) {
+            this.isRestoredTask = true
+            this.currentPage = savedPage
+            // this.showMessage('success', `已恢复任务: ${savedTaskId}`)
+          }
+        } catch (error) {
+          console.error('恢复任务失败:', error)
+          // 如果恢复失败，清除无效的记忆
+          this.clearTaskMemory()
+          this.showMessage('warning', '无法恢复之前的任务，可能任务已过期')
+        }
+      }
+    },
+
+    // 根据任务ID加载任务详情
+    async loadTaskById(taskId) {
+      try {
+        const response = await Crawler.getCrawlDetail(taskId)
+
+        if (response.data && response.data.data) {
+          this.currentTask = response.data.data
+
+          // 加载文献列表
+          if (this.currentTask && Array.isArray(this.currentTask.literature)) {
+            this.crawlResults = this.currentTask.literature
+          }
+
+          // 如果任务还在运行中，开始轮询
+          if (['pending', 'running'].includes(this.currentTask.status)) {
+            this.startPolling(taskId)
+          }
+
+          return this.currentTask
+        } else {
+          throw new Error('任务不存在或数据格式错误')
+        }
+      } catch (error) {
+        console.error('加载任务详情失败:', error)
+        throw error
+      }
+    },
+
+    // 清除任务记忆
+    clearTaskMemory() {
+      sessionStorage.removeItem('manualCrawlerTaskId')
+      sessionStorage.removeItem('manualCrawlerCurrentPage')
+    },
+
+    // 清除记忆任务（用户主动触发）
+    clearMemoryTask() {
+      this.clearTaskMemory()
+      this.currentTask = null
+      this.crawlResults = []
+      this.isRestoredTask = false
+      this.currentPage = 1
+      this.stopPolling()
+      this.showMessage('info', '已清除记忆任务')
+    },
+
+    // =============== 原有方法 ===============
+
     // 显示消息并防止重复
     showMessage(type, content) {
       if (this.messageShown && this.lastMessage === content) {
@@ -279,7 +405,8 @@ export default {
         this.manualCrawling = true
         this.currentTask = null
         this.crawlResults = []
-
+        this.isRestoredTask = false // 重置恢复标记
+        console.log("1111:", this.manualCrawler.source_ids)
         const requestData = {
           data_source_ids: this.manualCrawler.source_ids,
           keywords: this.manualCrawler.keywords,
@@ -288,7 +415,6 @@ export default {
           max_results: this.manualCrawler.maxResults,
         }
 
-        // 创建任务
         const response = await Crawler.createTask(requestData)
 
         if (response.data && response.data.task) {
@@ -319,9 +445,25 @@ export default {
           this.stopPolling()
           this.showMessage('error', "获取任务状态失败")
         }
-      }, 3000) // 每2秒轮询一次
+      }, 10000) // 每10秒轮询一次
+    },
+    getProgressWidth() {
+      if (this.currentTask && this.currentTask.progress) {
+        // 如果有具体进度，使用具体数值
+        const progress = this.currentTask.progress.replace('%', '')
+        return `${Math.min(Math.max(parseInt(progress) || 0, 0), 100)}%`
+      }
+      // 如果没有具体进度，显示动画效果
+      return '100%'
     },
 
+    // 获取进度文本
+    getProgressText() {
+      if (this.currentTask && this.currentTask.progress) {
+        return `正在获取爬取结果... ${this.currentTask.progress}`
+      }
+      return '正在获取爬取结果，请稍候...'
+    },
     // 停止轮询
     stopPolling() {
       if (this.pollingTimer) {
@@ -337,21 +479,20 @@ export default {
         const response = await Crawler.getCrawlDetail(taskId)
 
         if (response.data) {
-          this.currentTask = response.data
+          this.currentTask = response.data.data
 
-          // 如果有文献结果，更新结果列表
-          if (response.data.literature && Array.isArray(response.data.literature)) {
-            this.crawlResults = response.data.literature
+          if (this.currentTask && Array.isArray(this.currentTask.literature)) {
+            this.crawlResults = this.currentTask.literature
           }
 
           // 根据任务状态决定是否停止轮询
-          if (['completed', 'failed'].includes(response.data.status)) {
+          if (['completed', 'failed'].includes(this.currentTask.status)) {
             this.stopPolling()
 
-            if (response.data.status === 'completed') {
-              const count = response.data.results_count || 0
+            if (this.currentTask.status === 'completed') {
+              const count = this.currentTask.results_count || 0
               this.showMessage('success', `爬取任务完成，共获取 ${count} 篇文献`)
-            } else if (response.data.status === 'failed') {
+            } else if (this.currentTask.status === 'failed') {
               this.showMessage('error', "爬取任务失败: " + (response.data.error_message || "未知错误"))
             }
           }
@@ -364,6 +505,11 @@ export default {
 
     // 处理文献详情查看
     viewArticleDetail(id) {
+      // 在跳转前保存当前状态
+      if (this.currentTask && this.currentTask.id) {
+        this.saveTaskToMemory(this.currentTask.id)
+      }
+
       this.$router.push({
         name: "literature-detail",
         params: { id },
@@ -375,12 +521,19 @@ export default {
       this.crawlResults = []
       this.currentTask = null
       this.currentPage = 1
+      this.isRestoredTask = false
+      this.clearTaskMemory() // 清除记忆
     },
 
     // 切换页面
     changePage(page) {
       if (page < 1 || page > this.totalPages || page === this.currentPage) return
       this.currentPage = page
+
+      // 保存当前页码到记忆中
+      if (this.currentTask && this.currentTask.id) {
+        this.saveTaskToMemory(this.currentTask.id)
+      }
 
       // 滚动到结果区域顶部
       this.$nextTick(() => {
@@ -403,7 +556,9 @@ export default {
       this.currentTask = null
       this.crawlResults = []
       this.currentPage = 1
+      this.isRestoredTask = false
       this.stopPolling()
+      this.clearTaskMemory() // 清除记忆
     },
   },
 }
@@ -509,6 +664,12 @@ export default {
   color: #495057;
 }
 
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .status-badge {
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
@@ -537,14 +698,38 @@ export default {
   color: #721c24;
 }
 
+.clear-memory-btn {
+  padding: 0.25rem 0.75rem;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.clear-memory-btn:hover {
+  background-color: #5a6268;
+}
+
 .task-info p {
   margin: 0.5rem 0;
   color: #6c757d;
+  text-align: left;
 }
 
 .error-text {
   color: #dc3545;
   font-weight: 500;
+}
+
+.restore-info {
+  color: #17a2b8;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* 轮询进度条 */
@@ -729,6 +914,12 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  .status-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
   }
 
   .results-header {

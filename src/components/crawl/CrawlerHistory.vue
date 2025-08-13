@@ -34,6 +34,7 @@
             <th>数据源</th>
             <th>关键词</th>
             <th>爬取数量</th>
+            <th>进度</th>
             <th>状态</th>
             <th>备注</th>
           </tr>
@@ -41,21 +42,35 @@
         <tbody>
           <tr v-for="(history, index) in filteredHistory" :key="index">
             <td>{{ formatDate(history.start_time) }}</td>
-            <td>{{ history.data_source.name }}</td>
+            <td>
+              <div class="data-sources">
+                <span v-for="(source, idx) in history.data_sources" :key="idx" class="source-tag">
+                  {{ source }}
+                </span>
+              </div>
+            </td>
             <td>
               {{
-                (history.query_params && history.query_params.keywords) ||
+                (history.keywords && history.keywords.keywords) ||
                 "无"
               }}
             </td>
             <td>
               {{ history.results_count }}
             </td>
+            <td>
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div class="progress-fill" :style="{ width: history.progress || '0%' }"></div>
+                </div>
+                <span class="progress-text">{{ history.progress || '0%' }}</span>
+              </div>
+            </td>
             <td :class="history.status">
               {{ formatStatus(history.status) }}
             </td>
             <td>
-              {{ history.error_message }}
+              {{ history.error_message || '-' }}
             </td>
           </tr>
         </tbody>
@@ -108,8 +123,9 @@ export default {
       let filtered = this.crawlerHistory
 
       if (this.historyFilter.source_id) {
+        // 由于数据源现在是数组，需要检查数组中是否包含指定的数据源
         filtered = filtered.filter(
-          (item) => item.data_source.id === this.historyFilter.source_id
+          (item) => item.data_sources && item.data_sources.includes(this.historyFilter.source_id)
         )
       }
 
@@ -132,7 +148,7 @@ export default {
         let match = true
 
         if (this.historyFilter.source_id) {
-          match = match && item.data_source.id === this.historyFilter.source_id
+          match = match && item.data_sources && item.data_sources.includes(this.historyFilter.source_id)
         }
 
         if (this.historyFilter.status) {
@@ -290,20 +306,70 @@ th {
   background-color: #f9f9f9;
 }
 
+/* 数据源标签样式 */
+.data-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.source-tag {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* 进度条样式 */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #666;
+  min-width: 35px;
+}
+
+/* 状态样式 */
 td.pending {
   color: #ffc107;
+  font-weight: 500;
 }
 
 td.running {
   color: #17a2b8;
+  font-weight: 500;
 }
 
 td.completed {
   color: #28a745;
+  font-weight: 500;
 }
 
 td.failed {
   color: #dc3545;
+  font-weight: 500;
 }
 
 .empty-history {
@@ -349,6 +415,20 @@ td.failed {
   .history-filters {
     flex-direction: column;
     gap: 0;
+  }
+
+  .data-sources {
+    flex-direction: column;
+  }
+
+  .progress-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .progress-bar {
+    width: 100%;
   }
 }
 </style>

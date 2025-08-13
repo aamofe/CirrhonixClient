@@ -43,7 +43,7 @@
       </div>
 
       <div class="view-btn-container">
-        <button class="view-btn" @click.stop="viewFullText">查看全文</button>
+        <button class="view-btn" @click.stop="viewFullText">查看原文</button>
       </div>
     </div>
   </div>
@@ -94,6 +94,8 @@ export default {
     },
     viewFullText(e) {
       e.stopPropagation()
+
+
       if (this.article.url) {
         window.open(this.article.url, "_blank")
       } else {
