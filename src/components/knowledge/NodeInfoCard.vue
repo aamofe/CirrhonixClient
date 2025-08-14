@@ -412,7 +412,7 @@ export default {
         console.log('创建关系数据:', relationData)
 
         const response = await KnowledgeGraph.createRelation(relationData)
-        if (response.data && response.data.message === 'success') {
+        if (response.data && response.status == 200) {
           ElMessage.success('关系创建成功')
           handleCloseAddDialog()
           loadNodeDetail()
