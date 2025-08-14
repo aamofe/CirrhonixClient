@@ -134,8 +134,8 @@
         <el-form-item :label="relationForm.direction === 'source' ? '目标实体' : '源实体'" prop="targetEntity">
           <el-select v-model="relationForm.targetEntity" filterable remote reserve-keyword placeholder="请输入实体名称进行搜索"
             :remote-method="searchEntities" :loading="entityLoading" style="width: 100%" value-key="name">
-            <el-option v-for="entity in availableEntities" :key="entity.name || entity.id"
-              :label="`${entity.name} (Level ${entity.level})`" :value="entity" />
+            <el-option v-for="entity in availableEntities" :key="entity.name || entity.id" :label="`${entity.name} `"
+              :value="entity" />
           </el-select>
         </el-form-item>
 
@@ -172,7 +172,7 @@
           <button @click="handleCloseAddDialog" class="cancel-btn">取消</button>
           <button @click="handleAddRelation" :disabled="submitting" class="confirm-btn">
             <span v-if="submitting">提交中...</span>
-            <span v-else">确定</span>
+            <span v-else>确定</span>
           </button>
         </span>
       </template>
@@ -206,6 +206,8 @@ export default {
     const showAddRelationDialog = ref(false)
     const entityLoading = ref(false)
     const availableEntities = ref([])
+    const allEntities = ref([]) // 存储所有实体数据
+    const entitiesLoaded = ref(false) // 标记是否已加载所有实体
     const submitting = ref(false)
     const deletingRelation = ref(false)
     const relationFormRef = ref()
@@ -253,6 +255,97 @@ export default {
       return 'neutral'
     }
 
+    // 加载所有实体数据（只调用一次）
+    const loadAllEntities = async () => {
+      if (entitiesLoaded.value) return
+
+      entityLoading.value = true
+      try {
+        console.log('开始加载所有实体数据...')
+
+        // 使用大的 page_size 来获取所有实体
+        const response = await KnowledgeGraph.getEntities({
+          page_size: 10000, // 设置一个足够大的数值来获取所有实体
+          page: 1
+        })
+
+        console.log('API 响应:', response.data)
+
+        if (response.data && response.data.message === 'success' && response.data.data) {
+          const currentEntityId = getEntityIdentifier()
+
+          // 根据后端返回的数据结构获取实体列表
+          const entities = response.data.data.entities || response.data.data || []
+
+          // 过滤掉当前节点
+          allEntities.value = entities.filter(entity => {
+            const entityId = entity.id || entity.name
+            return entityId !== currentEntityId
+          })
+
+          entitiesLoaded.value = true
+          console.log('所有实体加载成功，共:', allEntities.value.length, '个实体')
+          console.log('实体样例:', allEntities.value.slice(0, 3))
+        } else {
+          console.error('加载实体失败，响应数据:', response.data)
+          ElMessage.error('加载实体数据失败')
+        }
+      } catch (error) {
+        console.error('加载所有实体失败:', error)
+        ElMessage.error('加载实体数据失败，请重试')
+      } finally {
+        entityLoading.value = false
+      }
+    }
+
+    // 随机获取指定数量的实体
+    const getRandomEntities = (count = 10) => {
+      if (allEntities.value.length === 0) return []
+
+      const shuffled = [...allEntities.value].sort(() => 0.5 - Math.random())
+      return shuffled.slice(0, Math.min(count, allEntities.value.length))
+    }
+
+    // 根据搜索关键词过滤实体
+    const filterEntitiesByQuery = (query) => {
+      if (!query || query.trim() === '') return []
+
+      const queryLower = query.trim().toLowerCase()
+      return allEntities.value.filter(entity => {
+        const name = (entity.name || '').toLowerCase()
+        const chineseName = (entity.chinese_name || '').toLowerCase()
+        const abbreviation = (entity.abbreviation || '').toLowerCase()
+        const description = (entity.description || '').toLowerCase()
+
+        return name.includes(queryLower) ||
+          chineseName.includes(queryLower) ||
+          abbreviation.includes(queryLower) ||
+          description.includes(queryLower)
+      })
+    }
+
+    // 搜索实体方法 - 现在只做前端过滤
+    const searchEntities = (query) => {
+      console.log('搜索关键词:', query)
+
+      // 确保实体数据已加载
+      if (!entitiesLoaded.value) {
+        console.log('实体数据未加载，等待加载完成...')
+        return
+      }
+
+      if (!query || query.trim() === '') {
+        // 没有搜索关键词时，随机展示10个实体
+        availableEntities.value = getRandomEntities(10)
+        console.log('无搜索关键词，随机展示10个实体:', availableEntities.value.length)
+      } else {
+        // 有搜索关键词时，根据关键词过滤
+        const filtered = filterEntitiesByQuery(query)
+        availableEntities.value = filtered.slice(0, 50) // 限制显示前50个结果
+        console.log(`搜索关键词"${query}"的结果:`, availableEntities.value.length, '个实体')
+      }
+    }
+
     // 加载节点详细信息
     const loadNodeDetail = async () => {
       const entityIdentifier = getEntityIdentifier()
@@ -296,41 +389,6 @@ export default {
       }
     }
 
-    // 搜索可用实体 - 修改为使用 KnowledgeGraph.getEntities
-    const searchEntities = async (query) => {
-      if (!query || query.length < 1) {
-        availableEntities.value = []
-        return
-      }
-
-      entityLoading.value = true
-      try {
-        console.log('搜索实体:', query)
-        const response = await KnowledgeGraph.getEntities({
-          search: query,
-          limit: 50
-        })
-
-        console.log('搜索结果:', response)
-
-        if (response.data && response.data.message === 'success') {
-          const currentEntityId = getEntityIdentifier()
-          availableEntities.value = response.data.data.filter(
-            entity => (entity.id || entity.name) !== currentEntityId
-          )
-          console.log('过滤后的实体列表:', availableEntities.value)
-        } else {
-          console.error('搜索实体失败:', response.data)
-          availableEntities.value = []
-        }
-      } catch (error) {
-        console.error('搜索实体失败:', error)
-        availableEntities.value = []
-      } finally {
-        entityLoading.value = false
-      }
-    }
-
     // 处理新增关系
     const handleAddRelation = async () => {
       if (!relationFormRef.value) return
@@ -347,16 +405,16 @@ export default {
         const targetEntityId = relationForm.targetEntity.id || relationForm.targetEntity.name
 
         const relationData = {
-          source_entity: relationForm.direction === 'source'
+          source_id: relationForm.direction === 'source'
             ? currentEntityId
             : targetEntityId,
-          target_entity: relationForm.direction === 'source'
+          target_id: relationForm.direction === 'source'
             ? targetEntityId
             : currentEntityId,
           factor_name: relationForm.factorName,
           factor_type: relationForm.factorType,
           effect: relationForm.effect,
-          literature: relationForm.literature || null, // 文献字段，可为空
+          literature_name: relationForm.literature || null,//这是文献名称
           description: relationForm.description
         }
 
@@ -416,7 +474,18 @@ export default {
       }
     }
 
-    // 监听节点数据变化
+    // 监听对话框打开状态
+    watch(showAddRelationDialog, async (isOpen) => {
+      if (isOpen) {
+        console.log('新增关系对话框打开')
+        // 对话框打开时，先确保加载所有实体数据
+        await loadAllEntities()
+        // 然后显示随机的10个实体
+        searchEntities('')
+      }
+    })
+
+    // 监听组件显示和节点数据变化
     watch(() => [props.visible, props.nodeData], ([visible, nodeData]) => {
       console.log('Watch triggered:', { visible, nodeData })
       if (visible && nodeData && getEntityIdentifier()) {
@@ -449,8 +518,125 @@ export default {
   }
 }
 </script>
-
 <style scoped>
+.card-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 999;
+}
+
+.node-info-card {
+  position: fixed;
+  width: 520px;
+  max-height: 80vh;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid #e1e5e9;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.loading {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.card-content {
+  max-height: calc(80vh - 80px);
+  overflow-y: auto;
+}
+
+.loading-content {
+  padding: 20px;
+}
+
+.section {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* 节点信息显示 */
+.node-info-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.node-header {
+  margin-bottom: 8px;
+}
+
 /* 新增样式：将level显示在name旁边 */
 .node-name-with-level {
   display: flex;
@@ -462,88 +648,487 @@ export default {
 .node-name {
   font-size: 16px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #333;
 }
 
 .level-badge-inline {
   display: inline-flex;
   align-items: center;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: white;
 }
 
 .level-badge-inline.level-1 {
-  background-color: #e74c3c;
+  background-color: #FF6B6B;
 }
 
 .level-badge-inline.level-2 {
-  background-color: #f39c12;
+  background-color: #4ECDC4;
 }
 
 .level-badge-inline.level-3 {
-  background-color: #27ae60;
+  background-color: #45B7D1;
 }
 
 .chinese-name {
   font-size: 14px;
-  color: #7f8c8d;
+  color: #666;
   font-style: italic;
 }
 
 .node-meta {
   display: flex;
   gap: 8px;
+  align-items: center;
   flex-wrap: wrap;
-  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.level-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.level-badge.level-1 {
+  background: #FF6B6B;
+}
+
+.level-badge.level-2 {
+  background: #4ECDC4;
+}
+
+.level-badge.level-3 {
+  background: #45B7D1;
 }
 
 .entity-type,
 .entity-subtype {
-  padding: 2px 6px;
+  font-size: 11px;
+  background: #e9ecef;
+  padding: 3px 8px;
   border-radius: 4px;
-  font-size: 12px;
-  background-color: #ecf0f1;
-  color: #2c3e50;
+  color: #666;
 }
 
 .node-abbreviation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
   margin-top: 8px;
-  font-size: 14px;
 }
 
 .node-abbreviation .label {
-  color: #7f8c8d;
+  font-weight: 500;
+  color: #666;
 }
 
 .node-abbreviation .value {
-  color: #2c3e50;
+  color: #333;
   font-weight: 500;
 }
 
-/* 其他现有样式保持不变 */
-.node-info-card {
-  position: fixed;
-  z-index: 9999;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  width: 400px;
-  max-height: 600px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+.label {
+  font-weight: 500;
+  color: #666;
 }
 
-.card-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.1);
-  z-index: 9998;
+.value {
+  color: #333;
+}
+
+/* 基础信息展示 */
+.basic-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.info-item .label {
+  font-weight: 500;
+  color: #666;
+  min-width: 80px;
+}
+
+.info-item .value {
+  color: #333;
+}
+
+/* 错误信息 */
+.error-message {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.error-message h4 {
+  margin: 0 0 8px 0;
+  color: #e74c3c;
+}
+
+.error-message p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.retry-btn {
+  background: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: #337ecc;
+}
+
+/* 统计显示 */
+.stats-display {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 16px 8px;
+  border-radius: 8px;
+  border: 2px solid;
+}
+
+.stat-item.primary {
+  background: rgba(64, 158, 255, 0.05);
+  border-color: #409eff;
+}
+
+.stat-item.positive {
+  background: rgba(76, 175, 80, 0.05);
+  border-color: #4CAF50;
+}
+
+.stat-item.negative {
+  background: rgba(255, 107, 107, 0.05);
+  border-color: #FF6B6B;
+}
+
+.stat-item.neutral {
+  background: rgba(158, 158, 158, 0.05);
+  border-color: #9E9E9E;
+}
+
+.stat-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+}
+
+/* 按钮样式 */
+.add-relation-btn {
+  background: #409eff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.add-relation-btn:hover {
+  background: #337ecc;
+}
+
+/* 关系组样式 */
+.relation-group {
+  margin-bottom: 20px;
+}
+
+.group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin: 0 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.relation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.relation-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  background: #fafbfc;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.relation-item:hover {
+  background: #f5f7fa;
+  border-color: #409eff;
+}
+
+.relation-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 关系流程显示 */
+.relation-flow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.entity-box {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 2px solid;
+}
+
+.entity-box.source {
+  border-color: #4ECDC4;
+  background: rgba(78, 205, 196, 0.05);
+}
+
+.entity-box.target {
+  border-color: #FF6B6B;
+  background: rgba(255, 107, 107, 0.05);
+}
+
+.entity-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+
+.entity-meta {
+  margin-top: 4px;
+}
+
+.arrow-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.factor-info {
+  text-align: center;
+}
+
+.factor-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 12px;
+}
+
+.factor-effect {
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.factor-effect.positive {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.factor-effect.negative {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.factor-effect.neutral {
+  background: rgba(158, 158, 158, 0.1);
+  color: #9E9E9E;
+}
+
+.arrow {
+  font-size: 16px;
+  color: #666;
+  font-weight: bold;
+}
+
+.relation-description {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.description-text {
+  color: #555;
+  line-height: 1.4;
+}
+
+.delete-relation-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  color: #f56c6c;
+  transition: all 0.2s;
+}
+
+.delete-relation-btn:hover:not(:disabled) {
+  background: rgba(245, 108, 108, 0.1);
+}
+
+.delete-relation-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 空状态 */
+.empty-relations {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.empty-message {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.empty-description {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 对话框样式 */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel-btn,
+.confirm-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.cancel-btn {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.cancel-btn:hover {
+  background: #e9e9e9;
+}
+
+.confirm-btn {
+  background: #409eff;
+  color: white;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: #337ecc;
+}
+
+.confirm-btn:disabled {
+  background: #a0cfff;
+  cursor: not-allowed;
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+  .node-info-card {
+    width: 90vw;
+    max-width: 480px;
+    left: 5vw !important;
+    top: 10vh !important;
+  }
+
+  .stats-display {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .relation-flow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .arrow-container {
+    order: 2;
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .arrow {
+    transform: rotate(90deg);
+  }
+
+  .node-name-with-level {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+/* 滚动条样式 */
+.card-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.card-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.card-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.card-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 </style>

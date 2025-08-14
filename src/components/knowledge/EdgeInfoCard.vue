@@ -2,11 +2,26 @@
   <div v-if="visible" class="edge-info-card" :style="{ left: position.x + 'px', top: position.y + 'px' }" @click.stop>
     <div class="card-header">
       <h3 class="card-title">关系详情</h3>
-      <button @click="close" class="close-btn">
-        <el-icon>
-          <Close />
-        </el-icon>
-      </button>
+      <div class="header-actions">
+        <el-popconfirm title="确定要删除这个关系吗？" confirm-button-text="确定" cancel-button-text="取消" icon="el-icon-info"
+          icon-color="#f56c6c" @confirm="handleDelete">
+          <template #reference>
+            <button class="delete-btn" :disabled="deleting">
+              <el-icon v-if="!deleting">
+                <Delete />
+              </el-icon>
+              <el-icon v-else class="loading">
+                <Loading />
+              </el-icon>
+            </button>
+          </template>
+        </el-popconfirm>
+        <button @click="close" class="close-btn">
+          <el-icon>
+            <Close />
+          </el-icon>
+        </button>
+      </div>
     </div>
 
     <div class="card-content">
@@ -94,7 +109,9 @@
           <div class="literature-details">
             <div class="detail-row">
               <span class="label">作者：</span>
-              <span class="value">{{ edgeData.literature.authors.join(', ') }}</span>
+              <span class="value"> {{ Array.isArray(edgeData.literature.authors)
+                ? edgeData.literature.authors.join(', ')
+                : edgeData.literature.authors || '未知' }}</span>
             </div>
             <div class="detail-row">
               <span class="label">期刊：</span>
@@ -135,12 +152,14 @@
 </template>
 
 <script>
-import { computed } from 'vue'
-import { Close } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { Close, Delete, Loading } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import KnowledgeGraph from '@/api/knowledgeGraph' // 根据你的实际路径调整
 
 export default {
   name: 'EdgeInfoCard',
-  components: { Close },
+  components: { Close, Delete, Loading },
   props: {
     visible: {
       type: Boolean,
@@ -155,10 +174,33 @@ export default {
       default: () => ({ x: 0, y: 0 })
     }
   },
-  emits: ['close'],
+  emits: ['close', 'deleted'],
   setup(props, { emit }) {
+    const deleting = ref(false)
+
     const close = () => {
       emit('close')
+    }
+
+    const handleDelete = async () => {
+      if (!props.edgeData.id) {
+        ElMessage.error('关系ID不存在，无法删除')
+        return
+      }
+
+      deleting.value = true
+
+      try {
+        await KnowledgeGraph.deleteRelation(props.edgeData.id)
+        ElMessage.success('关系删除成功')
+        // emit('deleted', props.edgeData.id)
+        close()
+      } catch (error) {
+        console.error('删除关系失败:', error)
+        ElMessage.error(error.response?.data?.message || '删除关系失败，请重试')
+      } finally {
+        deleting.value = false
+      }
     }
 
     const getEffectClass = (effect) => {
@@ -179,7 +221,9 @@ export default {
     }
 
     return {
+      deleting,
       close,
+      handleDelete,
       getEffectClass,
       formatDate
     }
@@ -212,7 +256,7 @@ export default {
 
 .card-header {
   display: flex;
-  justify-content: between;
+  justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
   background: #f8f9fa;
@@ -224,6 +268,49 @@ export default {
   font-size: 18px;
   font-weight: 600;
   color: #333;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  color: #f56c6c;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: rgba(245, 108, 108, 0.1);
+  color: #f56c6c;
+}
+
+.delete-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.loading {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .close-btn {

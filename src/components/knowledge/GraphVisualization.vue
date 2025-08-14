@@ -66,6 +66,10 @@
     <EdgeInfoCard :visible="showEdgeCard" :edge-data="selectedEdgeData" :position="cardPosition"
       @close="closeEdgeCard" />
 
+    <!-- 节点信息卡片 -->
+    <NodeInfoCard :visible="showNodeCard" :node-data="selectedNodeData" :position="cardPosition" @close="closeNodeCard"
+      @relation-updated="handleRelationUpdated" />
+
     <!-- 图谱信息面板 -->
     <!-- <div class="graph-info-panel" v-if="(!taskId || taskId === 0) && graphDataComputed.nodes?.length > 0">
       <div class="info-row">
@@ -81,7 +85,6 @@
     </div> -->
   </div>
 </template>
-
 <script>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Network, DataSet } from 'vis-network/standalone'
@@ -89,10 +92,11 @@ import KnowledgeGraph from '@/api/knowledgeGraph'
 import Literature from '@/api/Literature'
 import { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick } from '@element-plus/icons-vue'
 import EdgeInfoCard from './EdgeInfoCard.vue'
+import NodeInfoCard from './NodeInfoCard.vue'
 
 export default {
   name: 'GraphVisualization',
-  components: { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick, EdgeInfoCard },
+  components: { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick, EdgeInfoCard, NodeInfoCard },
   props: {
     currentView: { type: String, default: 'concept' },
     graphData: { type: Object, default: () => ({ nodes: [], edges: [] }) },
@@ -102,7 +106,7 @@ export default {
     taskId: { type: [Number, String], default: null },
     searchKeyword: { type: String, default: '' },
   },
-  emits: ['entity-selected', 'entity-deselected'],
+  emits: ['entity-selected', 'entity-deselected', 'graph-updated'],
   setup(props, { emit, expose }) {
     const networkContainer = ref(null)
     const network = ref(null)
@@ -114,6 +118,10 @@ export default {
     const showEdgeCard = ref(false)
     const selectedEdgeData = ref({})
     const cardPosition = ref({ x: 0, y: 0 })
+
+    // 节点卡片相关状态
+    const showNodeCard = ref(false)
+    const selectedNodeData = ref({})
 
     const debounce = (func, wait) => {
       let timeout
@@ -148,6 +156,46 @@ export default {
         case 2: return baseSize * 1.3
         case 3: return baseSize
         default: return baseSize
+      }
+    }
+
+    // 处理API返回的嵌套数组数据
+    const processApiResponse = (apiData) => {
+      console.log('原始API数据:', apiData)
+
+      let processedNodes = []
+      let processedEdges = []
+
+      // 处理nodes - 检查是否为嵌套数组
+      if (apiData.nodes && Array.isArray(apiData.nodes)) {
+        if (apiData.nodes.length > 0 && Array.isArray(apiData.nodes[0])) {
+          // 嵌套数组，需要展平
+          processedNodes = apiData.nodes.flat()
+        } else {
+          // 普通数组
+          processedNodes = apiData.nodes
+        }
+      }
+
+      // 处理edges - 检查是否为嵌套数组
+      if (apiData.edges && Array.isArray(apiData.edges)) {
+        if (apiData.edges.length > 0 && Array.isArray(apiData.edges[0])) {
+          // 嵌套数组，需要展平
+          processedEdges = apiData.edges.flat()
+        } else {
+          // 普通数组
+          processedEdges = apiData.edges
+        }
+      }
+
+      console.log('处理后的节点数量:', processedNodes.length)
+      console.log('处理后的边数量:', processedEdges.length)
+      console.log('节点样例:', processedNodes.slice(0, 2))
+      console.log('边样例:', processedEdges.slice(0, 2))
+
+      return {
+        nodes: processedNodes,
+        edges: processedEdges
       }
     }
 
@@ -193,6 +241,58 @@ export default {
       selectedEdgeData.value = {}
     }
 
+    // 节点卡片相关方法
+    const showNodeInfo = (nodeData, position) => {
+      selectedNodeData.value = nodeData
+
+      // 计算卡片位置，确保不会超出屏幕边界
+      const cardWidth = 480
+      const cardHeight = 600
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+
+      let x = position.x
+      let y = position.y
+
+      // 右边界检查
+      if (x + cardWidth > screenWidth) {
+        x = screenWidth - cardWidth - 20
+      }
+
+      // 左边界检查
+      if (x < 20) {
+        x = 20
+      }
+
+      // 下边界检查
+      if (y + cardHeight > screenHeight) {
+        y = screenHeight - cardHeight - 20
+      }
+
+      // 上边界检查
+      if (y < 20) {
+        y = 20
+      }
+
+      cardPosition.value = { x, y }
+      showNodeCard.value = true
+
+      // 关闭边卡片（如果打开的话）
+      showEdgeCard.value = false
+    }
+
+    const closeNodeCard = () => {
+      showNodeCard.value = false
+      selectedNodeData.value = {}
+    }
+
+    const handleRelationUpdated = () => {
+      // 当关系更新时，可能需要重新加载图谱数据
+      console.log('关系已更新，可能需要刷新图谱')
+      // 这里可以选择重新加载数据或者发出事件通知父组件
+      emit('graph-updated')
+    }
+
     // 计算优化的布局 - 避免重合，Level 3更散更整齐
     const calculateOptimizedLayout = (entities) => {
       const layout = {}
@@ -209,17 +309,17 @@ export default {
         const nodes = levelGroups[1]
 
         if (nodes.length === 1) {
-          layout[nodes[0].name] = { x: 0, y: 0 }
+          layout[nodes[0].id] = { x: 0, y: 0 }
         } else if (nodes.length === 2) {
           // 两个节点水平分布
-          layout[nodes[0].name] = { x: -40, y: 0 }
-          layout[nodes[1].name] = { x: 40, y: 0 }
+          layout[nodes[0].id] = { x: -40, y: 0 }
+          layout[nodes[1].id] = { x: 40, y: 0 }
         } else {
           // 多个节点圆形分布，增大半径
           const radius = Math.max(50, nodes.length * 12)
           nodes.forEach((entity, index) => {
             const angle = (index * 2 * Math.PI) / nodes.length
-            layout[entity.name] = {
+            layout[entity.id] = {
               x: radius * Math.cos(angle),
               y: radius * Math.sin(angle)
             }
@@ -256,7 +356,7 @@ export default {
             const finalRadius = currentRadius + radiusJitter
             const finalAngle = angle + angleJitter
 
-            layout[entity.name] = {
+            layout[entity.id] = {
               x: finalRadius * Math.cos(finalAngle),
               y: finalRadius * Math.sin(finalAngle)
             }
@@ -303,7 +403,7 @@ export default {
             const finalRadius = currentRadius + radiusJitter
             const finalAngle = angle + angleJitter
 
-            layout[entity.name] = {
+            layout[entity.id] = {
               x: finalRadius * Math.cos(finalAngle),
               y: finalRadius * Math.sin(finalAngle)
             }
@@ -326,8 +426,8 @@ export default {
 
       for (let i = 0; i < positions.length; i++) {
         for (let j = i + 1; j < positions.length; j++) {
-          const [name1, pos1] = positions[i]
-          const [name2, pos2] = positions[j]
+          const [id1, pos1] = positions[i]
+          const [id2, pos2] = positions[j]
 
           const dx = pos2.x - pos1.x
           const dy = pos2.y - pos1.y
@@ -339,11 +439,11 @@ export default {
             const pushX = (dx / distance) * pushDistance
             const pushY = (dy / distance) * pushDistance
 
-            resolved[name1] = {
+            resolved[id1] = {
               x: pos1.x - pushX,
               y: pos1.y - pushY
             }
-            resolved[name2] = {
+            resolved[id2] = {
               x: pos2.x + pushX,
               y: pos2.y + pushY
             }
@@ -380,21 +480,21 @@ export default {
         return
       }
 
-      // 查找匹配的节点
+      // 查找匹配的节点 - 使用id作为唯一标识
       const matchingNodes = graphDataComputed.value.nodes.filter(node =>
         node.name && node.name.toLowerCase().includes(keyword.toLowerCase())
       )
 
       if (matchingNodes.length > 0) {
-        // 高亮匹配的节点
-        const nodeIds = matchingNodes.map(node => node.name)
+        // 高亮匹配的节点 - 使用id
+        const nodeIds = matchingNodes.map(node => node.id)
         highlightedNodes.value = nodeIds
 
         // 更新节点样式
         const nodes = network.value.body.data.nodes
         const updates = matchingNodes.map(node => {
           return {
-            id: node.name,
+            id: node.id, // 使用实际的id
             color: {
               background: '#FFD700',
               border: '#FF6B00',
@@ -408,7 +508,7 @@ export default {
 
         // 聚焦处理
         if (matchingNodes.length === 1) {
-          focusOnEntity(matchingNodes[0].name)
+          focusOnEntity(matchingNodes[0].id)
         } else {
           // 多个匹配节点时，聚焦到第一个
           network.value.focus(nodeIds[0], {
@@ -432,7 +532,7 @@ export default {
       try {
         const nodes = network.value.body.data.nodes
         const updates = highlightedNodes.value.map(nodeId => {
-          const originalNode = graphDataComputed.value.nodes.find(n => n.name === nodeId)
+          const originalNode = graphDataComputed.value.nodes.find(n => n.id === nodeId)
           if (originalNode) {
             const levelConfig = getLevelConfig(originalNode.level)
             return {
@@ -472,10 +572,9 @@ export default {
         try {
           const response = await Literature.getAnalyzeDetail(props.taskId)
           if (response.data.data) {
-            internalGraphData.value = {
-              nodes: response.data.data.nodes || [],
-              edges: response.data.data.edges || [],
-            }
+            // 处理API返回的嵌套数组
+            const processedData = processApiResponse(response.data.data)
+            internalGraphData.value = processedData
             await nextTick()
             initializeNetwork()
           }
@@ -485,18 +584,13 @@ export default {
       } else {
         try {
           const params = {
-            // verified_only: false,
             limit: 500,
           }
-          // if (props.selectedFilters.selectedEntityTypes?.length > 0) {
-          //   params.entity_type = props.selectedFilters.selectedEntityTypes.join(',')
-          // }
           const response = await KnowledgeGraph.getGraph(params)
           if (response.data.data) {
-            internalGraphData.value = {
-              nodes: response.data.data.nodes || [],
-              edges: response.data.data.edges || [],
-            }
+            // 处理API返回的嵌套数组
+            const processedData = processApiResponse(response.data.data)
+            internalGraphData.value = processedData
             await nextTick()
             initializeNetwork()
           }
@@ -513,14 +607,14 @@ export default {
       try {
         const layout = calculateFinalLayout(graphDataComputed.value.nodes)
 
-        // 处理节点数据
+        // 处理节点数据 - 使用id作为唯一标识
         const nodes = new DataSet(
           graphDataComputed.value.nodes.map((entity) => {
             const levelConfig = getLevelConfig(entity.level)
-            const position = layout[entity.name] || { x: 0, y: 0 }
+            const position = layout[entity.id] || { x: 0, y: 0 }
 
             return {
-              id: entity.name,
+              id: entity.id, // 使用实际的id
               label: props.graphSettings.showLabels ? entity.name : '',
               title: `${entity.name}${entity.level > 2
                 ? `\n层级: Level ${entity.level}\n类型: ${entity.entity_type || '未分类'}`
@@ -537,17 +631,19 @@ export default {
               size: getEntitySize(entity),
               font: { size: entity.level === 1 ? 16 : 14, color: '#333' },
               borderWidth: entity.level === 1 ? 3 : 2,
-              shadow: true
+              shadow: true,
+              // 存储原始数据
+              originalData: entity
             }
           })
         )
 
-        // 处理边数据 - 存储原始数据以便点击时使用
+        // 处理边数据 - 使用source_entity.id和target_entity.id
         const edges = new DataSet(
           (graphDataComputed.value.edges || []).map((edge, index) => ({
-            id: `edge-${index}`,
-            from: edge.source_entity.name,
-            to: edge.target_entity.name,
+            id: edge.id || `edge-${index}`, // 优先使用edge.id
+            from: edge.source_entity.id, // 使用source_entity的id
+            to: edge.target_entity.id,   // 使用target_entity的id
             label: edge.factor?.factor_name || '',
             width: props.graphSettings.edgeWidth || 2,
             color: { color: '#888888', highlight: '#333333', opacity: 0.6 },
@@ -559,13 +655,13 @@ export default {
           }))
         )
 
-        // 网络配置
+        // 网络配置 - 修复版本
         const optimizedNetworkOptions = {
           physics: { enabled: false },
           interaction: {
             hover: true,
             hoverConnectedEdges: true,
-            selectConnectedEdges: true, // 启用边选择
+            selectConnectedEdges: false, // 关闭自动选择连接的边
             tooltipDelay: 200,
             zoomView: true,
             dragView: true,
@@ -614,26 +710,31 @@ export default {
       }
     }
 
-    // 设置事件监听器
+    // 设置事件监听器 - 修复版本
     const setupEventListeners = () => {
       if (!network.value) return
 
-      // 节点点击事件
-      network.value.on('selectNode', (params) => {
+      // 使用 click 事件，更精确控制
+      network.value.on('click', (params) => {
+        // 优先处理节点点击
         if (params.nodes.length > 0) {
           const entityId = params.nodes[0]
-          const entityData = graphDataComputed.value.nodes.find((n) => n.name === entityId)
-          if (entityData) emit('entity-selected', entityData)
+          const entityData = graphDataComputed.value.nodes.find((n) => n.id === entityId)
+          if (entityData) {
+            emit('entity-selected', entityData)
+            // 获取点击位置并显示节点信息卡片
+            const canvasPosition = network.value.canvasToDOM(params.pointer.canvas)
+
+            // 关闭边卡片，只显示节点卡片
+            closeEdgeCard()
+            showNodeInfo(entityData, {
+              x: canvasPosition.x,
+              y: canvasPosition.y
+            })
+          }
         }
-      })
-
-      network.value.on('deselectNode', () => {
-        emit('entity-deselected')
-      })
-
-      // 边点击事件
-      network.value.on('selectEdge', (params) => {
-        if (params.edges.length > 0) {
+        // 如果没有点击节点，再检查是否点击了边
+        else if (params.edges.length > 0) {
           const edgeId = params.edges[0]
           const edges = network.value.body.data.edges
           const edgeData = edges.get(edgeId)
@@ -641,19 +742,24 @@ export default {
           if (edgeData && edgeData.originalData) {
             // 获取点击位置
             const canvasPosition = network.value.canvasToDOM(params.pointer.canvas)
+
+            // 关闭节点卡片，只显示边卡片
+            closeNodeCard()
             showEdgeInfo(edgeData.originalData, {
               x: canvasPosition.x,
               y: canvasPosition.y
             })
           }
         }
+        // 点击空白处关闭所有卡片
+        else {
+          closeEdgeCard()
+          closeNodeCard()
+        }
       })
 
-      // 点击空白处关闭卡片
-      network.value.on('click', (params) => {
-        if (params.nodes.length === 0 && params.edges.length === 0) {
-          closeEdgeCard()
-        }
+      network.value.on('deselectNode', () => {
+        emit('entity-deselected')
       })
 
       network.value.on('doubleClick', (params) => {
@@ -775,18 +881,21 @@ export default {
       showEdgeCard,
       selectedEdgeData,
       cardPosition,
+      showNodeCard,
+      selectedNodeData,
       zoomIn,
       zoomOut,
       resetZoom,
       centerGraph,
       togglePhysics,
       focusOnEntity,
-      closeEdgeCard
+      closeEdgeCard,
+      closeNodeCard,
+      handleRelationUpdated
     }
   }
 }
 </script>
-
 <style scoped>
 .graph-visualization {
   position: relative;
