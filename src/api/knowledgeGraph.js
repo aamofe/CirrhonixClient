@@ -9,7 +9,8 @@ const url = {
   getGraph: '/kgraph/graph/',
   getSubgraph: (id) => `/kgraph/graph/${id}/`,
   statistics: '/kgraph/stats/',
-  manageRelation: '/kgraph/relations/manage/',
+  createRelation: '/kgraph/relations/create/',
+  deleteRelation: '/kgraph/relations/delete/',
 }
 
 export default class KnowledgeGraph {
@@ -40,9 +41,9 @@ export default class KnowledgeGraph {
   }
 
   static async createRelation(relationData) {
-    return service.post(url.manageRelation, {
-      source_id: relationData.source_entity,
-      target_id: relationData.target_entity,
+    return service.post(url.createRelation, {
+      source_id: relationData.source_id,
+      target_id: relationData.target_id,
       factor_name: relationData.factor_name,
       factor_type: relationData.factor_type,
       effect: relationData.effect,
@@ -51,10 +52,12 @@ export default class KnowledgeGraph {
     })
   }
 
-  // 新增：删除关系
+  // 删除关系
   static async deleteRelation(relationId) {
-    return service.delete(url.manageRelation, {
-      params: { relation_id: relationId },
+    return service.delete(url.deleteRelation, {
+      params: {
+        relation_id: relationId,
+      },
     })
   }
 }

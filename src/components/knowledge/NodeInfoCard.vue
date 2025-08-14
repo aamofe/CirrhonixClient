@@ -139,23 +139,16 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="作用效果" prop="effect">
+          <el-input v-model="relationForm.effect" placeholder="请输入作用效果，如：增强、抑制、激活等" />
+        </el-form-item>
+
         <el-form-item label="作用因子" prop="factorName">
-          <el-input v-model="relationForm.factorName" placeholder="如：CD52" />
+          <el-input v-model="relationForm.factorName" placeholder="请输入作用因子名称（可选），如：CD52" />
         </el-form-item>
 
         <el-form-item label="因子类型" prop="factorType">
-          <el-input v-model="relationForm.factorType" placeholder="如：细胞因子" />
-        </el-form-item>
-
-        <el-form-item label="作用类型" prop="effect">
-          <el-select v-model="relationForm.effect" placeholder="请选择作用类型">
-            <el-option label="增强" value="增强" />
-            <el-option label="维持" value="维持" />
-            <el-option label="抑制" value="抑制" />
-            <el-option label="导致炎症" value="导致炎症" />
-            <el-option label="激活" value="激活" />
-            <el-option label="调节" value="调节" />
-          </el-select>
+          <el-input v-model="relationForm.factorType" placeholder="请输入因子类型（可选），如：细胞因子" />
         </el-form-item>
 
         <el-form-item label="文献">
@@ -217,7 +210,7 @@ export default {
       targetEntity: null,
       factorName: '',
       factorType: '',
-      effect: '',
+      effect: '', // 作用效果，必填
       literature: '',
       description: ''
     })
@@ -226,12 +219,10 @@ export default {
       targetEntity: [
         { required: true, message: '请选择目标实体', trigger: 'change' }
       ],
-      factorName: [
-        { required: true, message: '请输入作用因子', trigger: 'blur' }
-      ],
       effect: [
-        { required: true, message: '请选择作用类型', trigger: 'change' }
+        { required: true, message: '请输入作用效果', trigger: 'blur' }
       ]
+      // 移除factorName的必填验证，因为作用因子可以为空
     }
 
     // 获取实体标识符的方法
@@ -414,7 +405,7 @@ export default {
           factor_name: relationForm.factorName,
           factor_type: relationForm.factorType,
           effect: relationForm.effect,
-          literature_name: relationForm.literature || null,//这是文献名称
+          literature_name: relationForm.literature || null, // 这是文献名称
           description: relationForm.description
         }
 
@@ -464,7 +455,7 @@ export default {
         targetEntity: null,
         factorName: '',
         factorType: '',
-        effect: '',
+        effect: '', // 重置作用效果
         literature: '',
         description: ''
       })
@@ -518,6 +509,7 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 .card-overlay {
   position: fixed;

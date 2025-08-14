@@ -70,19 +70,6 @@
     <NodeInfoCard :visible="showNodeCard" :node-data="selectedNodeData" :position="cardPosition" @close="closeNodeCard"
       @relation-updated="handleRelationUpdated" />
 
-    <!-- 图谱信息面板 -->
-    <!-- <div class="graph-info-panel" v-if="(!taskId || taskId === 0) && graphDataComputed.nodes?.length > 0">
-      <div class="info-row">
-        <div class="info-item">
-          <span class="info-value">{{ visibleNodes }}</span>
-          <span class="info-label">实体</span>
-        </div>
-        <div class="info-item">
-          <span class="info-value">{{ visibleEdges }}</span>
-          <span class="info-label">关系</span>
-        </div>
-      </div>
-    </div> -->
   </div>
 </template>
 <script>
