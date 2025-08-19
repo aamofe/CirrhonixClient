@@ -7,6 +7,7 @@ export function useGraphVisualization(networkContainer, props) {
   const network = ref(null)
   const physicsEnabled = ref(false)
   const highlightedNodes = ref([])
+  const currentGraphData = ref(ref(null))
 
   // 边卡片相关状态
   const showEdgeCard = ref(false)
@@ -170,7 +171,8 @@ export function useGraphVisualization(networkContainer, props) {
     // Level 2: 中间层 - 更松散的圆环分布
     if (levelGroups[2]) {
       const nodes = levelGroups[2]
-      const baseRadius = 180
+      const baseRadius = 250
+      const ringSpacing = 80
       const minAngle = Math.PI / 8
       const maxNodesPerRing = Math.floor((2 * Math.PI) / minAngle)
       const ringCount = Math.ceil(nodes.length / maxNodesPerRing)
@@ -178,7 +180,7 @@ export function useGraphVisualization(networkContainer, props) {
       let nodeIndex = 0
       for (let ring = 0; ring < ringCount; ring++) {
         const nodesInRing = Math.min(maxNodesPerRing, nodes.length - nodeIndex)
-        const currentRadius = baseRadius + ring * 60
+        const currentRadius = baseRadius + ring * ringSpacing
 
         const angleOffset =
           ring * (Math.PI / 6) + Math.random() * (Math.PI / 12)
@@ -187,7 +189,7 @@ export function useGraphVisualization(networkContainer, props) {
           const entity = nodes[nodeIndex + i]
           const angle = (i * 2 * Math.PI) / nodesInRing + angleOffset
 
-          const radiusJitter = (Math.random() - 0.5) * 20
+          const radiusJitter = (Math.random() - 0.5) * 30
           const angleJitter = (Math.random() - 0.5) * (Math.PI / 16)
 
           const finalRadius = currentRadius + radiusJitter
@@ -206,9 +208,9 @@ export function useGraphVisualization(networkContainer, props) {
     // Level 3: 外层 - 超松散的多环螺旋分布
     if (levelGroups[3]) {
       const nodes = levelGroups[3]
-      const startRadius = 320
-      const ringSpacing = 70
-      const minNodeDistance = 50
+      const startRadius = 400
+      const ringSpacing = 90
+      const minNodeDistance = 60
 
       const calculateOptimalNodesPerRing = (radius) => {
         const circumference = 2 * Math.PI * radius
@@ -231,7 +233,7 @@ export function useGraphVisualization(networkContainer, props) {
           const entity = nodes[currentIndex + i]
           const angle = baseAngle + (i * 2 * Math.PI) / nodesThisRing
 
-          const radiusJitter = (Math.random() - 0.5) * 30
+          const radiusJitter = (Math.random() - 0.5) * 40
           const angleJitter = (Math.random() - 0.5) * (Math.PI / 12)
 
           const finalRadius = currentRadius + radiusJitter
@@ -293,7 +295,7 @@ export function useGraphVisualization(networkContainer, props) {
     return finalLayout
   }
 
-  // 清除高亮
+  // 清除高亮 (现在用于点击等交互，而不是搜索)
   const clearHighlight = () => {
     if (!network.value || highlightedNodes.value.length === 0) return
 
@@ -301,7 +303,7 @@ export function useGraphVisualization(networkContainer, props) {
       const nodes = network.value.body.data.nodes
       const updates = highlightedNodes.value
         .map((nodeId) => {
-          const originalNode = props.graphData.nodes.find(
+          const originalNode = currentGraphData.value.nodes.find(
             (n) => n.id === nodeId
           )
           if (originalNode) {
@@ -337,89 +339,118 @@ export function useGraphVisualization(networkContainer, props) {
     }
   }
 
-  // ...（其他代码保持不变）
-
-  const handleSearch = (keyword) => {
-    if (!network.value) {
-      console.warn('Network instance is not ready, cannot perform search.')
-      return
-    }
-
-    console.log('--- 开始搜索 ---')
-    console.log('搜索关键词:', keyword)
-
-    clearHighlight()
-
-    if (!keyword.trim()) {
-      try {
-        network.value.fit({ animation: { duration: 800 } })
-      } catch (error) {
-        console.warn('恢复全图视图时出错:', error)
-      }
-      return
-    }
-
+  // 新增：根据关键词过滤图谱数据，仅保留匹配节点及其邻居
+  const getFilteredGraphData = (keyword) => {
     const lowerCaseKeyword = keyword.toLowerCase()
+    const allNodes = props.graphData.nodes
+    const allEdges = props.graphData.edges
 
-    // 确保从原始数据中进行搜索
-    const matchingNodes = props.graphData.nodes.filter((node) => {
-      return (
+    // 1. 找到所有匹配搜索关键词的节点
+    const matchingNodes = allNodes.filter(
+      (node) =>
         node.name &&
         typeof node.name === 'string' &&
         node.name.toLowerCase().includes(lowerCaseKeyword)
-      )
+    )
+
+    if (matchingNodes.length === 0) {
+      return { nodes: [], edges: [], matchedNodeIds: [] }
+    }
+
+    // 2. 找到所有匹配节点和它们的邻居
+    const connectedNodeIds = new Set(matchingNodes.map((node) => node.id))
+    const matchedNodeIds = new Set(matchingNodes.map((node) => node.id))
+
+    allEdges.forEach((edge) => {
+      if (
+        connectedNodeIds.has(edge.source_entity.id) ||
+        connectedNodeIds.has(edge.target_entity.id)
+      ) {
+        connectedNodeIds.add(edge.source_entity.id)
+        connectedNodeIds.add(edge.target_entity.id)
+      }
     })
 
-    console.log(`找到 ${matchingNodes.length} 个匹配节点。`)
+    // 3. 过滤出要显示的节点和边
+    const filteredNodes = allNodes.filter((node) =>
+      connectedNodeIds.has(node.id)
+    )
+    const filteredEdges = allEdges.filter(
+      (edge) =>
+        connectedNodeIds.has(edge.source_entity.id) &&
+        connectedNodeIds.has(edge.target_entity.id)
+    )
 
-    if (matchingNodes.length > 0) {
-      const nodeIds = matchingNodes.map((node) => node.id)
-      highlightedNodes.value = nodeIds
-
-      const nodes = network.value.body.data.nodes
-      const updates = matchingNodes.map((node) => {
-        return {
-          id: node.id,
-          color: {
-            background: '#FFD700',
-            border: '#FF6B00',
-            highlight: { background: '#FFD700', border: '#FF6B00' },
-          },
-          borderWidth: 4,
-        }
-      })
-
-      nodes.update(updates)
-
-      // 修正：根据匹配节点的数量，选择不同的视图操作
-      if (matchingNodes.length === 1) {
-        // 如果只有一个匹配节点，则聚焦到该节点
-        focusOnEntity(matchingNodes[0].id)
-      } else {
-        // 如果有多个匹配节点，则调整视图以适应所有匹配节点
-        network.value.fit({
-          nodes: nodeIds,
-          animation: { duration: 800 },
-          maxZoomLevel: 1.2,
-        })
-      }
-    } else {
-      console.log('未找到匹配的节点')
+    return {
+      nodes: filteredNodes,
+      edges: filteredEdges,
+      matchedNodeIds: Array.from(matchedNodeIds),
     }
   }
+
+  // 修改 handleSearch 函数以使用新的过滤逻辑
+  const handleSearch = (keyword) => {
+    const newKeyword = keyword.trim()
+    if (newKeyword) {
+      const filteredData = getFilteredGraphData(newKeyword)
+      if (filteredData.nodes.length > 0) {
+        // 传递需要高亮的节点ID数组
+        initializeNetwork(
+          filteredData,
+          props.graphSettings,
+          new Set(filteredData.matchedNodeIds)
+        )
+      } else {
+        // 如果没有匹配结果，就清空图谱
+        if (network.value) network.value.destroy()
+        console.log('未找到匹配的节点，图谱已清空。')
+      }
+    } else {
+      // 如果关键词为空，恢复到完整图谱
+      resetGraph()
+    }
+  }
+
   const debouncedSearch = debounce(handleSearch, 300)
 
   // 初始化网络图
-  const initializeNetwork = async (graphData, graphSettings) => {
+  // 新增一个参数 nodesToHighlight，用于在初始化时应用高亮样式
+  const initializeNetwork = async (
+    graphData,
+    graphSettings,
+    nodesToHighlight = new Set()
+  ) => {
     if (!networkContainer.value || !graphData || !graphData.nodes.length) return
 
     try {
+      currentGraphData.value = graphData
+
       const layout = calculateFinalLayout(graphData.nodes)
 
       const nodes = new DataSet(
         graphData.nodes.map((entity) => {
+          const isHighlighted = nodesToHighlight.has(entity.id)
           const levelConfig = getLevelConfig(entity.level)
           const position = layout[entity.id] || { x: 0, y: 0 }
+
+          let nodeColor, borderWidth
+          if (isHighlighted) {
+            // 应用高亮样式
+            nodeColor = {
+              background: '#FFD700',
+              border: '#FF6B00',
+              highlight: { background: '#FFD700', border: '#FF6B00' },
+            }
+            borderWidth = 4
+          } else {
+            // 应用默认样式
+            nodeColor = {
+              background: levelConfig.color,
+              border: '#ffffff',
+              highlight: { background: levelConfig.color, border: '#333333' },
+            }
+            borderWidth = entity.level === 1 ? 3 : 2
+          }
 
           return {
             id: entity.id,
@@ -433,14 +464,10 @@ export function useGraphVisualization(networkContainer, props) {
             }`,
             x: position.x,
             y: position.y,
-            color: {
-              background: levelConfig.color,
-              border: '#ffffff',
-              highlight: { background: levelConfig.color, border: '#333333' },
-            },
+            color: nodeColor,
             size: getEntitySize(entity),
             font: { size: entity.level === 1 ? 16 : 14, color: '#333' },
-            borderWidth: entity.level === 1 ? 3 : 2,
+            borderWidth: borderWidth,
             shadow: true,
             originalData: entity,
           }
@@ -516,6 +543,11 @@ export function useGraphVisualization(networkContainer, props) {
     }
   }
 
+  // 新增：恢复到完整的图谱
+  const resetGraph = () => {
+    initializeNetwork(props.graphData, props.graphSettings)
+  }
+
   // 设置事件监听器
   const setupEventListeners = () => {
     if (!network.value) return
@@ -523,7 +555,9 @@ export function useGraphVisualization(networkContainer, props) {
     network.value.on('click', (params) => {
       if (params.nodes.length > 0) {
         const entityId = params.nodes[0]
-        const entityData = props.graphData.nodes.find((n) => n.id === entityId)
+        const entityData = currentGraphData.value.nodes.find(
+          (n) => n.id === entityId
+        )
         if (entityData) {
           bus.emit('entity-selected', entityData)
           const canvasPosition = network.value.canvasToDOM(
