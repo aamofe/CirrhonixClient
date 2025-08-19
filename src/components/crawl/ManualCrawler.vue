@@ -86,12 +86,12 @@
           <span class="error-text">{{ currentTask.error_message }}</span>
         </p>
         <!-- 显示任务恢复信息 -->
-        <p v-if="isRestoredTask" class="restore-info">
+        <!-- <p v-if="isRestoredTask" class="restore-info">
           <el-icon>
             <InfoFilled />
           </el-icon>
           已从记忆中恢复此任务
-        </p>
+        </p> -->
       </div>
 
       <!-- 轮询进度条 -->

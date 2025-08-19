@@ -104,12 +104,12 @@
             </div>
           </div>
 
-          <div class="section-card">
+          <!-- <div class="section-card">
             <h2>全文</h2>
             <div class="content-placeholder">
               {{ article.full_text || "全文内容将在此显示" }}
             </div>
-          </div>
+          </div> -->
 
           <!-- 文献分析功能区域 - 移到这里 -->
           <div class="section-card analysis-section">
