@@ -11,13 +11,6 @@
       </div>
     </div>
 
-    <!-- 调试信息
-    <div v-if="debugMode" class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px; font-size: 12px;">
-      <div>节点数据: {{ JSON.stringify(nodeData, null, 2) }}</div>
-      <div>标识符: {{ getEntityIdentifier() }}</div>
-      <div>加载状态: {{ loading }}</div>
-    </div> -->
-
     <!-- 加载状态 -->
     <div v-if="loading" class="card-content loading-content">
       <el-skeleton :rows="5" animated />
@@ -104,10 +97,10 @@
         </div>
       </div>
 
-      <!-- 相关关系 - 仅在有详细数据时显示 -->
-      <div v-if="detailData.relations" class="section">
+      <!-- 关系管理区域 -->
+      <div class="section">
         <div class="section-header">
-          <div class="section-title">相关关系</div>
+          <div class="section-title">关系管理</div>
           <button @click="showAddRelationDialog = true" class="add-relation-btn">
             <el-icon>
               <Plus />
@@ -115,9 +108,9 @@
             新增关系
           </button>
         </div>
-
-        <!-- 其余关系相关的代码保持不变... -->
-        <!-- ... 省略了关系显示的完整代码，因为这部分没有问题 ... -->
+        <div class="relation-management">
+          <p class="management-note">通过上方按钮可以为此节点添加新的关系连接。</p>
+        </div>
       </div>
     </div>
 
@@ -133,10 +126,23 @@
 
         <el-form-item :label="relationForm.direction === 'source' ? '目标实体' : '源实体'" prop="targetEntity">
           <el-select v-model="relationForm.targetEntity" filterable remote reserve-keyword placeholder="请输入实体名称进行搜索"
-            :remote-method="searchEntities" :loading="entityLoading" style="width: 100%" value-key="name">
-            <el-option v-for="entity in availableEntities" :key="entity.name || entity.id" :label="`${entity.name} `"
-              :value="entity" />
+            :remote-method="searchEntities" :loading="entityLoading" style="width: 100%" value-key="id" clearable
+            :no-data-text="entityLoading ? '搜索中...' : '暂无数据'">
+            <el-option v-for="entity in availableEntities" :key="entity.id || entity.name"
+              :label="formatEntityLabel(entity)" :value="entity">
+              <div class="entity-option">
+                <div class="entity-name">{{ entity.name }}</div>
+                <div class="entity-meta">
+                  <span v-if="entity.chinese_name" class="chinese-name">{{ entity.chinese_name }}</span>
+                  <span v-if="entity.entity_type" class="entity-type">{{ entity.entity_type }}</span>
+                  <span v-if="entity.level" class="entity-level">Level {{ entity.level }}</span>
+                </div>
+              </div>
+            </el-option>
           </el-select>
+          <div class="search-tip">
+            <span class="tip-text">💡 提示：输入实体名称、中文名或缩写进行搜索</span>
+          </div>
         </el-form-item>
 
         <el-form-item label="作用效果" prop="effect">
@@ -177,14 +183,14 @@
 </template>
 
 <script>
-import { ref, watch, reactive, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Close, Plus, Delete, Loading } from '@element-plus/icons-vue'
+import { ref, watch, reactive } from 'vue'
+import { ElMessage, ElSkeleton, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElRadioGroup, ElRadio } from 'element-plus'
+import { Close, Plus } from '@element-plus/icons-vue'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
 export default {
   name: 'NodeInfoCard',
-  components: { Close, Plus, Delete, Loading },
+  components: { Close, Plus, ElSkeleton, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElRadioGroup, ElRadio },
   props: {
     visible: { type: Boolean, default: false },
     nodeData: { type: Object, default: () => ({}) },
@@ -195,14 +201,12 @@ export default {
     const loading = ref(false)
     const detailData = ref({})
     const apiError = ref('')
-    const debugMode = ref(true) // 设置为 true 启用调试模式
     const showAddRelationDialog = ref(false)
     const entityLoading = ref(false)
     const availableEntities = ref([])
     const allEntities = ref([]) // 存储所有实体数据
     const entitiesLoaded = ref(false) // 标记是否已加载所有实体
     const submitting = ref(false)
-    const deletingRelation = ref(false)
     const relationFormRef = ref()
 
     const relationForm = reactive({
@@ -222,7 +226,6 @@ export default {
       effect: [
         { required: true, message: '请输入作用效果', trigger: 'blur' }
       ]
-      // 移除factorName的必填验证，因为作用因子可以为空
     }
 
     // 获取实体标识符的方法
@@ -234,16 +237,16 @@ export default {
       emit('close')
     }
 
-    // 获取效果类样式
-    const getEffectClass = (effect) => {
-      if (!effect) return ''
-      const effectLower = effect.toLowerCase()
-      if (effectLower.includes('促进') || effectLower.includes('增强') || effectLower.includes('激活')) {
-        return 'positive'
-      } else if (effectLower.includes('抑制') || effectLower.includes('减弱') || effectLower.includes('降低')) {
-        return 'negative'
+    // 格式化实体标签
+    const formatEntityLabel = (entity) => {
+      let label = entity.name || ''
+      if (entity.chinese_name) {
+        label += ` (${entity.chinese_name})`
       }
-      return 'neutral'
+      if (entity.entity_type) {
+        label += ` - ${entity.entity_type}`
+      }
+      return label
     }
 
     // 加载所有实体数据（只调用一次）
@@ -254,10 +257,9 @@ export default {
       try {
         console.log('开始加载所有实体数据...')
 
-        // 使用大的 page_size 来获取所有实体
+        // 调用 getEntities API 获取所有实体，使用大的 limit 参数
         const response = await KnowledgeGraph.getEntities({
-          page_size: 10000, // 设置一个足够大的数值来获取所有实体
-          page: 1
+          limit: 500 // 获取足够多的实体
         })
 
         console.log('API 响应:', response.data)
@@ -265,8 +267,8 @@ export default {
         if (response.data && response.data.message === 'success' && response.data.data) {
           const currentEntityId = getEntityIdentifier()
 
-          // 根据后端返回的数据结构获取实体列表
-          const entities = response.data.data.entities || response.data.data || []
+          // 根据后端返回数据结构，实体列表在 entities 字段中
+          const entities = response.data.data.entities || []
 
           // 过滤掉当前节点
           allEntities.value = entities.filter(entity => {
@@ -275,21 +277,16 @@ export default {
           })
 
           entitiesLoaded.value = true
-          console.log('所有实体加载成功，共:', allEntities.value.length, '个实体')
-          console.log('实体样例:', allEntities.value.slice(0, 3))
+
         } else {
-          console.error('加载实体失败，响应数据:', response.data)
           ElMessage.error('加载实体数据失败')
         }
       } catch (error) {
-        console.error('加载所有实体失败:', error)
         ElMessage.error('加载实体数据失败，请重试')
       } finally {
         entityLoading.value = false
       }
     }
-
-    // 随机获取指定数量的实体
     const getRandomEntities = (count = 10) => {
       if (allEntities.value.length === 0) return []
 
@@ -297,7 +294,7 @@ export default {
       return shuffled.slice(0, Math.min(count, allEntities.value.length))
     }
 
-    // 根据搜索关键词过滤实体
+    // 根据搜索关键词过滤实体（前端过滤）
     const filterEntitiesByQuery = (query) => {
       if (!query || query.trim() === '') return []
 
@@ -306,23 +303,25 @@ export default {
         const name = (entity.name || '').toLowerCase()
         const chineseName = (entity.chinese_name || '').toLowerCase()
         const abbreviation = (entity.abbreviation || '').toLowerCase()
-        const description = (entity.description || '').toLowerCase()
+        const entityType = (entity.entity_type || '').toLowerCase()
+        const subtype = (entity.subtype || '').toLowerCase()
 
         return name.includes(queryLower) ||
           chineseName.includes(queryLower) ||
           abbreviation.includes(queryLower) ||
-          description.includes(queryLower)
+          entityType.includes(queryLower) ||
+          subtype.includes(queryLower)
       })
     }
 
-    // 搜索实体方法 - 现在只做前端过滤
-    const searchEntities = (query) => {
+    // 搜索实体方法 - 纯前端过滤
+    const searchEntities = async (query) => {
       console.log('搜索关键词:', query)
 
       // 确保实体数据已加载
       if (!entitiesLoaded.value) {
-        console.log('实体数据未加载，等待加载完成...')
-        return
+        console.log('实体数据未加载，开始加载...')
+        await loadAllEntities()
       }
 
       if (!query || query.trim() === '') {
@@ -356,24 +355,15 @@ export default {
       apiError.value = ''
 
       try {
-        console.log('发送 API 请求，标识符:', entityIdentifier)
         const response = await KnowledgeGraph.getEntityDetail(entityIdentifier)
-        console.log('API 响应:', response)
 
         if (response.data && response.data.message === 'success') {
           detailData.value = response.data.data
-          console.log('节点详情加载成功:', detailData.value)
         } else {
           console.error('API 返回错误:', response.data)
           apiError.value = response.data?.message || 'API 返回未知错误'
         }
       } catch (error) {
-        console.error('加载节点详情失败:', error)
-        console.error('错误详情:', {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status
-        })
         apiError.value = `请求失败: ${error.message}`
       } finally {
         loading.value = false
@@ -402,48 +392,32 @@ export default {
           target_id: relationForm.direction === 'source'
             ? targetEntityId
             : currentEntityId,
-          factor_name: relationForm.factorName,
-          factor_type: relationForm.factorType,
+          factor_name: relationForm.factorName || '',
+          factor_type: relationForm.factorType || '',
           effect: relationForm.effect,
-          literature_name: relationForm.literature || null, // 这是文献名称
-          description: relationForm.description
+          literature: relationForm.literature || '',
+          description: relationForm.description || ''
         }
 
         console.log('创建关系数据:', relationData)
 
         const response = await KnowledgeGraph.createRelation(relationData)
-        if (response.data && response.status == 200) {
+        console.log('创建关系响应:', response)
+
+        if (response.data && (response.status === 200 || response.status === 201)) {
           ElMessage.success('关系创建成功')
           handleCloseAddDialog()
-          loadNodeDetail()
-          emit('relation-updated')
+          loadNodeDetail() // 重新加载节点详情
+          emit('relation-updated') // 通知父组件更新图表
+        } else {
+          throw new Error(response.data?.message || '创建关系失败')
         }
       } catch (error) {
         console.error('创建关系失败:', error)
-        ElMessage.error('创建关系失败')
+        const errorMessage = error.response?.data?.message || error.message || '创建关系失败，请重试'
+        ElMessage.error(errorMessage)
       } finally {
         submitting.value = false
-      }
-    }
-
-    // 删除关系
-    const deleteRelation = async (relation) => {
-      if (!relation.id) {
-        ElMessage.error('关系ID不存在，无法删除')
-        return
-      }
-
-      deletingRelation.value = true
-      try {
-        await KnowledgeGraph.deleteRelation(relation.id)
-        ElMessage.success('关系删除成功')
-        loadNodeDetail()
-        emit('relation-updated')
-      } catch (error) {
-        console.error('删除关系失败:', error)
-        ElMessage.error(error.response?.data?.message || '删除关系失败，请重试')
-      } finally {
-        deletingRelation.value = false
       }
     }
 
@@ -455,7 +429,7 @@ export default {
         targetEntity: null,
         factorName: '',
         factorType: '',
-        effect: '', // 重置作用效果
+        effect: '',
         literature: '',
         description: ''
       })
@@ -468,8 +442,8 @@ export default {
     // 监听对话框打开状态
     watch(showAddRelationDialog, async (isOpen) => {
       if (isOpen) {
-        console.log('新增关系对话框打开')
-        // 对话框打开时，先确保加载所有实体数据
+        console.log('新增关系对话框打开，开始加载实体数据')
+        // 对话框打开时，确保加载所有实体数据
         await loadAllEntities()
         // 然后显示随机的10个实体
         searchEntities('')
@@ -478,7 +452,6 @@ export default {
 
     // 监听组件显示和节点数据变化
     watch(() => [props.visible, props.nodeData], ([visible, nodeData]) => {
-      console.log('Watch triggered:', { visible, nodeData })
       if (visible && nodeData && getEntityIdentifier()) {
         loadNodeDetail()
       }
@@ -488,22 +461,19 @@ export default {
       loading,
       detailData,
       apiError,
-      debugMode,
       showAddRelationDialog,
       entityLoading,
       availableEntities,
       submitting,
-      deletingRelation,
       relationFormRef,
       relationForm,
       relationRules,
       getEntityIdentifier,
       close,
-      getEffectClass,
+      formatEntityLabel,
       loadNodeDetail,
       searchEntities,
       handleAddRelation,
-      deleteRelation,
       handleCloseAddDialog
     }
   }
@@ -511,47 +481,41 @@ export default {
 </script>
 
 <style scoped>
-.card-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 999;
-}
-
+/* 基础样式 */
 .node-info-card {
   position: fixed;
-  width: 520px;
-  max-height: 80vh;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   z-index: 1000;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 480px;
+  max-width: 90vw;
+  max-height: 80vh;
+  font-family: 'Arial', sans-serif;
   overflow: hidden;
-  border: 1px solid #e1e5e9;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-header {
+  padding: 12px 20px;
+  background-color: #f7f9fc;
+  border-bottom: 1px solid #e1e5e9;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0;
 }
 
 .card-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
   color: #333;
+  font-weight: 600;
 }
 
 .header-actions {
   display: flex;
-  align-items: center;
   gap: 8px;
 }
 
@@ -559,34 +523,21 @@ export default {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px;
+  padding: 4px;
   border-radius: 4px;
-  color: #666;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
+  color: #888;
 }
 
 .close-btn:hover {
-  background: #e9ecef;
-  color: #333;
-}
-
-.loading {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  background-color: #f0f0f0;
 }
 
 .card-content {
-  max-height: calc(80vh - 80px);
+  padding: 20px;
   overflow-y: auto;
+  flex-grow: 1;
+  background-color: #fff;
 }
 
 .loading-content {
@@ -594,21 +545,16 @@ export default {
 }
 
 .section {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f1f3f4;
-}
-
-.section:last-child {
-  border-bottom: none;
+  margin-bottom: 20px;
 }
 
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: #555;
   margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .section-header {
@@ -616,9 +562,11 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-/* 节点信息显示 */
+/* 节点信息样式 */
 .node-info-display {
   display: flex;
   flex-direction: column;
@@ -626,48 +574,46 @@ export default {
 }
 
 .node-header {
-  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-/* 新增样式：将level显示在name旁边 */
 .node-name-with-level {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 10px;
 }
 
 .node-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2c3e50;
 }
 
 .level-badge-inline {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 12px;
-  font-size: 11px;
-  font-weight: 500;
   color: white;
+  font-size: 12px;
+  font-weight: bold;
 }
 
-.level-badge-inline.level-1 {
-  background-color: #FF6B6B;
+.level-1 {
+  background-color: #ff6b6b;
 }
 
-.level-badge-inline.level-2 {
-  background-color: #4ECDC4;
+.level-2 {
+  background-color: #4ecdc4;
 }
 
-.level-badge-inline.level-3 {
-  background-color: #45B7D1;
+.level-3 {
+  background-color: #45b7d1;
 }
 
 .chinese-name {
   font-size: 14px;
-  color: #666;
+  color: #67C23A;
   font-style: italic;
 }
 
@@ -675,67 +621,86 @@ export default {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
 }
 
-.level-badge {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-weight: 500;
-  color: white;
-}
-
-.level-badge.level-1 {
-  background: #FF6B6B;
-}
-
-.level-badge.level-2 {
-  background: #4ECDC4;
-}
-
-.level-badge.level-3 {
-  background: #45B7D1;
-}
-
-.entity-type,
-.entity-subtype {
-  font-size: 11px;
-  background: #e9ecef;
-  padding: 3px 8px;
+.entity-type {
+  background-color: #f0f2f5;
+  padding: 2px 8px;
   border-radius: 4px;
-  color: #666;
+  font-size: 12px;
+  color: #606266;
+}
+
+.entity-subtype {
+  background-color: #e6f7ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #1890ff;
 }
 
 .node-abbreviation {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  margin-top: 8px;
+  font-size: 14px;
 }
 
 .node-abbreviation .label {
-  font-weight: 500;
-  color: #666;
+  font-weight: 600;
+  color: #555;
 }
 
 .node-abbreviation .value {
-  color: #333;
-  font-weight: 500;
-}
-
-.label {
-  font-weight: 500;
   color: #666;
 }
 
-.value {
+/* 统计数据样式 */
+.stats-display {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  text-align: center;
+}
+
+.stat-item {
+  background-color: #f7f9fc;
+  padding: 15px 10px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
   color: #333;
 }
 
-/* 基础信息展示 */
+.stat-label {
+  font-size: 12px;
+  color: #888;
+}
+
+.stat-item.primary {
+  background-color: #e6f7ff;
+  border-left: 4px solid #1890ff;
+}
+
+.stat-item.positive {
+  background-color: #f6ffed;
+  border-left: 4px solid #52c41a;
+}
+
+.stat-item.negative {
+  background-color: #fff2e8;
+  border-left: 4px solid #fa8c16;
+}
+
+.stat-item.neutral {
+  background-color: #f0f0f0;
+  border-left: 4px solid #d9d9d9;
+}
+
+/* 基础信息样式 */
 .basic-info {
   display: flex;
   flex-direction: column;
@@ -744,368 +709,328 @@ export default {
 
 .info-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  align-items: flex-start;
+  font-size: 14px;
 }
 
 .info-item .label {
-  font-weight: 500;
-  color: #666;
+  font-weight: 600;
+  color: #555;
   min-width: 80px;
+  flex-shrink: 0;
 }
 
 .info-item .value {
-  color: #333;
+  color: #666;
+  word-break: break-all;
 }
 
-/* 错误信息 */
+/* 错误信息样式 */
 .error-message {
   text-align: center;
   padding: 20px;
-  color: #666;
+  background-color: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 6px;
 }
 
 .error-message h4 {
+  color: #ff4d4f;
   margin: 0 0 8px 0;
-  color: #e74c3c;
 }
 
 .error-message p {
-  margin: 8px 0;
-  font-size: 14px;
+  color: #ff7875;
+  margin: 0 0 12px 0;
 }
 
 .retry-btn {
-  background: #409eff;
+  background-color: #ff4d4f;
   color: white;
   border: none;
   padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
 }
 
 .retry-btn:hover {
-  background: #337ecc;
+  background-color: #ff7875;
 }
 
-/* 统计显示 */
-.stats-display {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.stat-item {
+/* 关系管理样式 */
+.relation-management {
   text-align: center;
-  padding: 16px 8px;
-  border-radius: 8px;
-  border: 2px solid;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  border: 1px dashed #d0d0d0;
 }
 
-.stat-item.primary {
-  background: rgba(64, 158, 255, 0.05);
-  border-color: #409eff;
-}
-
-.stat-item.positive {
-  background: rgba(76, 175, 80, 0.05);
-  border-color: #4CAF50;
-}
-
-.stat-item.negative {
-  background: rgba(255, 107, 107, 0.05);
-  border-color: #FF6B6B;
-}
-
-.stat-item.neutral {
-  background: rgba(158, 158, 158, 0.05);
-  border-color: #9E9E9E;
-}
-
-.stat-value {
-  display: block;
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
+.management-note {
   color: #666;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
 }
 
-/* 按钮样式 */
 .add-relation-btn {
-  background: #409eff;
+  background-color: #409eff;
   color: white;
   border: none;
   padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s;
+  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 4px;
+  transition: background-color 0.2s;
 }
 
 .add-relation-btn:hover {
-  background: #337ecc;
+  background-color: #337ecc;
 }
 
-/* 关系组样式 */
-.relation-group {
-  margin-bottom: 20px;
+/* 实体选择下拉框样式 */
+.entity-option {
+  padding: 4px 0;
 }
 
-.group-title {
-  font-size: 13px;
+.entity-option .entity-name {
   font-weight: 600;
+  color: #303133;
+  margin-bottom: 2px;
+}
+
+.entity-option .entity-meta {
+  font-size: 12px;
+  color: #909399;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.entity-option .chinese-name {
+  color: #67C23A;
+}
+
+.entity-option .entity-type {
+  background-color: #f0f2f5;
+  padding: 1px 6px;
+  border-radius: 3px;
   color: #606266;
-  margin: 0 0 12px 0;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #f0f0f0;
 }
 
-.relation-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.entity-option .entity-level {
+  background-color: #409EFF;
+  color: white;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
 }
 
-.relation-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 16px;
-  background: #fafbfc;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
-}
-
-.relation-item:hover {
-  background: #f5f7fa;
-  border-color: #409eff;
-}
-
-.relation-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* 关系流程显示 */
-.relation-flow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.entity-box {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 2px solid;
-}
-
-.entity-box.source {
-  border-color: #4ECDC4;
-  background: rgba(78, 205, 196, 0.05);
-}
-
-.entity-box.target {
-  border-color: #FF6B6B;
-  background: rgba(255, 107, 107, 0.05);
-}
-
-.entity-name {
-  font-weight: 600;
-  font-size: 13px;
-  color: #333;
-}
-
-.entity-meta {
+.search-tip {
   margin-top: 4px;
 }
 
-.arrow-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.factor-info {
-  text-align: center;
-}
-
-.factor-name {
-  font-weight: 600;
-  color: #333;
+.search-tip .tip-text {
   font-size: 12px;
+  color: #909399;
+  font-style: italic;
 }
 
-.factor-effect {
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 500;
-}
-
-.factor-effect.positive {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
-}
-
-.factor-effect.negative {
-  background: rgba(244, 67, 54, 0.1);
-  color: #f44336;
-}
-
-.factor-effect.neutral {
-  background: rgba(158, 158, 158, 0.1);
-  color: #9E9E9E;
-}
-
-.arrow {
-  font-size: 16px;
-  color: #666;
-  font-weight: bold;
-}
-
-.relation-description {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.description-text {
-  color: #555;
-  line-height: 1.4;
-}
-
-.delete-relation-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  color: #f56c6c;
-  transition: all 0.2s;
-}
-
-.delete-relation-btn:hover:not(:disabled) {
-  background: rgba(245, 108, 108, 0.1);
-}
-
-.delete-relation-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-/* 空状态 */
-.empty-relations {
-  text-align: center;
-  padding: 40px 20px;
-  color: #666;
-}
-
-.empty-message {
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.empty-description {
-  font-size: 12px;
-  color: #999;
-}
-
-/* 对话框样式 */
+/* Dialog footer styles */
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-}
-
-.cancel-btn,
-.confirm-btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
+  gap: 10px;
 }
 
 .cancel-btn {
-  background: #f5f5f5;
-  color: #666;
+  background-color: #f5f5f5;
+  color: #606266;
+  border: 1px solid #dcdfe6;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
 .cancel-btn:hover {
-  background: #e9e9e9;
+  background-color: #e6e8eb;
+  border-color: #c0c4cc;
 }
 
 .confirm-btn {
-  background: #409eff;
+  background-color: #409eff;
   color: white;
+  border: 1px solid #409eff;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
 .confirm-btn:hover:not(:disabled) {
-  background: #337ecc;
+  background-color: #337ecc;
+  border-color: #337ecc;
 }
 
 .confirm-btn:disabled {
-  background: #a0cfff;
+  background-color: #a0cfff;
+  border-color: #a0cfff;
   cursor: not-allowed;
 }
 
-/* 响应式设计 */
-@media (max-width: 600px) {
+/* Card overlay for backdrop */
+.card-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Form styles within dialog */
+.el-form-item {
+  margin-bottom: 18px;
+}
+
+.el-form-item__label {
+  font-weight: 600;
+  color: #606266;
+}
+
+.el-input__inner,
+.el-textarea__inner {
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+  transition: border-color 0.2s;
+}
+
+.el-input__inner:focus,
+.el-textarea__inner:focus {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+
+.el-radio {
+  margin-right: 20px;
+  margin-bottom: 8px;
+}
+
+.el-radio__label {
+  font-size: 14px;
+  color: #606266;
+}
+
+.el-select {
+  width: 100%;
+}
+
+.el-select .el-input__inner {
+  cursor: pointer;
+}
+
+.el-select-dropdown {
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
   .node-info-card {
-    width: 90vw;
-    max-width: 480px;
-    left: 5vw !important;
-    top: 10vh !important;
+    width: 95vw;
+    max-height: 90vh;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%);
   }
 
   .stats-display {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 10px;
   }
 
-  .relation-flow {
+  .stat-item {
+    padding: 12px 8px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .card-content {
+    padding: 15px;
+  }
+
+  .section-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: 8px;
   }
 
-  .arrow-container {
-    order: 2;
-    flex-direction: row;
-    justify-content: center;
+  .add-relation-btn {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .node-name {
+    font-size: 18px;
   }
 
-  .arrow {
-    transform: rotate(90deg);
+  .stats-display {
+    grid-template-columns: 1fr;
   }
 
   .node-name-with-level {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 6px;
   }
 }
 
-/* 滚动条样式 */
+/* Animation for card appearance */
+.node-info-card {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Loading skeleton customization */
+.el-skeleton__item {
+  background: linear-gradient(90deg, #f0f0f0 25%, rgba(240, 240, 240, 0.5) 50%, #f0f0f0 75%);
+  background-size: 400% 100%;
+  animation: loading 1.4s ease infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Custom scrollbar */
 .card-content::-webkit-scrollbar {
   width: 6px;
 }
@@ -1122,5 +1047,42 @@ export default {
 
 .card-content::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* Hover effects for interactive elements */
+.node-info-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+.close-btn:focus,
+.add-relation-btn:focus,
+.retry-btn:focus,
+.cancel-btn:focus,
+.confirm-btn:focus {
+  outline: 2px solid #409eff;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .node-info-card {
+    border: 2px solid #000;
+  }
+
+  .card-header {
+    border-bottom-color: #000;
+  }
+
+  .section-title {
+    border-bottom-color: #000;
+  }
 }
 </style>

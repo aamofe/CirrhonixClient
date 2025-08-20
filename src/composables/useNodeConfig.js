@@ -1,24 +1,23 @@
 // composables/useNodeConfig.js
 import { ref } from 'vue'
 import {
-  BugFilled, // 病原体 - 病毒/细菌
+  Bug, // 病原体 - 病毒/细菌
   Aim, // 感染部位 - 瞄准/定位
-  Stethoscope, // 临床症状 - 听诊器
+  FirstAidKit, // 临床症状 - 医疗/健康
   Search, // 诊断方法 - 搜索/检查
-  Pills, // 治疗方案 - 药丸（需要自定义或使用MedicineFilled）
+  MedicineBox, // 治疗方案 - 药物/药箱
   Shield, // 预防策略 - 盾牌
   CopyDocument, // 肝硬化阶段 - 分层
-  WarnTriangleFilled, // 并发症 - 警告三角
+  Warning, // 并发症 - 警告三角
 } from '@element-plus/icons-vue'
 
 export const useNodeConfig = () => {
-  // 节点类型配置
   const nodeTypes = ref([
     {
       label: '病原体',
       value: 'pathogen',
       color: '#ff6b6b',
-      icon: BugFilled,
+      icon: Bug,
     },
     {
       label: '感染部位',
@@ -30,7 +29,7 @@ export const useNodeConfig = () => {
       label: '临床症状',
       value: 'clinical_symptom',
       color: '#45b7d1',
-      icon: Stethoscope,
+      icon: FirstAidKit,
     },
     {
       label: '诊断方法',
@@ -42,7 +41,7 @@ export const useNodeConfig = () => {
       label: '治疗方案',
       value: 'treatment_plan',
       color: '#ffeaa7',
-      icon: Pills,
+      icon: MedicineBox,
     },
     {
       label: '预防策略',
@@ -60,11 +59,10 @@ export const useNodeConfig = () => {
       label: '并发症',
       value: 'complication',
       color: '#ff7675',
-      icon: WarnTriangleFilled,
+      icon: Warning,
     },
   ])
 
-  // 关系类型配置
   const relationTypes = ref([
     { label: '致病', value: 'causes' },
     { label: '表现为', value: 'manifests_as' },
@@ -78,29 +76,20 @@ export const useNodeConfig = () => {
     { label: '关联', value: 'associated_with' },
   ])
 
-  // 工具方法
   const getNodeConfig = (type) => {
     return (
       nodeTypes.value.find((node) => node.value === type) || {
         label: type,
         value: type,
         color: '#95a5a6',
-        icon: BugFilled, // 默认图标
+        icon: Bug, // 默认图标
       }
     )
   }
 
-  const getNodeColor = (type) => {
-    return getNodeConfig(type).color
-  }
-
-  const getNodeLabel = (type) => {
-    return getNodeConfig(type).label
-  }
-
-  const getNodeIcon = (type) => {
-    return getNodeConfig(type).icon
-  }
+  const getNodeColor = (type) => getNodeConfig(type).color
+  const getNodeLabel = (type) => getNodeConfig(type).label
+  const getNodeIcon = (type) => getNodeConfig(type).icon
 
   const getRelationLabel = (type) => {
     const relation = relationTypes.value.find((rel) => rel.value === type)

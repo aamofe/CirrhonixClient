@@ -56,13 +56,11 @@ export default {
     // Event handlers for bus
     const handleEntitySelected = (entity) => {
       globalState.selectedEntity = entity
-      console.log('选中实体 (via bus):', entity)
-      // You can add more logic here, e.g., fetching entity details
+
     }
 
     const handleEntityDeselected = () => {
       globalState.selectedEntity = null
-      console.log('取消选中实体 (via bus)')
     }
 
     const handleGraphUpdated = () => {

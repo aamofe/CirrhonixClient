@@ -429,6 +429,7 @@ export function useGraphVisualization(networkContainer, props) {
 
       const nodes = new DataSet(
         graphData.nodes.map((entity) => {
+          // ... (节点构建逻辑保持不变)
           const isHighlighted = nodesToHighlight.has(entity.id)
           const levelConfig = getLevelConfig(entity.level)
           const position = layout[entity.id] || { x: 0, y: 0 }
@@ -474,23 +475,38 @@ export function useGraphVisualization(networkContainer, props) {
         })
       )
 
+      // 边数据集构建逻辑 - 重点修改这里
       const edges = new DataSet(
-        (graphData.edges || []).map((edge, index) => ({
-          id: edge.id || `edge-${index}`,
-          from: edge.source_entity.id,
-          to: edge.target_entity.id,
-          label: edge.factor?.factor_name || '',
-          width: graphSettings.edgeWidth || 2,
-          color: { color: '#888888', highlight: '#333333', opacity: 0.6 },
-          smooth: { type: 'curvedCW', roundness: 0.2 },
-          arrows: { to: { enabled: true, scaleFactor: 1.2 } },
-          font: { size: 10, color: '#555' },
-          originalData: edge,
-        }))
+        (graphData.edges || []).map((aggregatedEdge, index) => {
+          const factorCount = aggregatedEdge.factors?.length || 0
+          const firstFactor = aggregatedEdge.factors?.[0]
+
+          // 根据关系数量设置 label
+          const labelText = graphSettings.showLabels
+            ? factorCount > 1
+              ? `${firstFactor?.factor_name || ''} 等 (${factorCount})`
+              : firstFactor?.factor_name || ''
+            : ''
+
+          return {
+            // 使用 useGraphData 中生成的唯一id
+            id: aggregatedEdge.id,
+            from: aggregatedEdge.from,
+            to: aggregatedEdge.to,
+            label: labelText,
+            width: graphSettings.edgeWidth || 2,
+            color: { color: '#888888', highlight: '#333333', opacity: 0.6 },
+            smooth: { type: 'curvedCW', roundness: 0.2 },
+            arrows: { to: { enabled: true, scaleFactor: 1.2 } },
+            font: { size: 10, color: '#555' },
+            // originalData 存储完整的聚合对象
+            originalData: aggregatedEdge.originalData,
+          }
+        })
       )
 
       const optimizedNetworkOptions = {
-        // 确保初始化时物理引擎关闭，以应用自定义布局
+        // ... (vis.js配置保持不变)
         physics: { enabled: false },
         interaction: {
           hover: true,
@@ -576,6 +592,7 @@ export function useGraphVisualization(networkContainer, props) {
             params.pointer.canvas
           )
           closeNodeCard()
+          // 将完整的聚合数据传递给 showEdgeInfo
           showEdgeInfo(edgeData.originalData, {
             x: canvasPosition.x,
             y: canvasPosition.y,

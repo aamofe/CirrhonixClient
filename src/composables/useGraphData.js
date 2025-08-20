@@ -1,37 +1,36 @@
 // src/composables/useGraphData.js
 import { ref, watch } from 'vue'
-import KnowledgeGraph from '@/api/knowledgeGraph' // Assuming this path is correct
+import KnowledgeGraph from '@/api/knowledgeGraph'
 
 export function useGraphData() {
   const internalGraphData = ref({ nodes: [], edges: [] })
   const isLoading = ref(false)
 
-  // 处理API返回的嵌套数组数据
+  // 处理API返回数据，直接使用聚合后的edges
   const processApiResponse = (apiData) => {
-    let processedNodes = []
+    let processedNodes = apiData.nodes || []
     let processedEdges = []
 
-    // 处理nodes - 检查是否为嵌套数组
-    if (apiData.nodes && Array.isArray(apiData.nodes)) {
-      if (apiData.nodes.length > 0 && Array.isArray(apiData.nodes[0])) {
-        // 嵌套数组，需要展平
-        processedNodes = apiData.nodes.flat()
-      } else {
-        // 普通数组
-        processedNodes = apiData.nodes
-      }
+    if (apiData.edges && Array.isArray(apiData.edges)) {
+      apiData.edges.forEach((aggregatedEdge) => {
+        // 如果aggregatedEdge有效，创建一个vis.js的edge对象
+        if (
+          aggregatedEdge &&
+          aggregatedEdge.source_entity &&
+          aggregatedEdge.target_entity
+        ) {
+          processedEdges.push({
+            // 使用一个唯一的组合ID来确保唯一性，例如：源节点ID-目标节点ID
+            id: `${aggregatedEdge.source_entity.id}-${aggregatedEdge.target_entity.id}`,
+            from: aggregatedEdge.source_entity.id,
+            to: aggregatedEdge.target_entity.id,
+            // 将整个聚合后的对象作为originalData存储，方便后续访问所有关系
+            originalData: aggregatedEdge,
+          })
+        }
+      })
     }
 
-    // 处理edges - 检查是否为嵌套数组
-    if (apiData.edges && Array.isArray(apiData.edges)) {
-      if (apiData.edges.length > 0 && Array.isArray(apiData.edges[0])) {
-        // 嵌套数组，需要展平
-        processedEdges = apiData.edges.flat()
-      } else {
-        // 普通数组
-        processedEdges = apiData.edges
-      }
-    }
     return {
       nodes: processedNodes,
       edges: processedEdges,
@@ -43,7 +42,7 @@ export function useGraphData() {
     isLoading.value = true
     try {
       const params = {
-        limit: 500, // Or whatever default limit you need
+        limit: 500,
       }
       const response = await KnowledgeGraph.getGraph(params)
       if (response.data.data) {
@@ -57,12 +56,11 @@ export function useGraphData() {
     }
   }
 
-  // Initial load
   loadGraphData()
 
   return {
     graphData: internalGraphData,
     isLoading,
-    loadGraphData, // Expose if you need to manually trigger reload
+    loadGraphData,
   }
 }

@@ -1,257 +1,274 @@
 <template>
-  <div v-if="visible" class="edge-info-card" :style="{ left: position.x + 'px', top: position.y + 'px' }" @click.stop>
-    <div class="card-header">
-      <h3 class="card-title">关系详情</h3>
-      <div class="header-actions">
-        <el-popconfirm title="确定要删除这个关系吗？" confirm-button-text="确定" cancel-button-text="取消" icon="el-icon-info"
-          icon-color="#f56c6c" @confirm="handleDelete">
-          <template #reference>
-            <button class="delete-btn" :disabled="deleting">
-              <el-icon v-if="!deleting">
-                <Delete />
-              </el-icon>
-              <el-icon v-else class="loading">
-                <Loading />
-              </el-icon>
-            </button>
-          </template>
-        </el-popconfirm>
-        <button @click="close" class="close-btn">
-          <el-icon>
-            <Close />
-          </el-icon>
-        </button>
-      </div>
-    </div>
+  <div v-if="visible">
+    <!-- 背景遮罩层 -->
+    <div class="card-overlay" @click="close"></div>
 
-    <div class="card-content">
-      <!-- 关系信息 -->
-      <div class="section">
-        <div class="section-title">关系信息</div>
-        <div class="relation-flow">
-          <div class="entity-box source">
-            <div class="entity-name">{{ edgeData.source_entity.name }}</div>
-            <div class="entity-meta">
-              <span class="level-badge" :class="`level-${edgeData.source_entity.level}`">
-                Level {{ edgeData.source_entity.level }}
-              </span>
-              <span v-if="edgeData.source_entity.entity_type" class="entity-type">
-                {{ edgeData.source_entity.entity_type }}
-              </span>
-            </div>
-            <div v-if="edgeData.source_entity.subtype" class="entity-subtype">
-              {{ edgeData.source_entity.subtype }}
-            </div>
-          </div>
-
-          <div class="arrow-container">
-            <div class="factor-info">
-              <div class="factor-name">{{ edgeData.factor.factor_name }}</div>
-              <div class="factor-type">{{ edgeData.factor.factor_type }}</div>
-            </div>
-            <div class="arrow">→</div>
-          </div>
-
-          <div class="entity-box target">
-            <div class="entity-name">{{ edgeData.target_entity.name }}</div>
-            <div class="entity-meta">
-              <span class="level-badge" :class="`level-${edgeData.target_entity.level}`">
-                Level {{ edgeData.target_entity.level }}
-              </span>
-              <span v-if="edgeData.target_entity.entity_type" class="entity-type">
-                {{ edgeData.target_entity.entity_type }}
-              </span>
-            </div>
-            <div v-if="edgeData.target_entity.subtype" class="entity-subtype">
-              {{ edgeData.target_entity.subtype }}
-            </div>
-          </div>
+    <!-- 卡片主体 -->
+    <div class="edge-info-card" :style="{ left: position.x + 'px', top: position.y + 'px' }" @click.stop
+      @wheel.stop="handleWheel" @touchmove.stop="handleTouchMove">
+      <div class="card-header">
+        <h3 class="card-title">关系详情 ({{ edgeData.factors?.length || 0 }} 条)</h3>
+        <div class="header-actions">
+          <button @click="close" class="close-btn">
+            <el-icon>
+              <Close />
+            </el-icon>
+          </button>
         </div>
       </div>
 
-      <!-- 影响因子详情 -->
-      <div class="section">
-        <div class="section-title">影响因子</div>
-        <div class="factor-details">
-          <div class="factor-item">
-            <span class="label">因子名称：</span>
-            <span class="value">{{ edgeData.factor.factor_name }}</span>
-          </div>
-          <div class="factor-item">
-            <span class="label">因子类型：</span>
-            <span class="value">{{ edgeData.factor.factor_type }}</span>
-          </div>
-          <div class="factor-item">
-            <span class="label">作用效果：</span>
-            <span class="value effect" :class="getEffectClass(edgeData.factor.effect)">
-              {{ edgeData.factor.effect }}
-            </span>
-          </div>
-          <div v-if="edgeData.factor.description" class="factor-description">
-            <span class="label">详细描述：</span>
-            <p class="description-text">{{ edgeData.factor.description }}</p>
+      <div class="card-content">
+        <div class="section">
+          <div class="section-title">实体信息</div>
+          <div class="relation-flow">
+            <div class="entity-box source">
+              <div class="entity-name">{{ edgeData.source_entity.name }}</div>
+              <div class="entity-meta">
+                <span class="level-badge" :class="`level-${edgeData.source_entity.level}`">
+                  Level {{ edgeData.source_entity.level }}
+                </span>
+                <span v-if="edgeData.source_entity.entity_type" class="entity-type">
+                  {{ edgeData.source_entity.entity_type }}
+                </span>
+              </div>
+            </div>
+            <div class="arrow-container">
+              <div class="arrow">→</div>
+            </div>
+            <div class="entity-box target">
+              <div class="entity-name">{{ edgeData.target_entity.name }}</div>
+              <div class="entity-meta">
+                <span class="level-badge" :class="`level-${edgeData.target_entity.level}`">
+                  Level {{ edgeData.target_entity.level }}
+                </span>
+                <span v-if="edgeData.target_entity.entity_type" class="entity-type">
+                  {{ edgeData.target_entity.entity_type }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 支撑文献 -->
-      <div class="section">
-        <div class="section-title">支撑文献</div>
-        <div class="literature-info">
-          <div class="literature-header">
-            <h4 class="literature-title">{{ edgeData.literature.title }}</h4>
-            <div class="literature-meta">
-              <span class="publication-date">{{ formatDate(edgeData.literature.publication_date) }}</span>
-              <span class="citation-count">引用: {{ edgeData.literature.citation_count }}</span>
+        <div v-if="edgeData.factors && edgeData.factors.length > 0" class="section">
+          <div class="section-title">详细关系列表</div>
+          <div class="factors-list">
+            <div v-for="(factor, index) in edgeData.factors" :key="factor.id" class="factor-item">
+              <div class="factor-index">{{ index + 1 }}.</div>
+              <div class="factor-details">
+                <div class="detail-row">
+                  <span class="label">因子：</span>
+                  <span class="value">{{ factor.factor_name || '无' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">类型：</span>
+                  <span class="value">{{ factor.factor_type || '无' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">效果：</span>
+                  <span class="value effect" :class="getEffectClass(factor.effect)">
+                    {{ factor.effect || '无' }}
+                  </span>
+                </div>
+                <div v-if="factor.description" class="detail-row">
+                  <span class="label">描述：</span>
+                  <span class="value">{{ factor.description }}</span>
+                </div>
+                <div v-if="factor.literature" class="detail-row literature-row">
+                  <span class="label">文献：</span>
+                  <button @click.stop="viewArticleDetail(factor.literature)" class="literature-link" type="button">
+                    {{ factor.literature.title || '无标题' }}
+                  </button>
+                </div>
+                <div class="delete-action">
+                  <el-popconfirm title="确定要删除这条关系吗？" confirm-button-text="确定" cancel-button-text="取消"
+                    @confirm="handleDelete(factor.id)">
+                    <template #reference>
+                      <button class="delete-btn" @click.stop>
+                        <el-icon>
+                          <Delete />
+                        </el-icon>
+                      </button>
+                    </template>
+                  </el-popconfirm>
+                </div>
+              </div>
             </div>
           </div>
-
-          <div class="literature-details">
-            <div class="detail-row">
-              <span class="label">作者：</span>
-              <span class="value"> {{ Array.isArray(edgeData.literature.authors)
-                ? edgeData.literature.authors.join(', ')
-                : edgeData.literature.authors || '未知' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">期刊：</span>
-              <span class="value">{{ edgeData.literature.source }}</span>
-            </div>
-            <div v-if="edgeData.literature.doi" class="detail-row">
-              <span class="label">DOI：</span>
-              <span class="value doi">{{ edgeData.literature.doi }}</span>
-            </div>
-            <div v-if="edgeData.literature.pmid" class="detail-row">
-              <span class="label">PMID：</span>
-              <span class="value">{{ edgeData.literature.pmid }}</span>
-            </div>
-          </div>
-
-          <div v-if="edgeData.literature.keywords?.length" class="keywords">
-            <span class="label">关键词：</span>
-            <div class="keyword-tags">
-              <span v-for="keyword in edgeData.literature.keywords" :key="keyword" class="keyword-tag">
-                {{ keyword }}
-              </span>
-            </div>
-          </div>
-
-          <div class="literature-actions">
-            <a v-if="edgeData.literature.url" :href="edgeData.literature.url" target="_blank"
-              class="view-literature-btn">
-              查看原文
-            </a>
-          </div>
+        </div>
+        <div v-else class="section">
+          <p class="empty-message">暂无关系详情。</p>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- 遮罩层 -->
-  <div v-if="visible" class="card-overlay" @click="close"></div>
 </template>
 
-<script>
-import { ref } from 'vue'
-import { Close, Delete, Loading } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import KnowledgeGraph from '@/api/knowledgeGraph' // 根据你的实际路径调整
+<script setup>
+import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElPopconfirm } from 'element-plus'
+import { Close, Delete } from '@element-plus/icons-vue'
+import KnowledgeGraph from '@/api/knowledgeGraph'
 
-export default {
-  name: 'EdgeInfoCard',
-  components: { Close, Delete, Loading },
-  props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    edgeData: {
-      type: Object,
-      default: () => ({})
-    },
-    position: {
-      type: Object,
-      default: () => ({ x: 0, y: 0 })
-    }
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false,
   },
-  emits: ['close', 'deleted'],
-  setup(props, { emit }) {
-    const deleting = ref(false)
+  position: {
+    type: Object,
+    default: () => ({ x: 0, y: 0 }),
+  },
+  edgeData: {
+    type: Object,
+    default: () => ({}),
+  },
+})
 
-    const close = () => {
-      emit('close')
+const emit = defineEmits(['close', 'deleted'])
+
+const router = useRouter()
+const deleting = ref(false)
+
+// 监听visible变化，控制body滚动
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    // 卡片显示时禁用body滚动
+    document.body.style.overflow = 'hidden'
+    document.body.style.paddingRight = '15px' // 防止滚动条消失导致的抖动
+  } else {
+    // 卡片隐藏时恢复body滚动
+    document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
+
+    // 清理触摸事件的临时数据
+    const cardContent = document.querySelector('.edge-info-card .card-content')
+    if (cardContent) {
+      delete cardContent._startY
+      delete cardContent._startScrollTop
     }
+  }
+})
 
-    const handleDelete = async () => {
-      if (!props.edgeData.id) {
-        ElMessage.error('关系ID不存在，无法删除')
-        return
-      }
+// 处理滚轮事件
+const handleWheel = (event) => {
+  const cardContent = event.currentTarget.querySelector('.card-content')
+  const { scrollTop, scrollHeight, clientHeight } = cardContent
 
-      deleting.value = true
+  // 计算滚动方向
+  const scrollingUp = event.deltaY < 0
+  const scrollingDown = event.deltaY > 0
 
-      try {
-        await KnowledgeGraph.deleteRelation(props.edgeData.id)
-        ElMessage.success('关系删除成功')
-        // emit('deleted', props.edgeData.id)
-        close()
-      } catch (error) {
-        console.error('删除关系失败:', error)
-        ElMessage.error(error.response?.data?.message || '删除关系失败，请重试')
-      } finally {
-        deleting.value = false
-      }
-    }
+  // 检查是否到达边界
+  const atTop = scrollTop <= 0
+  const atBottom = scrollTop >= scrollHeight - clientHeight
 
-    const getEffectClass = (effect) => {
-      if (!effect) return ''
-      const effectLower = effect.toLowerCase()
-      if (effectLower.includes('促进') || effectLower.includes('增强') || effectLower.includes('激活')) {
-        return 'positive'
-      } else if (effectLower.includes('抑制') || effectLower.includes('减弱') || effectLower.includes('降低')) {
-        return 'negative'
-      }
-      return 'neutral'
-    }
+  // 只在到达边界时阻止默认行为，其他情况允许卡片内滚动
+  if ((scrollingUp && atTop) || (scrollingDown && atBottom)) {
+    event.preventDefault()
+  } else {
+    // 允许卡片内容滚动
+    cardContent.scrollTop += event.deltaY
+    event.preventDefault() // 阻止页面滚动，但允许卡片内滚动
+  }
+}
 
-    const formatDate = (dateStr) => {
-      if (!dateStr) return ''
-      const date = new Date(dateStr)
-      return date.toLocaleDateString('zh-CN')
-    }
+// 处理触摸移动事件
+const handleTouchMove = (event) => {
+  const cardContent = event.currentTarget.querySelector('.card-content')
+  const { scrollTop, scrollHeight, clientHeight } = cardContent
 
-    return {
-      deleting,
-      close,
-      handleDelete,
-      getEffectClass,
-      formatDate
-    }
+  const touch = event.touches[0]
+  if (!cardContent._startY) {
+    cardContent._startY = touch.clientY
+    cardContent._startScrollTop = scrollTop
+    return
+  }
+
+  const deltaY = cardContent._startY - touch.clientY
+  const newScrollTop = cardContent._startScrollTop + deltaY
+
+  // 检查边界
+  const atTop = newScrollTop <= 0
+  const atBottom = newScrollTop >= scrollHeight - clientHeight
+
+  // 允许卡片内容滚动，只在边界时阻止
+  if (!atTop && !atBottom) {
+    cardContent.scrollTop = newScrollTop
+    event.preventDefault()
+  } else if ((atTop && deltaY < 0) || (atBottom && deltaY > 0)) {
+    event.preventDefault()
+  }
+}
+
+const close = () => {
+  emit('close')
+}
+
+const handleDelete = async (factorId) => {
+  if (!factorId) {
+    ElMessage.error('关系ID不存在，无法删除')
+    return
+  }
+
+  deleting.value = true
+  try {
+    await KnowledgeGraph.deleteRelation(factorId)
+    ElMessage.success('关系删除成功')
+    emit('deleted', factorId)
+  } catch (error) {
+    console.error('删除关系失败:', error)
+    ElMessage.error(error.response?.data?.message || '删除关系失败，请重试')
+  } finally {
+    deleting.value = false
+  }
+}
+
+const getEffectClass = (effect) => {
+  if (!effect) return ''
+  const effectLower = effect.toLowerCase()
+  if (effectLower.includes('促进') || effectLower.includes('增强') || effectLower.includes('激活')) {
+    return 'positive'
+  } else if (effectLower.includes('抑制') || effectLower.includes('减弱') || effectLower.includes('降低')) {
+    return 'negative'
+  }
+  return 'neutral'
+}
+
+const viewArticleDetail = (article) => {
+  console.log('点击文献链接:', article)
+  if (article && article.id) {
+    close()
+    setTimeout(() => {
+      router.push({ name: "literature-detail", params: { id: article.id } })
+    }, 100)
+  } else {
+    ElMessage.warning('文献ID不存在，无法跳转')
   }
 }
 </script>
 
 <style scoped>
+.edge-info-card {
+  position: fixed;
+  z-index: 10000;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
 .card-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 999;
-}
-
-.edge-info-card {
-  position: fixed;
-  width: 480px;
-  max-height: 600px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  overflow: hidden;
-  border: 1px solid #e1e5e9;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
 }
 
 .card-header {
@@ -259,58 +276,15 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .card-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: #333;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.delete-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  color: #f56c6c;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.delete-btn:hover:not(:disabled) {
-  background: rgba(245, 108, 108, 0.1);
-  color: #f56c6c;
-}
-
-.delete-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.loading {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  color: #1f2937;
 }
 
 .close-btn {
@@ -319,24 +293,26 @@ export default {
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
-  color: #666;
+  color: #6b7280;
   transition: all 0.2s;
 }
 
 .close-btn:hover {
-  background: #e9ecef;
-  color: #333;
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .card-content {
   padding: 0;
-  max-height: 520px;
+  max-height: calc(80vh - 72px);
   overflow-y: auto;
+  scroll-behavior: smooth;
+  /* 平滑滚动 */
 }
 
 .section {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f1f3f4;
+  padding: 20px;
+  border-bottom: 1px solid #f3f4f6;
 }
 
 .section:last-child {
@@ -344,305 +320,200 @@ export default {
 }
 
 .section-title {
-  font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: #374151;
   margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 14px;
 }
 
-/* 关系流程显示 */
 .relation-flow {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .entity-box {
   flex: 1;
-  min-width: 120px;
   padding: 12px;
-  border: 2px solid #e9ecef;
+  background: #f9fafb;
   border-radius: 8px;
-  background: #fafbfc;
-}
-
-.entity-box.source {
-  border-color: #4ECDC4;
-  background: rgba(78, 205, 196, 0.05);
-}
-
-.entity-box.target {
-  border-color: #FF6B6B;
-  background: rgba(255, 107, 107, 0.05);
+  border: 1px solid #e5e7eb;
 }
 
 .entity-name {
   font-weight: 600;
-  color: #333;
-  margin-bottom: 6px;
-  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 4px;
 }
 
 .entity-meta {
   display: flex;
-  gap: 6px;
-  margin-bottom: 4px;
-  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .level-badge {
-  font-size: 11px;
+  font-size: 12px;
   padding: 2px 6px;
-  border-radius: 12px;
+  border-radius: 4px;
   font-weight: 500;
-  color: white;
 }
 
-.level-badge.level-1 {
-  background: #FF6B6B;
+.level-1 {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-.level-badge.level-2 {
-  background: #4ECDC4;
+.level-2 {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
-.level-badge.level-3 {
-  background: #45B7D1;
+.level-3 {
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .entity-type {
-  font-size: 11px;
-  color: #666;
-  background: #e9ecef;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.entity-subtype {
-  font-size: 11px;
-  color: #888;
-  font-style: italic;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .arrow-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  min-width: 80px;
-}
-
-.factor-info {
-  text-align: center;
-}
-
-.factor-name {
-  font-weight: 600;
-  color: #333;
-  font-size: 12px;
-}
-
-.factor-type {
-  font-size: 11px;
-  color: #666;
 }
 
 .arrow {
-  font-size: 20px;
-  color: #666;
-  font-weight: bold;
+  font-size: 18px;
+  color: #6b7280;
 }
 
-/* 因子详情 */
-.factor-details {
+.factors-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
 }
 
 .factor-item {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.factor-description {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.label {
-  font-weight: 500;
-  color: #666;
-  font-size: 13px;
-  min-width: 70px;
-  flex-shrink: 0;
-}
-
-.value {
-  color: #333;
-  font-size: 13px;
-}
-
-.value.effect {
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 500;
-  font-size: 12px;
-}
-
-.effect.positive {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
-}
-
-.effect.negative {
-  background: rgba(244, 67, 54, 0.1);
-  color: #f44336;
-}
-
-.effect.neutral {
-  background: rgba(158, 158, 158, 0.1);
-  color: #9E9E9E;
-}
-
-.description-text {
-  margin: 0;
-  line-height: 1.5;
-  color: #555;
-  font-size: 13px;
-}
-
-/* 文献信息 */
-.literature-info {
-  display: flex;
-  flex-direction: column;
   gap: 12px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  position: relative;
 }
 
-.literature-header {
-  border-bottom: 1px solid #f1f3f4;
-  padding-bottom: 8px;
-}
-
-.literature-title {
-  margin: 0 0 6px 0;
-  font-size: 14px;
+.factor-index {
   font-weight: 600;
-  color: #333;
-  line-height: 1.4;
+  color: #6b7280;
+  min-width: 24px;
 }
 
-.literature-meta {
-  display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: #666;
-}
-
-.citation-count {
-  color: #4CAF50;
-  font-weight: 500;
-}
-
-.literature-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.factor-details {
+  flex: 1;
 }
 
 .detail-row {
   display: flex;
+  margin-bottom: 8px;
   align-items: flex-start;
   gap: 8px;
-  font-size: 12px;
 }
 
-.detail-row .label {
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  font-weight: 500;
+  color: #374151;
   min-width: 50px;
-  flex-shrink: 0;
+  font-size: 14px;
 }
 
-.doi {
-  font-family: 'Monaco', 'Menlo', monospace;
-  font-size: 11px;
-  background: #f8f9fa;
-  padding: 2px 4px;
-  border-radius: 3px;
+.value {
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.4;
+  flex: 1;
 }
 
-.keywords {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.keyword-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.keyword-tag {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 11px;
+.effect.positive {
+  color: #059669;
   font-weight: 500;
 }
 
-.literature-actions {
-  padding-top: 8px;
-  border-top: 1px solid #f1f3f4;
+.effect.negative {
+  color: #dc2626;
+  font-weight: 500;
 }
 
-.view-literature-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  background: #1976d2;
-  color: white;
+.effect.neutral {
+  color: #6b7280;
+}
+
+.literature-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.literature-link:hover {
+  color: #1d4ed8;
   text-decoration: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
+}
+
+.delete-action {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #ef4444;
   transition: all 0.2s;
 }
 
-.view-literature-btn:hover {
-  background: #1565c0;
-  text-decoration: none;
+.delete-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
-/* 响应式设计 */
-@media (max-width: 600px) {
-  .edge-info-card {
-    width: 90vw;
-    max-width: 400px;
-    left: 5vw !important;
-    top: 10vh !important;
-  }
+.empty-message {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  margin: 0;
+}
 
-  .relation-flow {
-    flex-direction: column;
-    align-items: stretch;
-  }
+/* 自定义滚动条 */
+.card-content::-webkit-scrollbar {
+  width: 6px;
+}
 
-  .arrow-container {
-    order: 2;
-    flex-direction: row;
-    justify-content: center;
-  }
+.card-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
 
-  .arrow {
-    transform: rotate(90deg);
-  }
+.card-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.card-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 </style>
