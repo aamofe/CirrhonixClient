@@ -42,7 +42,7 @@ export default {
         const response = await Search.getSearchHistory();
         this.searchHistory = response.data.items || [];
       } catch (error) {
-        console.error("获取搜索历史失败", error);
+;
         this.$message.error("获取搜索历史失败");
       } finally {
         this.loading = false;

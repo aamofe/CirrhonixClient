@@ -206,7 +206,7 @@ const handleDelete = async (factorId) => {
     close()
     bus.emit('graph-updated')
   } catch (error) {
-    console.error('删除关系失败:', error)
+
     ElMessage.error(error.response?.data?.message || '删除关系失败，请重试')
   } finally {
     deleting.value = false
@@ -225,7 +225,7 @@ const getEffectClass = (effect) => {
 }
 
 const viewArticleDetail = (article) => {
-  console.log('点击文献链接:', article)
+
   if (article && article.id) {
     close()
     setTimeout(() => {

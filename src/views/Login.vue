@@ -113,7 +113,7 @@ export default {
         this.setUserId(userInfo.id)
         this.$router.push("/")
       } catch (err) {
-        console.log(err)
+
         this.$message.error(err?.response?.data?.message || "登录请求出错")
       }
     },
@@ -149,7 +149,7 @@ export default {
       }
     },
 
-    // 登出
+
     async logout() {
       try {
         await User.logout()
@@ -164,7 +164,7 @@ export default {
       }
     },
 
-    // 获取当前用户信息
+
     async getProfile() {
       try {
         const response = await User.profile()

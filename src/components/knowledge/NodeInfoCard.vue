@@ -204,8 +204,8 @@ export default {
     const showAddRelationDialog = ref(false)
     const entityLoading = ref(false)
     const availableEntities = ref([])
-    const allEntities = ref([]) // 存储所有实体数据
-    const entitiesLoaded = ref(false) // 标记是否已加载所有实体
+    const allEntities = ref([])
+    const entitiesLoaded = ref(false)
     const submitting = ref(false)
     const relationFormRef = ref()
 
@@ -214,7 +214,7 @@ export default {
       targetEntity: null,
       factorName: '',
       factorType: '',
-      effect: '', // 作用效果，必填
+      effect: '',
       literature: '',
       description: ''
     })
@@ -228,7 +228,7 @@ export default {
       ]
     }
 
-    // 获取实体标识符的方法
+
     const getEntityIdentifier = () => {
       return props.nodeData.id || props.nodeData.name || null
     }
@@ -237,7 +237,7 @@ export default {
       emit('close')
     }
 
-    // 格式化实体标签
+
     const formatEntityLabel = (entity) => {
       let label = entity.name || ''
       if (entity.chinese_name) {
@@ -249,28 +249,28 @@ export default {
       return label
     }
 
-    // 加载所有实体数据（只调用一次）
+
     const loadAllEntities = async () => {
       if (entitiesLoaded.value) return
 
       entityLoading.value = true
       try {
-        console.log('开始加载所有实体数据...')
 
-        // 调用 getEntities API 获取所有实体，使用大的 limit 参数
+
+
         const response = await KnowledgeGraph.getEntities({
-          limit: 500 // 获取足够多的实体
+          limit: 500
         })
 
-        console.log('API 响应:', response.data)
+
 
         if (response.data && response.data.message === 'success' && response.data.data) {
           const currentEntityId = getEntityIdentifier()
 
-          // 根据后端返回数据结构，实体列表在 entities 字段中
+
           const entities = response.data.data.entities || []
 
-          // 过滤掉当前节点
+
           allEntities.value = entities.filter(entity => {
             const entityId = entity.id || entity.name
             return entityId !== currentEntityId
@@ -294,7 +294,7 @@ export default {
       return shuffled.slice(0, Math.min(count, allEntities.value.length))
     }
 
-    // 根据搜索关键词过滤实体（前端过滤）
+
     const filterEntitiesByQuery = (query) => {
       if (!query || query.trim() === '') return []
 
@@ -314,39 +314,39 @@ export default {
       })
     }
 
-    // 搜索实体方法 - 纯前端过滤
-    const searchEntities = async (query) => {
-      console.log('搜索关键词:', query)
 
-      // 确保实体数据已加载
+    const searchEntities = async (query) => {
+
+
+
       if (!entitiesLoaded.value) {
-        console.log('实体数据未加载，开始加载...')
+
         await loadAllEntities()
       }
 
       if (!query || query.trim() === '') {
-        // 没有搜索关键词时，随机展示10个实体
+
         availableEntities.value = getRandomEntities(10)
-        console.log('无搜索关键词，随机展示10个实体:', availableEntities.value.length)
+
       } else {
-        // 有搜索关键词时，根据关键词过滤
+
         const filtered = filterEntitiesByQuery(query)
-        availableEntities.value = filtered.slice(0, 50) // 限制显示前50个结果
-        console.log(`搜索关键词"${query}"的结果:`, availableEntities.value.length, '个实体')
+        availableEntities.value = filtered.slice(0, 50)
+
       }
     }
 
-    // 加载节点详细信息
+
     const loadNodeDetail = async () => {
       const entityIdentifier = getEntityIdentifier()
 
-      console.log('=== NodeInfoCard Debug ===')
-      console.log('Props nodeData:', props.nodeData)
-      console.log('Entity identifier:', entityIdentifier)
-      console.log('Visible:', props.visible)
+
+
+
+
 
       if (!entityIdentifier) {
-        console.error('节点数据缺少标识符')
+
         apiError.value = '节点数据缺少有效的标识符（id 或 name）'
         return
       }
@@ -360,7 +360,7 @@ export default {
         if (response.data && response.data.message === 'success') {
           detailData.value = response.data.data
         } else {
-          console.error('API 返回错误:', response.data)
+
           apiError.value = response.data?.message || 'API 返回未知错误'
         }
       } catch (error) {
@@ -370,7 +370,7 @@ export default {
       }
     }
 
-    // 处理新增关系
+
     const handleAddRelation = async () => {
       if (!relationFormRef.value) return
 
@@ -399,21 +399,21 @@ export default {
           description: relationForm.description || ''
         }
 
-        console.log('创建关系数据:', relationData)
+
 
         const response = await KnowledgeGraph.createRelation(relationData)
-        console.log('创建关系响应:', response)
+
 
         if (response.data && (response.status === 200 || response.status === 201)) {
           ElMessage.success('关系创建成功')
           handleCloseAddDialog()
-          loadNodeDetail() // 重新加载节点详情
-          emit('relation-updated') // 通知父组件更新图表
+          loadNodeDetail()
+          emit('relation-updated')
         } else {
           throw new Error(response.data?.message || '创建关系失败')
         }
       } catch (error) {
-        console.error('创建关系失败:', error)
+
         const errorMessage = error.response?.data?.message || error.message || '创建关系失败，请重试'
         ElMessage.error(errorMessage)
       } finally {
@@ -421,7 +421,7 @@ export default {
       }
     }
 
-    // 关闭新增关系对话框
+
     const handleCloseAddDialog = () => {
       showAddRelationDialog.value = false
       Object.assign(relationForm, {
@@ -439,18 +439,18 @@ export default {
       }
     }
 
-    // 监听对话框打开状态
+
     watch(showAddRelationDialog, async (isOpen) => {
       if (isOpen) {
-        console.log('新增关系对话框打开，开始加载实体数据')
-        // 对话框打开时，确保加载所有实体数据
+
+
         await loadAllEntities()
-        // 然后显示随机的10个实体
+
         searchEntities('')
       }
     })
 
-    // 监听组件显示和节点数据变化
+
     watch(() => [props.visible, props.nodeData], ([visible, nodeData]) => {
       if (visible && nodeData && getEntityIdentifier()) {
         loadNodeDetail()

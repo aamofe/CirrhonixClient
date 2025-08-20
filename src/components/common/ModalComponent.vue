@@ -28,14 +28,14 @@ export default {
     },
   },
   mounted() {
-    // 防止滚动
-    document.body.style.overflow = "hidden";
+
+    document.body.style.overflow = "hidden"
   },
   beforeUnmount() {
-    // 恢复滚动
-    document.body.style.overflow = "";
+
+    document.body.style.overflow = ""
   },
-};
+}
 </script>
 
 <style scoped>

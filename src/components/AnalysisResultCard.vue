@@ -140,7 +140,7 @@ import { useNodeConfig } from '@/composables/useNodeConfig'
 import { Close, Document, Loading, SuccessFilled, WarningFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
-// 常量定义
+
 const STATUS_CONFIG = {
   pending: { text: '等待中', icon: 'Loading', description: '任务正在等待执行中，请稍候...' },
   running: { text: '分析中', icon: 'Loading', description: '任务正在分析中，请耐心等待...' },
@@ -183,7 +183,7 @@ export default {
     const taskData = ref(null)
     const isLoading = ref(false)
 
-    // 计算属性
+
     const taskInfoList = computed(() => {
       if (!taskData.value) return []
 
@@ -218,7 +218,7 @@ export default {
       ]
     })
 
-    // API调用
+
     const loadTaskDetail = async () => {
       if (!props.taskId) return
 
@@ -229,14 +229,14 @@ export default {
           taskData.value = response.data.data
         }
       } catch (error) {
-        console.error("Error loading task detail:", error)
+
         ElMessage.error('加载任务详情失败')
       } finally {
         isLoading.value = false
       }
     }
 
-    // 监听器
+
     watch(() => [props.visible, props.taskId], ([visible, taskId]) => {
       if (visible && taskId) {
         loadTaskDetail()
@@ -246,14 +246,14 @@ export default {
       }
     }, { immediate: true })
 
-    // 工具方法
+
     const handleClose = () => emit('close')
 
     const getEntityNameFromRelation = (relation, type) => {
       const entity = type === 'source' ? relation.source_entity : relation.target_entity
       if (entity?.name) return entity.name
 
-      // 从entities数组中查找
+
       if (taskData.value?.entities) {
         const entityId = type === 'source' ? relation.source_entity_id : relation.target_entity_id
         const foundEntity = taskData.value.entities.find(e => e.id === entityId)

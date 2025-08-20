@@ -131,7 +131,7 @@ import {
   Plus,
 } from "@element-plus/icons-vue"
 
-// 导入爬虫API
+
 import Crawler from "@/api/Crawler"
 
 export default {
@@ -178,22 +178,22 @@ export default {
     this.fetchAutoSchedules()
   },
   methods: {
-    // 获取自动爬取任务列表
+
     async fetchAutoSchedules() {
       try {
-        // 暂时使用空数据，因为后端未实现该接口
+
         this.autoSchedules = []
 
-        // 当后端实现后可以使用以下代码
+
         const response = await Crawler.getSchedules()
         this.autoSchedules = response.data.data || []
       } catch (error) {
-        // console.error("获取自动爬取任务失败", error);
-        // this.$message.error("获取自动爬取任务失败");
+        ;
+
       }
     },
 
-    // 创建自动爬取任务
+
     async createSchedule() {
       if (!this.newSchedule.data_source_id) {
         this.$message.error("请选择数据源")
@@ -201,20 +201,20 @@ export default {
       }
 
       try {
-        // 注意：目前后端未实现该接口
+
         this.$message.info("自动爬取功能正在开发中")
         this.showNewScheduleModal = false
 
-        // 当后端实现后可以使用以下代码
+
         /*
-        // 准备查询参数
+        
         const queryParams = {
           keywords: this.newSchedule.keywords,
           max_results: this.newSchedule.max_results,
-          fields_of_study: "肝硬化" // 默认添加肝硬化作为研究领域
+          fields_of_study: "肝硬化" 
         }
         
-        // 准备创建的任务数据
+        
         const scheduleData = {
           data_source_id: this.newSchedule.data_source_id,
           interval: this.newSchedule.interval,
@@ -226,7 +226,7 @@ export default {
         this.showNewScheduleModal = false
         this.$message.success("自动爬取任务创建成功")
         
-        // 重置表单
+        
         this.newSchedule = {
           data_source_id: this.availableSources.length > 0 ? this.availableSources[0].id : "",
           interval: "weekly",
@@ -235,18 +235,18 @@ export default {
           is_active: true,
         }
         
-        // 刷新自动任务列表
+        
         await this.fetchAutoSchedules()
         */
       } catch (error) {
-        console.error("创建自动爬取任务失败", error)
+
         this.$message.error("创建自动爬取任务失败")
       }
     },
 
-    // 编辑自动爬取任务
+
     editSchedule(schedule) {
-      // 复制任务数据到表单
+
       this.newSchedule = {
         id: schedule.id,
         data_source_id: schedule.data_source_id,
@@ -258,18 +258,18 @@ export default {
       this.showNewScheduleModal = true
     },
 
-    // 切换自动爬取任务状态
+
     async toggleSchedule(schedule) {
       try {
-        // 注意：目前后端未实现该接口
+
         this.$message.info("自动爬取功能正在开发中")
 
-        // 当后端实现后可以使用以下代码
+
         /*
         const updatedStatus = !schedule.is_active
         await Crawler.updateSchedule(schedule.id, { is_active: updatedStatus })
  
-        // 更新本地数据
+        
         const index = this.autoSchedules.findIndex((s) => s.id === schedule.id)
         if (index !== -1) {
           this.autoSchedules[index].is_active = updatedStatus
@@ -278,12 +278,12 @@ export default {
         this.$message.success(`任务已${updatedStatus ? "启用" : "禁用"}`)
         */
       } catch (error) {
-        console.error("更新任务状态失败", error)
+
         this.$message.error("更新任务状态失败")
       }
     },
 
-    // 删除自动爬取任务
+
     async deleteSchedule(schedule) {
       if (
         !confirm(
@@ -295,32 +295,32 @@ export default {
         return
 
       try {
-        // 注意：目前后端未实现该接口
+
         this.$message.info("自动爬取功能正在开发中")
 
-        // 当后端实现后可以使用以下代码
+
         /*
         await Crawler.deleteSchedule(schedule.id)
  
-        // 从列表中移除
+        
         this.autoSchedules = this.autoSchedules.filter(
           (s) => s.id !== schedule.id
         )
         this.$message.success("任务删除成功")
         */
       } catch (error) {
-        console.error("删除任务失败", error)
+
         this.$message.error("删除任务失败")
       }
     },
 
-    // 获取数据源名称
+
     getSourceName(sourceId) {
       const source = this.availableSources.find((s) => s.id === sourceId)
       return source ? source.name : sourceId
     },
 
-    // 格式化频率
+
     formatFrequency(frequency) {
       switch (frequency) {
         case "daily":

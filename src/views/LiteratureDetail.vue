@@ -312,7 +312,7 @@ export default {
         const response = await Literature.getAnalyzeList(null, this.articleId)
         this.analysisTasks = response.data.data || []
       } catch (error) {
-        console.error("Error loading analysis tasks:", error)
+
       }
     },
 
@@ -329,7 +329,7 @@ export default {
 
         await this.loadAnalysisTasks()
       } catch (error) {
-        console.error("Error starting analysis:", error)
+
         this.$message.error(error.response?.data?.message || '启动分析失败')
       } finally {
         this.isAnalyzing = false
@@ -338,23 +338,23 @@ export default {
 
     async showTaskDetail(task) {
       try {
-        // console.log('点击任务:', task)
+
         this.taskId = task.id
-        // console.log("父文件中id:", this.taskId)
+
         await this.$nextTick()
         this.showAnalysisCard = true
 
-        // console.log('卡片状态:', this.showAnalysisCard, 'TaskId:', this.taskId) // 调试日志
+
       } catch (error) {
-        console.error("Error loading task detail:", error)
+
         this.$message.error('加载任务详情失败')
       }
     },
 
     closeAnalysisCard() {
-      console.log('closeAnalysisCard called in parent')
+
       this.showAnalysisCard = false
-      this.taskId = 0 // 清空 taskId
+      this.taskId = 0
     },
 
     getStatusText(status) {
@@ -400,7 +400,7 @@ export default {
           this.translateText(this.article.abstract, 'abstract')
         }
       } catch (error) {
-        console.error("Error loading article details:", error)
+
         this.$message.error(error.response.data.message)
       } finally {
         this.isLoading = false
@@ -414,7 +414,7 @@ export default {
           this.personalNotes = interaction.personal_notes || ""
         }
       } catch (error) {
-        console.error("Error loading user interaction:", error)
+
       }
     },
     async loadUserCollections() {
@@ -432,7 +432,7 @@ export default {
           .filter(collection => collection.has_literature)
           .map(collection => collection.id)
       } catch (error) {
-        console.error("Error loading user collections:", error)
+
       }
     },
     formatDate(dateString) {
@@ -458,7 +458,7 @@ export default {
           this.translatedAbstract = response.data.data.translated
         }
       } catch (error) {
-        console.error(`Error translating ${type}:`, error)
+
       }
     },
     async saveNotes() {
@@ -471,7 +471,7 @@ export default {
         })
         this.$message.success('笔记已保存')
       } catch (error) {
-        console.error("Error saving notes:", error)
+
         this.$message.error('笔记保存失败')
       } finally {
         this.isSavingNote = false
@@ -519,26 +519,26 @@ export default {
       this.isGeneratingSummary = true
 
       try {
-        // 这里可以调用AI生成摘要的接口
-        // 假设接口返回的结构中包含summary字段
+
+
         // const response = await AIService.generateSummary(this.article.id)
         // this.aiSummary = response.data.summary
 
-        // 模拟API调用
+
         setTimeout(() => {
           this.aiSummary = `这篇文章研究了非酒精性脂肪性肝炎向肝硬化转变的分子机制。通过多组学分析揭示了NASH患者肝脏中炎症反应与细胞外基质累积的分子调控网络，发现了TGF-β1信号通路在肝纤维化进展中的关键作用。研究结果为肝纤维化的精准治疗提供了新的靶点。`
           this.isGeneratingSummary = false
         }, 2000)
       } catch (error) {
-        console.error("Error generating AI summary:", error)
+
         this.isGeneratingSummary = false
       }
     },
     onCollectionsUpdated(updatedCollections) {
-      // 更新本地收藏夹数据
+
       this.collections = updatedCollections
 
-      // 更新是否已收藏到任意收藏夹
+
       this.isInAnyCollection = updatedCollections.some(collection => collection.selected)
     },
 

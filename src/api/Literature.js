@@ -4,10 +4,10 @@ const url = {
   list: '/literature/list',
   detail: (id) => `/literature/detail/${id}`,
   interaction: '/literature/interaction',
-  interactionDetail: (id) => `/literature/interaction/${id}`, // 新增：获取特定文献的交互
+  interactionDetail: (id) => `/literature/interaction/${id}`,
   collections: '/literature/collections',
   collection: (id) => `/literature/collection/${id}`,
-  updateCollections: (id) => `/literature/collections/update/${id}`, // 新增：更新文献与收藏夹关系
+  updateCollections: (id) => `/literature/collections/update/${id}`,
   search: '/literature/search',
   uploadSinglePaper: '/literature/upload',
   uploadBatchPaper: '/literature/batch',

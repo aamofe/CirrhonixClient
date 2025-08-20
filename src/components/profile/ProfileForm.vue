@@ -12,13 +12,7 @@
               <span>更换头像</span>
             </div>
           </div>
-          <input
-            type="file"
-            ref="fileInput"
-            accept="image/*"
-            style="display: none"
-            @change="handleFileChange"
-          />
+          <input type="file" ref="fileInput" accept="image/*" style="display: none" @change="handleFileChange" />
         </div>
 
         <!-- 右侧信息 -->
@@ -83,11 +77,7 @@
         <!-- 左侧头像 -->
         <div class="avatar-section">
           <div class="avatar-container">
-            <img
-              :src="avatarUrl || defaultAvatar"
-              alt="用户头像"
-              class="avatar-image"
-            />
+            <img :src="avatarUrl || defaultAvatar" alt="用户头像" class="avatar-image" />
             <div class="avatar-overlay" @click="triggerFileInput">
               <span>更换头像</span>
             </div>
@@ -113,23 +103,13 @@
 
           <div class="form-group">
             <label for="introduction">个人简介</label>
-            <textarea
-              id="introduction"
-              v-model="form.introduction"
-              class="form-textarea"
-              rows="4"
-            ></textarea>
+            <textarea id="introduction" v-model="form.introduction" class="form-textarea" rows="4"></textarea>
           </div>
 
           <div class="form-group">
             <label for="interest">研究方向</label>
-            <textarea
-              id="interest"
-              v-model="form.interest"
-              class="form-textarea"
-              rows="3"
-              placeholder="多个研究方向请用逗号分隔"
-            ></textarea>
+            <textarea id="interest" v-model="form.interest" class="form-textarea" rows="3"
+              placeholder="多个研究方向请用逗号分隔"></textarea>
           </div>
         </div>
       </div>
@@ -146,10 +126,10 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import { Edit, Lock, SwitchButton } from "@element-plus/icons-vue";
-import defaultAvatar from "@/assets/female.png";
-import User from "@/api/User";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import { Edit, Lock, SwitchButton } from "@element-plus/icons-vue"
+import defaultAvatar from "@/assets/female.png"
+import User from "@/api/User"
 
 export default {
   name: "ProfileForm",
@@ -176,78 +156,78 @@ export default {
       avatarFile: null,
       defaultAvatar,
       loading: false,
-    };
+    }
   },
   created() {
-    // 初始化表单数据
-    this.initForm();
+
+    this.initForm()
   },
   methods: {
     initForm() {
-      // 只保留需要编辑的字段
+
       this.form = {
         introduction: this.user.introduction || "",
         interest: this.user.interest || "",
-      };
+      }
 
-      // 设置头像
+
       if (this.user.avatar_url) {
-        this.avatarUrl = this.user.avatar_url;
+        this.avatarUrl = this.user.avatar_url
       }
     },
     startEditing() {
-      this.isEditing = true;
-      this.initForm(); // 重新初始化表单，确保最新数据
+      this.isEditing = true
+      this.initForm()
     },
     cancelEditing() {
-      this.isEditing = false;
-      this.initForm(); // 重置表单数据
+      this.isEditing = false
+      this.initForm()
     },
     triggerFileInput() {
-      this.$refs.fileInput.click();
+      this.$refs.fileInput.click()
     },
     handleFileChange(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+      const file = event.target.files[0]
+      if (!file) return
 
-      // 处理文件上传预览
-      const reader = new FileReader();
+
+      const reader = new FileReader()
       reader.onload = (e) => {
-        this.avatarUrl = e.target.result;
-        this.avatarFile = file;
-      };
-      reader.readAsDataURL(file);
+        this.avatarUrl = e.target.result
+        this.avatarFile = file
+      }
+      reader.readAsDataURL(file)
     },
     async handleSubmit() {
-      this.loading = true;
+      this.loading = true
       try {
-        const formData = new FormData();
-        formData.append("introduction", this.form.introduction);
-        formData.append("interest", this.form.interest);
+        const formData = new FormData()
+        formData.append("introduction", this.form.introduction)
+        formData.append("interest", this.form.interest)
 
         if (this.avatarFile) {
-          formData.append("avatar", this.avatarFile);
+          formData.append("avatar", this.avatarFile)
         }
 
-        await User.preference(formData);
+        await User.preference(formData)
         this.$emit("profileUpdated", {
           ...this.user,
           introduction: this.form.introduction,
           interest: this.form.interest,
           ...(this.avatarUrl && { avatar_url: this.avatarUrl }),
-        });
+        })
 
-        this.$message.success("个人信息更新成功");
-        this.isEditing = false;
+        this.$message.success("个人信息更新成功")
+        this.isEditing = false
       } catch (error) {
-        console.error("更新用户信息失败", error);
-        this.$message.error("个人信息更新失败");
+        ;
+        this.$message.error("个人信息更新失败")
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
   },
-};
+}
 </script>
 
 <style scoped>

@@ -237,7 +237,7 @@
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
 import Literature from "@/api/Literature"
-// 使用 Element Plus 图标组件
+
 import {
   Document,
   Upload,
@@ -260,9 +260,9 @@ export default {
   },
   data() {
     return {
-      uploadMode: "single", // 'single' 或 'batch'
+      uploadMode: "single",
 
-      // 单个上传
+
       singleUpload: {
         file: null,
         title: "",
@@ -277,7 +277,7 @@ export default {
       },
       uploading: false,
 
-      // 批量上传
+
       batchFiles: [],
       batchUpload: {
         extractionMode: "filename",
@@ -288,7 +288,7 @@ export default {
       uploadProgress: 0,
       uploadedCount: 0,
 
-      // 上传结果提示
+
       uploadResult: {
         show: false,
         success: false,
@@ -297,7 +297,7 @@ export default {
     }
   },
   methods: {
-    // 单个文件上传相关方法
+
     triggerFileInput() {
       this.$refs.fileInput.click()
     },
@@ -327,7 +327,7 @@ export default {
     },
 
     async uploadSinglePaper() {
-      // 验证必填字段
+
       if (!this.singleUpload.file) {
         this.$message.error("请选择PDF文件")
         return
@@ -351,7 +351,7 @@ export default {
       this.uploading = true
 
       try {
-        // 准备表单数据
+
         const formData = new FormData()
         formData.append("pdf_file", this.singleUpload.file)
         formData.append("title", this.singleUpload.title)
@@ -360,7 +360,7 @@ export default {
         formData.append("publication_type", this.singleUpload.publication_type)
         formData.append("language", this.singleUpload.language)
 
-        // 添加可选字段
+
         if (this.singleUpload.doi) {
           formData.append("doi", this.singleUpload.doi)
         }
@@ -377,7 +377,7 @@ export default {
           formData.append("url", this.singleUpload.url)
         }
 
-        // 发送请求
+
         const response = await Literature.uploadPaper(formData)
 
         if (response.data.data && response.data.data.success) {
@@ -387,7 +387,7 @@ export default {
           throw new Error(response.data.data?.message || "上传失败")
         }
       } catch (error) {
-        console.error("上传文献失败", error)
+
         this.showUploadResult(
           false,
           `上传失败: ${error.message || "未知错误"}`
@@ -413,7 +413,7 @@ export default {
       this.$refs.fileInput.value = ""
     },
 
-    // 批量上传相关方法
+
     triggerBatchFileInput() {
       this.$refs.batchFileInput.click()
     },
@@ -464,7 +464,7 @@ export default {
       this.uploadedCount = 0
 
       try {
-        // 准备批量上传参数
+
         const batchParams = {
           extraction_mode: this.batchUpload.extractionMode,
           default_type: this.batchUpload.defaultType,
@@ -475,12 +475,12 @@ export default {
         const successUploads = []
         const failedUploads = []
 
-        // 逐个上传文件
+
         for (let i = 0; i < this.batchFiles.length; i++) {
           const file = this.batchFiles[i]
           const formData = new FormData()
 
-          // 添加文件和批量上传参数
+
           formData.append("pdf_file", file)
           formData.append("extraction_mode", batchParams.extraction_mode)
           formData.append("default_type", batchParams.default_type)
@@ -504,14 +504,14 @@ export default {
             })
           }
 
-          // 更新进度
+
           this.uploadedCount = i + 1
           this.uploadProgress = Math.round(
             (this.uploadedCount / totalFiles) * 100
           )
         }
 
-        // 显示上传结果
+
         if (failedUploads.length === 0) {
           this.showUploadResult(
             true,
@@ -528,7 +528,7 @@ export default {
             true,
             `成功上传 ${successUploads.length} 个文件，${failedUploads.length} 个文件失败`
           )
-          // 保留失败的文件
+
           this.batchFiles = this.batchFiles.filter((_, index) => {
             return failedUploads.some(
               (fail) => fail.name === this.batchFiles[index].name
@@ -540,7 +540,7 @@ export default {
       }
     },
 
-    // 上传结果提示
+
     showUploadResult(success, message) {
       this.uploadResult = {
         show: true,
@@ -548,7 +548,7 @@ export default {
         message,
       }
 
-      // 5秒后自动关闭
+
       setTimeout(() => {
         this.closeUploadResult()
       }, 5000)

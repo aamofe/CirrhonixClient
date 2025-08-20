@@ -82,22 +82,22 @@ export default {
     },
     async handleSave() {
       try {
-        // 获取选中的收藏夹ID
+
         const selectedIds = this.collectionsData
           .filter(collection => collection.selected)
           .map(collection => collection.id)
 
-        // 调用API更新收藏夹
+
         await Literature.updateLiteratureCollections(this.literatureId, {
           collection_ids: selectedIds
         })
 
-        // 传递更新后的收藏夹数据给父组件
+
         this.$emit("collections-updated", this.collectionsData)
         this.$emit("update:visible", false)
         this.$message.success('收藏夹已更新')
       } catch (error) {
-        console.error("Error updating collections:", error)
+
         this.$message.error('更新收藏夹失败')
       }
     },
@@ -113,7 +113,7 @@ export default {
       if (!name) return
 
       try {
-        // 创建新收藏夹
+
         const response = await Literature.createCollection({
           name,
           description: '',
@@ -121,12 +121,12 @@ export default {
 
         const newCollection = response.data.data
 
-        // 将文献添加到新收藏夹
+
         await Literature.updateCollection(newCollection.id, {
           add_literature_ids: [this.literatureId]
         })
 
-        // 添加新创建的收藏夹并设为选中
+
         const updatedCollection = {
           ...newCollection,
           selected: true,
@@ -135,12 +135,12 @@ export default {
 
         this.collectionsData.push(updatedCollection)
 
-        // 清空输入
+
         this.newCollectionName = ""
 
         this.$message.success('收藏夹创建成功')
       } catch (error) {
-        console.error("Error creating collection:", error)
+
         this.$message.error('创建收藏夹失败')
       }
     }

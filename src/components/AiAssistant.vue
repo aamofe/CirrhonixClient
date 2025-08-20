@@ -2,11 +2,7 @@
 <template>
   <div class="ai-assistant-container" :class="{ 'is-expanded': isExpanded }">
     <!-- 收起状态的浮动按钮 -->
-    <div
-      v-if="!isExpanded"
-      class="ai-assistant-button"
-      @click="toggleAssistant"
-    >
+    <div v-if="!isExpanded" class="ai-assistant-button" @click="toggleAssistant">
       <div class="assistant-avatar">
         <img src="@/assets/assistant-avatar.png" alt="AI助手" />
       </div>
@@ -18,11 +14,7 @@
       <!-- 聊天头部 -->
       <div class="assistant-header">
         <div class="assistant-info">
-          <img
-            src="@/assets/assistant-avatar.png"
-            alt="AI助手"
-            class="assistant-avatar-sm"
-          />
+          <img src="@/assets/assistant-avatar.png" alt="AI助手" class="assistant-avatar-sm" />
           <div class="assistant-title">
             <h3>智能助手</h3>
             <span class="assistant-status">在线</span>
@@ -49,21 +41,13 @@
         </div>
 
         <!-- 聊天消息 -->
-        <div
-          v-for="(message, index) in messages"
-          :key="index"
-          class="message-item"
-          :class="{
-            'message-user': message.isUser,
-            'message-ai': !message.isUser,
-          }"
-        >
+        <div v-for="(message, index) in messages" :key="index" class="message-item" :class="{
+          'message-user': message.isUser,
+          'message-ai': !message.isUser,
+        }">
           <div class="message-content">
             <!-- 使用MarkdownDisplayer组件显示AI的消息 -->
-            <MarkdownDisplayer
-              v-if="!message.isUser"
-              :content="message.content"
-            />
+            <MarkdownDisplayer v-if="!message.isUser" :content="message.content" />
             <!-- 用户的消息仍然使用普通格式 -->
             <p v-else>{{ message.content }}</p>
           </div>
@@ -82,10 +66,7 @@
 
       <!-- 功能上拉框 -->
       <div class="assistant-features" v-if="literatureId">
-        <div
-          class="feature-panel"
-          :class="{ 'is-expanded': isFeaturePanelOpen }"
-        >
+        <div class="feature-panel" :class="{ 'is-expanded': isFeaturePanelOpen }">
           <div class="feature-items">
             <div class="feature-item" @click="handleTranslate">
               <span class="feature-icon">🔠</span>
@@ -101,11 +82,7 @@
             </div>
           </div>
         </div>
-        <div
-          class="feature-toggle"
-          @click="toggleFeaturePanel"
-          :class="{ 'is-expanded': isFeaturePanelOpen }"
-        >
+        <div class="feature-toggle" @click="toggleFeaturePanel" :class="{ 'is-expanded': isFeaturePanelOpen }">
           <span class="toggle-icon">{{ isFeaturePanelOpen ? "▼" : "▲" }}</span>
           <span>文献工具</span>
         </div>
@@ -113,18 +90,9 @@
 
       <!-- 输入区域 -->
       <div class="assistant-input">
-        <textarea
-          v-model="userInput"
-          placeholder="输入您的问题..."
-          @keydown.enter.prevent="sendMessage"
-          rows="1"
-          ref="inputArea"
-        ></textarea>
-        <button
-          :disabled="!userInput.trim() || isLoading"
-          @click="sendMessage"
-          class="send-button"
-        >
+        <textarea v-model="userInput" placeholder="输入您的问题..." @keydown.enter.prevent="sendMessage" rows="1"
+          ref="inputArea"></textarea>
+        <button :disabled="!userInput.trim() || isLoading" @click="sendMessage" class="send-button">
           发送
         </button>
       </div>
@@ -133,11 +101,11 @@
 </template>
 
 <script>
-import AI from "@/api/Ai"; // 假设您的AI类导入路径
-import MarkdownDisplayer from "@/components/markdown/MarkdownDisplayer.vue";
+import AI from "@/api/Ai"
+import MarkdownDisplayer from "@/components/markdown/MarkdownDisplayer.vue"
 
-const STORAGE_KEY = "aiAssistantMessages";
-const CONTEXT_KEY = "aiAssistantContext";
+const STORAGE_KEY = "aiAssistantMessages"
+const CONTEXT_KEY = "aiAssistantContext"
 
 export default {
   name: "AiAssistant",
@@ -158,36 +126,36 @@ export default {
       isLoading: false,
       currentContext: [],
       isFeaturePanelOpen: false,
-    };
+    }
   },
   created() {
-    this.loadChatHistory();
+    this.loadChatHistory()
   },
   methods: {
     toggleAssistant() {
-      this.isExpanded = !this.isExpanded;
+      this.isExpanded = !this.isExpanded
       if (this.isExpanded) {
         this.$nextTick(() => {
-          this.$refs.inputArea.focus();
-          this.scrollToBottom();
-        });
+          this.$refs.inputArea.focus()
+          this.scrollToBottom()
+        })
       }
     },
 
     toggleFeaturePanel() {
-      this.isFeaturePanelOpen = !this.isFeaturePanelOpen;
+      this.isFeaturePanelOpen = !this.isFeaturePanelOpen
     },
 
     async sendMessage(e) {
-      if (e.shiftKey && e.key === "Enter") return; // 允许shift+enter换行
+      if (e.shiftKey && e.key === "Enter") return
 
-      const message = this.userInput.trim();
-      if (!message || this.isLoading) return;
+      const message = this.userInput.trim()
+      if (!message || this.isLoading) return
 
-      // 添加用户消息到聊天
-      this.addMessage(message, true);
-      this.userInput = "";
-      this.isLoading = true;
+
+      this.addMessage(message, true)
+      this.userInput = ""
+      this.isLoading = true
 
       try {
         const response = await AI.query({
@@ -195,204 +163,203 @@ export default {
           context_literature_ids: this.currentContext,
           system_message: `您是LiverScholar肝硬化文献智能检索系统的AI助手，请基于专业医学知识解答用户的问题。`,
           temperature: 0.7,
-        });
+        })
 
         if (response.data && response.data.data.response) {
-          this.addMessage(response.data.data.response, false);
+          this.addMessage(response.data.data.response, false)
           if (response.data.related_literature_ids) {
-            this.currentContext = response.data.related_literature_ids;
-            // 保存上下文到sessionStorage
-            this.saveChatContext();
+            this.currentContext = response.data.related_literature_ids
+
+            this.saveChatContext()
           }
         }
       } catch (error) {
-        this.$message.error(error?.response?.data?.message);
-        this.addMessage("抱歉，我暂时无法回答您的问题。请稍后再试。", false);
+        this.$message.error(error?.response?.data?.message)
+        this.addMessage("抱歉，我暂时无法回答您的问题。请稍后再试。", false)
       } finally {
-        this.isLoading = false;
-        // 滚动到最新消息
+        this.isLoading = false
+
         this.$nextTick(() => {
-          this.scrollToBottom();
-        });
+          this.scrollToBottom()
+        })
       }
     },
 
     async handleTranslate() {
-      if (this.isLoading) return;
-      this.isLoading = true;
+      if (this.isLoading) return
+      this.isLoading = true
 
       try {
-        this.addMessage("请帮我翻译当前文献", true);
+        this.addMessage("请帮我翻译当前文献", true)
 
-        // 调用翻译API
+
         const response = await AI.translate({
           literature_id: this.literatureId,
-          source_language: "en", // 假设原始语言是英文
-          target_language: "zh-cn", // 目标语言是中文
-        });
+          source_language: "en",
+          target_language: "zh-cn",
+        })
 
-        // 处理多种可能的响应结构
-        const translationData = response.data;
-        let translatedText = null;
 
-        // 检查所有可能的路径
+        const translationData = response.data
+        let translatedText = null
+
+
         if (translationData.data && translationData.data.translated_text) {
-          translatedText = translationData.data.translated_text;
+          translatedText = translationData.data.translated_text
         } else if (translationData.translated_text) {
-          translatedText = translationData.translated_text;
+          translatedText = translationData.translated_text
         } else if (translationData.translation) {
-          translatedText = translationData.translation;
+          translatedText = translationData.translation
         } else if (typeof translationData === "string") {
-          translatedText = translationData;
+          translatedText = translationData
         }
 
         if (translatedText) {
-          this.addMessage(translatedText, false);
+          this.addMessage(translatedText, false)
         } else {
-          console.error("无法解析翻译数据:", translationData);
+          ;
           this.addMessage(
             "抱歉，翻译数据解析失败。收到的响应格式可能有问题。",
             false
-          );
+          )
         }
       } catch (error) {
-        console.error("翻译失败:", error);
-        this.$message.error(error?.response?.data?.message || "翻译失败");
-        this.addMessage("抱歉，翻译请求失败。请稍后再试。", false);
+        ;
+        this.$message.error(error?.response?.data?.message || "翻译失败")
+        this.addMessage("抱歉，翻译请求失败。请稍后再试。", false)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
         this.$nextTick(() => {
-          this.scrollToBottom();
-        });
+          this.scrollToBottom()
+        })
       }
 
-      // 关闭功能面板
-      this.isFeaturePanelOpen = false;
+
+      this.isFeaturePanelOpen = false
     },
 
     async handleSummarize() {
-      if (this.isLoading) return;
-      this.isLoading = true;
+      if (this.isLoading) return
+      this.isLoading = true
 
       try {
-        this.addMessage("请帮我总结当前文献", true);
+        this.addMessage("请帮我总结当前文献", true)
 
-        // 调用总结API
+
         const response = await AI.summarize(this.literatureId, {
           language: "zh-cn",
           max_length: 300,
-        });
+        })
 
-        // 处理多种可能的响应结构
-        const summaryData = response.data;
-        let summary = null;
 
-        // 检查所有可能的路径
+        const summaryData = response.data
+        let summary = null
+
+
         if (summaryData.data && summaryData.data.summary_text) {
-          summary = summaryData.data.summary_text;
+          summary = summaryData.data.summary_text
         } else if (summaryData.data && summaryData.data.summary) {
-          summary = summaryData.data.summary;
+          summary = summaryData.data.summary
         } else if (summaryData.summary_text) {
-          summary = summaryData.summary_text;
+          summary = summaryData.summary_text
         } else if (summaryData.summary) {
-          summary = summaryData.summary;
+          summary = summaryData.summary
         }
 
         if (summary) {
-          this.addMessage(summary, false);
+          this.addMessage(summary, false)
         } else {
-          console.error("无法解析摘要数据:", summaryData);
+          ;
           this.addMessage(
             "抱歉，摘要数据解析失败。收到的响应格式可能有问题。",
             false
-          );
+          )
         }
       } catch (error) {
-        console.error("总结失败:", error);
-        this.$message.error(error?.response?.data?.message || "总结失败");
-        this.addMessage("抱歉，总结请求失败。请稍后再试。", false);
+        ;
+        this.$message.error(error?.response?.data?.message || "总结失败")
+        this.addMessage("抱歉，总结请求失败。请稍后再试。", false)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
         this.$nextTick(() => {
-          this.scrollToBottom();
-        });
+          this.scrollToBottom()
+        })
       }
 
-      // 关闭功能面板
-      this.isFeaturePanelOpen = false;
+
+      this.isFeaturePanelOpen = false
     },
 
     async handleRecommend() {
-      if (this.isLoading) return;
-      this.isLoading = true;
+      if (this.isLoading) return
+      this.isLoading = true
 
       try {
-        this.addMessage("请为我推荐与当前文献相关的论文", true);
+        this.addMessage("请为我推荐与当前文献相关的论文", true)
 
-        // 调用推荐API
+
         const response = await AI.recommend(this.literatureId, {
-          count: 5, // 返回5篇推荐文献
-        });
+          count: 5,
+        })
 
-        // 处理多种可能的响应结构
-        const recommendData = response.data;
-        let recommendations = null;
 
-        // 检查所有可能的路径
+        const recommendData = response.data
+        let recommendations = null
+
+
         if (recommendData.data && recommendData.data.recommendations) {
-          recommendations = recommendData.data.recommendations;
+          recommendations = recommendData.data.recommendations
         } else if (recommendData.recommendations) {
-          recommendations = recommendData.recommendations;
+          recommendations = recommendData.recommendations
         } else if (recommendData.data && Array.isArray(recommendData.data)) {
-          recommendations = recommendData.data;
+          recommendations = recommendData.data
         } else if (Array.isArray(recommendData)) {
-          recommendations = recommendData;
+          recommendations = recommendData
         }
 
         if (recommendations && recommendations.length > 0) {
-          // 格式化推荐结果
-          let message = "### 推荐文献\n\n";
+
+          let message = "### 推荐文献\n\n"
 
           recommendations.forEach((item, index) => {
-            message += `${index + 1}. **${item.title || "无标题"}**\n`;
+            message += `${index + 1}. **${item.title || "无标题"}**\n`
 
             if (item.authors) {
-              message += `   作者: ${item.authors}\n`;
+              message += `   作者: ${item.authors}\n`
             }
 
             if (item.journal || item.year) {
-              message += `   期刊: ${item.journal || "未知"}, ${
-                item.year || "未知年份"
-              }\n`;
+              message += `   期刊: ${item.journal || "未知"}, ${item.year || "未知年份"
+                }\n`
             }
 
             if (item.relevance_score !== undefined) {
               message += `   相关度: ${Number(item.relevance_score).toFixed(
                 2
-              )}\n`;
+              )}\n`
             }
 
-            message += "\n";
-          });
+            message += "\n"
+          })
 
-          this.addMessage(message, false);
+          this.addMessage(message, false)
         } else {
-          console.error("无法解析推荐数据:", recommendData);
-          this.addMessage("抱歉，未找到相关文献推荐或数据格式有问题。", false);
+          ;
+          this.addMessage("抱歉，未找到相关文献推荐或数据格式有问题。", false)
         }
       } catch (error) {
-        console.error("推荐失败:", error);
-        this.$message.error(error?.response?.data?.message || "推荐失败");
-        this.addMessage("抱歉，文献推荐请求失败。请稍后再试。", false);
+        ;
+        this.$message.error(error?.response?.data?.message || "推荐失败")
+        this.addMessage("抱歉，文献推荐请求失败。请稍后再试。", false)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
         this.$nextTick(() => {
-          this.scrollToBottom();
-        });
+          this.scrollToBottom()
+        })
       }
 
-      // 关闭功能面板
-      this.isFeaturePanelOpen = false;
+
+      this.isFeaturePanelOpen = false
     },
 
     addMessage(content, isUser) {
@@ -400,75 +367,75 @@ export default {
         content,
         isUser,
         timestamp: new Date(),
-      });
+      })
 
-      // 保存消息历史到sessionStorage
-      this.saveChatHistory();
 
-      // 如果是用户发送的消息，立即滚动
+      this.saveChatHistory()
+
+
       if (isUser) {
         this.$nextTick(() => {
-          this.scrollToBottom();
-        });
+          this.scrollToBottom()
+        })
       }
     },
 
     scrollToBottom() {
-      const container = this.$refs.messagesContainer;
+      const container = this.$refs.messagesContainer
       if (container) {
-        container.scrollTop = container.scrollHeight;
+        container.scrollTop = container.scrollHeight
       }
     },
 
     formatTime(date) {
       if (typeof date === "string") {
-        date = new Date(date);
+        date = new Date(date)
       }
       return new Intl.DateTimeFormat("zh-CN", {
         hour: "2-digit",
         minute: "2-digit",
-      }).format(date);
+      }).format(date)
     },
 
-    // 保存聊天历史到sessionStorage
+
     saveChatHistory() {
       try {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.messages));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.messages))
       } catch (error) {
-        console.error("保存聊天历史失败", error);
+        ;
       }
     },
 
-    // 保存上下文到sessionStorage
+
     saveChatContext() {
       try {
         sessionStorage.setItem(
           CONTEXT_KEY,
           JSON.stringify(this.currentContext)
-        );
+        )
       } catch (error) {
-        console.error("保存上下文失败", error);
+        ;
       }
     },
 
-    // 从sessionStorage加载聊天历史
+
     loadChatHistory() {
       try {
-        const savedMessages = sessionStorage.getItem(STORAGE_KEY);
+        const savedMessages = sessionStorage.getItem(STORAGE_KEY)
         if (savedMessages) {
-          this.messages = JSON.parse(savedMessages);
+          this.messages = JSON.parse(savedMessages)
         }
 
-        const savedContext = sessionStorage.getItem(CONTEXT_KEY);
+        const savedContext = sessionStorage.getItem(CONTEXT_KEY)
         if (savedContext) {
-          this.currentContext = JSON.parse(savedContext);
+          this.currentContext = JSON.parse(savedContext)
         }
       } catch (error) {
-        console.error("加载聊天历史失败", error);
+        ;
       }
     },
   },
-};
+}
 </script>
 
 <style scoped>
@@ -782,6 +749,7 @@ export default {
 }
 
 @keyframes bounce {
+
   0%,
   80%,
   100% {

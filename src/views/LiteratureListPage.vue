@@ -88,7 +88,7 @@ export default {
       pageSize: 10,
       totalPages: 1,
       sortBy: "relevance",
-      // 添加一个标志来追踪是否有保存的列表状态
+
       hasListState: false,
     }
   },
@@ -123,7 +123,7 @@ export default {
     },
   },
   created() {
-    // 检查 URL 查询参数，优先级高于 sessionStorage
+
     const urlQuery = this.$route.query.q
     if (urlQuery !== undefined) {
       this.searchQuery = urlQuery
@@ -135,22 +135,22 @@ export default {
       return
     }
 
-    // 从 sessionStorage 恢复状态（如果有）
+
     this.restoreListState()
 
-    // 如果没有已保存的状态，则加载所有文献
+
     if (!this.hasListState) {
       this.loadAllLiterature()
     }
   },
   methods: {
-    // 清除列表状态
+
     clearListState() {
       sessionStorage.removeItem("literatureListState")
       this.hasListState = false
     },
 
-    // 保存列表状态到 sessionStorage
+
     saveListState() {
       const listState = {
         searchQuery: this.searchQuery,
@@ -165,7 +165,7 @@ export default {
       this.hasListState = true
     },
 
-    // 从 sessionStorage 恢复列表状态
+
     restoreListState() {
       const savedState = sessionStorage.getItem("literatureListState")
 
@@ -173,19 +173,19 @@ export default {
         try {
           const state = JSON.parse(savedState)
 
-          // 恢复列表状态
+
           this.searchQuery = state.searchQuery || ""
           this.results = state.results || []
           this.totalResults = state.totalResults || 0
           this.currentPage = state.currentPage || 1
           this.sortBy = state.sortBy || "relevance"
 
-          // 重新计算总页数，以防数据变化
+
           this.totalPages = Math.ceil(this.results.length / this.pageSize)
 
           this.hasListState = true
         } catch (error) {
-          console.error("Error restoring literature list state:", error)
+
           this.hasListState = false
         }
       } else {
@@ -200,20 +200,20 @@ export default {
         const response = await Literature.list({
           page: this.currentPage,
           size: this.pageSize,
-          sort_by: this.sortBy  // 添加排序参数
+          sort_by: this.sortBy
         })
         if (response && response.data) {
           this.results = response?.data?.data?.items || []
           this.totalResults = response?.data?.data?.total || 0
           this.totalPages = Math.ceil(this.totalResults / this.pageSize)
         } else {
-          console.error("Unexpected response format:", response)
+
           this.results = []
           this.totalResults = 0
           this.totalPages = 1
         }
       } catch (error) {
-        console.error("Error loading literature list:", error)
+
         this.results = []
         this.totalResults = 0
         this.totalPages = 1
@@ -223,30 +223,30 @@ export default {
     },
 
     async onSearch(query) {
-      // 重置当前页面到第一页
+
       this.currentPage = 1
 
-      // 设置搜索查询文本
+
       this.searchQuery = query
 
-      // 清除之前保存的状态
+
       this.clearListState()
 
       if (!query) {
-        // 如果搜索词为空，清除搜索状态并加载所有文献
+
         await this.loadAllLiterature()
 
-        // 更新URL，去掉q参数
+
         this.updateUrl()
       } else {
-        // 搜索特定关键词
+
         await this.searchLiterature()
 
-        // 更新URL，添加q参数
+
         this.updateUrl()
       }
 
-      // 搜索完成后保存新状态
+
       this.saveListState()
     },
 
@@ -254,12 +254,12 @@ export default {
       this.isLoading = true
 
       try {
-        // 搜索API调用，传入当前页码和排序参数
+
         const response = await Literature.search(
           this.searchQuery,
           this.currentPage,
           this.pageSize,
-          this.sortBy  // 添加排序参数
+          this.sortBy
         )
 
         if (response && response.data) {
@@ -267,13 +267,13 @@ export default {
           this.totalResults = response?.data?.data?.total || 0
           this.totalPages = Math.ceil(this.totalResults / this.pageSize)
         } else {
-          console.error("Unexpected response format:", response)
+
           this.results = []
           this.totalResults = 0
           this.totalPages = 1
         }
       } catch (error) {
-        console.error("Error searching literature:", error)
+
         this.results = []
         this.totalResults = 0
         this.totalPages = 1
@@ -281,7 +281,7 @@ export default {
         this.isLoading = false
       }
     },
-    // 更新URL，但不重新加载页面
+
     updateUrl() {
       const query = { ...this.$route.query }
 
@@ -292,12 +292,12 @@ export default {
       }
 
       query.page = this.currentPage
-      query.sort_by = this.sortBy  // 添加排序参数到URL
+      query.sort_by = this.sortBy
 
       this.$router.replace({
         query
       }).catch(err => {
-        // 忽略重复导航的错误
+
         if (err.name !== 'NavigationDuplicated') {
           throw err
         }
@@ -308,19 +308,19 @@ export default {
       if (this.sortBy === sort) return
 
       this.sortBy = sort
-      this.currentPage = 1 // 重置到第一页
+      this.currentPage = 1
 
-      // 调用API获取新的排序结果
+
       if (this.searchQuery) {
         this.searchLiterature()
       } else {
         this.loadAllLiterature()
       }
 
-      // 更新URL
+
       this.updateUrl()
 
-      // 保存状态
+
       this.saveListState()
     },
 
@@ -331,20 +331,20 @@ export default {
 
       this.currentPage = page
 
-      // 更新URL的页码参数
+
       this.updateUrl()
 
-      // 根据当前搜索条件决定加载方式
+
       if (this.searchQuery) {
-        this.searchLiterature() // 将使用this.currentPage获取对应页的数据
+        this.searchLiterature()
       } else {
-        this.loadAllLiterature() // 将使用this.currentPage获取对应页的数据
+        this.loadAllLiterature()
       }
 
-      // 保存状态
+
       this.saveListState()
 
-      // 滚动到页面顶部以便用户查看新结果
+
       window.scrollTo(0, 0)
     },
 
@@ -378,7 +378,7 @@ export default {
         }
       }
 
-      // 根据参数加载数据
+
       if (this.searchQuery) {
         this.searchLiterature()
       } else {
@@ -395,7 +395,7 @@ export default {
     },
   },
   beforeUnmount() {
-    // 在组件卸载前保存状态
+
     this.saveListState()
   },
 }

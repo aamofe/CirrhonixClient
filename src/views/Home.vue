@@ -173,7 +173,7 @@ export default {
         })
         this.recentArticles = response.data.data.items || []
       } catch (error) {
-        console.error("Failed to load recent articles", error)
+
       } finally {
         this.isLoading = false
       }
@@ -188,7 +188,7 @@ export default {
         })
         this.popularAuthors = response.data.data.items || []
       } catch (error) {
-        console.error("Failed to load popular authors", error)
+
       } finally {
         this.isLoading = false
       }
@@ -213,7 +213,7 @@ export default {
           }
         }
       } catch (error) {
-        console.error("Failed to load featured article", error)
+
       }
     },
     // async loadKeywords() {
@@ -224,7 +224,7 @@ export default {
     //     });
     //     this.keywords = response.data.data.items || [];
     //   } catch (error) {
-    //     console.error("Failed to load keywords", error);
+
     //   }
     // },
     onSearch(query) {
@@ -244,7 +244,7 @@ export default {
   },
   async mounted() {
     try {
-      // 并行加载数据
+
       await Promise.all([
         this.loadRecentArticles(),
         this.loadPopularAuthors(),
@@ -252,7 +252,7 @@ export default {
         // this.loadKeywords(),
       ])
     } catch (error) {
-      console.error("Error initializing home page", error)
+
     }
   },
 }

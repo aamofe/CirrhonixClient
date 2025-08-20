@@ -64,7 +64,7 @@ export default {
     }
 
     const handleGraphUpdated = () => {
-      console.log('Graph updated event received, could trigger data reload if needed.')
+
       loadGraphData()
     }
 

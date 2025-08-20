@@ -1,14 +1,14 @@
 // composables/useNodeConfig.js
 import { ref } from 'vue'
 import {
-  Bug, // 病原体 - 病毒/细菌
-  Aim, // 感染部位 - 瞄准/定位
-  FirstAidKit, // 临床症状 - 医疗/健康
-  Search, // 诊断方法 - 搜索/检查
-  MedicineBox, // 治疗方案 - 药物/药箱
-  Shield, // 预防策略 - 盾牌
-  CopyDocument, // 肝硬化阶段 - 分层
-  Warning, // 并发症 - 警告三角
+  Bug,
+  Aim,
+  FirstAidKit,
+  Search,
+  MedicineBox,
+  Shield,
+  CopyDocument,
+  Warning,
 } from '@element-plus/icons-vue'
 
 export const useNodeConfig = () => {
@@ -82,7 +82,7 @@ export const useNodeConfig = () => {
         label: type,
         value: type,
         color: '#95a5a6',
-        icon: Bug, // 默认图标
+        icon: Bug,
       }
     )
   }

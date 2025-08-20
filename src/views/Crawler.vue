@@ -51,16 +51,16 @@
 <script>
 import SiteFooter from "@/components/layout/SiteFooter.vue"
 import SectionTitle from "@/components/common/Sectiontitle.vue"
-// 导入拆分后的爬虫组件
+
 import ManualCrawler from "@/components/crawl/ManualCrawler.vue"
 import AutoCrawler from "@/components/crawl/AutoCrawler.vue"
 import CrawlerHistory from "@/components/crawl/CrawlerHistory.vue"
 import UploadPaper from "@/components/crawl/UploadPaper.vue"
 
-// 导入爬虫API
+
 import Crawler from "@/api/Crawler"
 
-// Element Plus 图标 - 请确保这些图标已在您的项目中导入
+
 import {
   Search as SearchIcon,
   Timer as TimerIcon,
@@ -91,7 +91,7 @@ export default {
         { id: "upload", label: "上传PDF", icon: "UploadIcon" },
         { id: "history", label: "历史记录", icon: "DocumentIcon" }
       ],
-      // 初始化为空数组而不是null，这样即使API调用失败也能保持组件渲染
+
       availableSources: [],
       isLoading: true
     }
@@ -102,41 +102,41 @@ export default {
       try {
         const response = await Crawler.getSourceList()
         if (response.data && response.data.data) {
-          // 确保数据是数组格式
+
           this.availableSources = Array.isArray(response.data.data)
             ? response.data.data
             : [response.data.data]
 
-          // console.log("成功获取数据源:", this.availableSources)
+
         } else {
-          console.error("API返回的数据结构不符合预期:", response)
+
           this.$message.error("获取数据源列表返回的数据格式有误")
         }
       } catch (error) {
-        console.error("获取数据源列表失败", error)
+
         this.$message.error("获取数据源列表失败")
       } finally {
         this.isLoading = false
       }
     },
 
-    // 设置当前活跃标签并保存到sessionStorage
+
     setActiveSection(sectionId) {
       this.activeSection = sectionId
       sessionStorage.setItem("crawlerActiveSection", sectionId)
     },
 
-    // 从sessionStorage获取上次保存的标签ID
+
     getSavedSection() {
       const savedSection = sessionStorage.getItem("crawlerActiveSection")
-      return savedSection || "manual" // 如果没有保存过，默认为'manual'
+      return savedSection || "manual"
     }
   },
   created() {
-    // 先加载数据源
+
     this.fetchDataSources()
 
-    // 检查URL参数中是否指定了特定的部分
+
     const urlParams = new URLSearchParams(window.location.search)
     const sectionParam = urlParams.get("section")
     if (

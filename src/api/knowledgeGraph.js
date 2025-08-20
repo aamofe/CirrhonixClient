@@ -51,8 +51,6 @@ export default class KnowledgeGraph {
       description: relationData.description,
     })
   }
-
-  // 删除关系
   static async deleteRelation(relationId) {
     return service.delete(url.deleteRelation, {
       params: {

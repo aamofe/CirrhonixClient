@@ -3,56 +3,29 @@
   <form @submit.prevent="handleSubmit" class="password-form">
     <div class="form-group">
       <label for="oldPassword">旧密码</label>
-      <input
-        type="password"
-        id="oldPassword"
-        v-model="form.oldPassword"
-        class="form-input"
-        required
-        placeholder="输入当前密码"
-      />
+      <input type="password" id="oldPassword" v-model="form.oldPassword" class="form-input" required
+        placeholder="输入当前密码" />
     </div>
 
     <div class="form-group">
       <label for="newPassword">新密码</label>
-      <input
-        type="password"
-        id="newPassword"
-        v-model="form.newPassword"
-        class="form-input"
-        required
-        placeholder="输入新密码"
-        minlength="8"
-      />
-      <small class="form-hint"
-        >密码长度至少8位，建议包含字母、数字和特殊字符</small
-      >
+      <input type="password" id="newPassword" v-model="form.newPassword" class="form-input" required placeholder="输入新密码"
+        minlength="8" />
+      <small class="form-hint">密码长度至少8位，建议包含字母、数字和特殊字符</small>
     </div>
 
     <div class="form-group">
       <label for="confirmPassword">确认新密码</label>
-      <input
-        type="password"
-        id="confirmPassword"
-        v-model="form.confirmPassword"
-        class="form-input"
-        required
-        placeholder="再次输入新密码"
-      />
-      <small v-if="passwordMismatch" class="form-error"
-        >两次输入的密码不一致</small
-      >
+      <input type="password" id="confirmPassword" v-model="form.confirmPassword" class="form-input" required
+        placeholder="再次输入新密码" />
+      <small v-if="passwordMismatch" class="form-error">两次输入的密码不一致</small>
     </div>
 
     <div class="form-actions">
       <button type="button" class="cancel-btn" @click="handleCancel">
         取消
       </button>
-      <PrimaryButton
-        type="submit"
-        :fullWidth="false"
-        :disabled="isSubmitting || passwordMismatch"
-      >
+      <PrimaryButton type="submit" :fullWidth="false" :disabled="isSubmitting || passwordMismatch">
         {{ isSubmitting ? "提交中..." : "确认修改" }}
       </PrimaryButton>
     </div>
@@ -60,8 +33,8 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue";
-import User from "@/api/User";
+import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import User from "@/api/User"
 
 export default {
   name: "PasswordForm",
@@ -76,7 +49,7 @@ export default {
         confirmPassword: "",
       },
       isSubmitting: false,
-    };
+    }
   },
   computed: {
     passwordMismatch() {
@@ -84,39 +57,39 @@ export default {
         this.form.newPassword &&
         this.form.confirmPassword &&
         this.form.newPassword !== this.form.confirmPassword
-      );
+      )
     },
   },
   methods: {
     async handleSubmit() {
       if (this.passwordMismatch) {
-        return;
+        return
       }
 
-      this.isSubmitting = true;
+      this.isSubmitting = true
 
       try {
-        // 直接调用API修改密码
+
         await User.updatePassword({
           oldPassword: this.form.oldPassword,
           newPassword: this.form.newPassword,
-        });
+        })
 
-        this.$message.success("密码修改成功");
-        this.resetForm();
-        this.$emit("cancel"); // 关闭模态框
+        this.$message.success("密码修改成功")
+        this.resetForm()
+        this.$emit("cancel")
       } catch (error) {
-        console.error("密码修改失败:", error);
-        this.$message.error("密码修改失败，请检查旧密码是否正确");
+        ;
+        this.$message.error("密码修改失败，请检查旧密码是否正确")
       } finally {
-        this.isSubmitting = false;
+        this.isSubmitting = false
       }
     },
 
     handleCancel() {
-      // 明确触发取消事件
-      this.$emit("cancel");
-      this.resetForm();
+
+      this.$emit("cancel")
+      this.resetForm()
     },
 
     resetForm() {
@@ -124,10 +97,10 @@ export default {
         oldPassword: "",
         newPassword: "",
         confirmPassword: "",
-      };
+      }
     },
   },
-};
+}
 </script>
 
 <style scoped>

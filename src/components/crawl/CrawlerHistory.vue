@@ -118,12 +118,12 @@ export default {
     }
   },
   computed: {
-    // 过滤后的历史记录
+
     filteredHistory() {
       let filtered = this.crawlerHistory
 
       if (this.historyFilter.source_id) {
-        // 由于数据源现在是数组，需要检查数组中是否包含指定的数据源
+
         filtered = filtered.filter(
           (item) => item.data_sources && item.data_sources.includes(this.historyFilter.source_id)
         )
@@ -135,7 +135,7 @@ export default {
         )
       }
 
-      // 分页
+
       const start = (this.currentPage - 1) * this.pageSize
       const end = start + this.pageSize
 
@@ -143,7 +143,7 @@ export default {
     },
 
     hasNextPage() {
-      // 考虑筛选条件下的总记录数
+
       const filteredTotal = this.crawlerHistory.filter((item) => {
         let match = true
 
@@ -162,7 +162,7 @@ export default {
     },
   },
   methods: {
-    // 获取爬取历史
+
     async fetchCrawlerHistory() {
       try {
         const response = await Crawler.getCrawlList(
@@ -178,18 +178,18 @@ export default {
           this.crawlerHistory = []
         }
       } catch (error) {
-        console.error("获取爬取历史失败", error)
+
         this.$message.error("获取爬取历史失败")
       }
     },
 
-    // 切换页码
+
     changePage(page) {
       this.currentPage = page
       this.$emit("page-changed", page)
     },
 
-    // 格式化状态
+
     formatStatus(status) {
       switch (status) {
         case "completed":
@@ -205,7 +205,7 @@ export default {
       }
     },
 
-    // 格式化日期
+
     formatDate(dateString) {
       if (!dateString) return ""
 
@@ -220,10 +220,10 @@ export default {
     },
   },
   created() {
-    // 获取爬取历史
+
     this.fetchCrawlerHistory()
   },
-  // 监听筛选条件变化
+
   watch: {
     "historyFilter.source_id"() {
       this.currentPage = 1

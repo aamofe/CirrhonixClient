@@ -85,24 +85,24 @@ export default {
       try {
         const response = await Literature.getCollections()
         this.collections = response.data.data || []
-        // console.log(response)
-        // this.$message.error("获取收藏夹成功")
+
+
       } catch (error) {
-        console.error("获取收藏夹失败", error)
+
         this.$message.error("获取收藏夹失败")
       } finally {
         this.loading = false
       }
     },
 
-    // 处理表单操作成功 (无论是创建还是更新)
+
     handleFormSuccess(result) {
       if (result.action === "create") {
-        // 创建收藏夹成功，添加到列表的最前面
+
         this.collections.unshift(result.data)
         this.closeNewCollectionModal()
       } else if (result.action === "update") {
-        // 更新收藏夹成功，更新本地集合数据
+
         const index = this.collections.findIndex(
           (c) => c.id === result.data.id
         )
@@ -126,18 +126,18 @@ export default {
           (c) => c.id !== collection.id
         )
 
-        // 显示成功提示
+
         this.$message.success(`"${collection.name}" 删除成功`)
       } catch (error) {
-        console.error("删除收藏夹失败", error)
 
-        // 显示错误提示（可根据API返回细化提示）
+
+
         const msg = error.response?.data?.message || "删除操作失败，请稍后重试"
         this.$message.error(msg)
       }
     },
 
-    // 关闭模态框的方法
+
     closeNewCollectionModal() {
       this.showNewCollectionModal = false
     },
@@ -147,12 +147,12 @@ export default {
       this.selectedCollection = null
     },
 
-    // 查看收藏夹详情
+
     viewCollectionDetail(collection) {
       this.selectedCollectionId = collection.id
       this.showCollectionDetail = true
 
-      // 更新URL，但不改变路由（保持在 Profile 页面内）
+
       if (this.$router) {
         this.$router.replace({
           query: {
@@ -163,12 +163,12 @@ export default {
       }
     },
 
-    // 返回收藏夹列表
+
     backToCollections() {
       this.showCollectionDetail = false
       this.selectedCollectionId = null
 
-      // 移除URL中的collectionId参数
+
       if (this.$router) {
         const query = { ...this.$route.query }
         delete query.collectionId

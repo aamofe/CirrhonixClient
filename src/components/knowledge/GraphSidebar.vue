@@ -79,7 +79,7 @@ export default {
   },
   emits: ['focus-node', 'view-article', 'settings-change', 'reset-settings'],
   setup(props, { emit }) {
-    // 组件内部管理统计数据
+
     const graphStats = reactive({
       totalNodes: 0,
       totalRelations: 0,
@@ -92,7 +92,7 @@ export default {
     const keyPapers = ref([])
     const isLoading = ref(false)
 
-    // 加载统计数据 - 从父组件移到子组件
+
     const loadStatistics = async () => {
       try {
         isLoading.value = true
@@ -101,7 +101,7 @@ export default {
         if (response.data.data) {
           const data = response.data.data
 
-          // 更新基础统计
+
           if (data.basic_stats) {
             Object.assign(graphStats, {
               totalNodes: data.basic_stats.total_entities,
@@ -112,7 +112,7 @@ export default {
             })
           }
 
-          // 更新热门概念
+
           if (data.top_active_entities) {
             popularConcepts.value = data.top_active_entities
               .slice(0, 10)
@@ -123,13 +123,13 @@ export default {
               }))
           }
 
-          // 更新核心文献
+
           if (data.key_papers) {
             keyPapers.value = data.key_papers.slice(0, 5)
           }
         }
       } catch (error) {
-        console.error('加载统计数据失败:', error)
+
       } finally {
         isLoading.value = false
       }
@@ -153,7 +153,7 @@ export default {
       emit('view-article', articleId)
     }
 
-    // 刷新统计数据
+
     const refreshStatistics = () => {
       loadStatistics()
     }
@@ -163,13 +163,13 @@ export default {
     })
 
     return {
-      // 状态
+
       graphStats,
       popularConcepts,
       keyPapers,
       isLoading,
 
-      // 方法
+
       updateSetting,
       resetSettings,
       focusOnConcept,

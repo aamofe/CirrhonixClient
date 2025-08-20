@@ -31,12 +31,12 @@ export default {
       this.loading = true
       try {
         const response = await Literature.getInteractions()
-        // 确保我们得到的是数组
+
         this.readingHistory = response.data.data
-        console.log(response)
-        // console.log("获取到的阅读历史:", this.readingHistory)
+
+
       } catch (error) {
-        console.error("获取阅读历史失败", error)
+
         this.$message.error("获取阅读历史失败")
       } finally {
         this.loading = false

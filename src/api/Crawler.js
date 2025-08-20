@@ -1,4 +1,3 @@
-// src/api/Crawling.js
 import service from '@/http'
 
 const url = {

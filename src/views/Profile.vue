@@ -8,12 +8,8 @@
         <!-- 左侧导航 -->
         <div class="profile-sidebar">
           <nav>
-            <div
-              v-for="(item, index) in navItems"
-              :key="index"
-              @click="setActiveSection(item.id)"
-              :class="['nav-item', activeSection === item.id ? 'active' : '']"
-            >
+            <div v-for="(item, index) in navItems" :key="index" @click="setActiveSection(item.id)"
+              :class="['nav-item', activeSection === item.id ? 'active' : '']">
               <span class="nav-icon">
                 <el-icon>
                   <component :is="item.icon" />
@@ -29,13 +25,8 @@
           <!-- 基本信息 -->
           <div v-if="activeSection === 'basic'" class="profile-section">
             <h3>基本信息</h3>
-            <ProfileForm
-              v-if="!loading"
-              :user="userInfo"
-              @profileUpdated="updateLocalUserInfo"
-              @showPasswordModal="showChangePasswordModal = true"
-              @logout="logout"
-            />
+            <ProfileForm v-if="!loading" :user="userInfo" @profileUpdated="updateLocalUserInfo"
+              @showPasswordModal="showChangePasswordModal = true" @logout="logout" />
             <div v-else class="loading">加载中...</div>
           </div>
 
@@ -58,35 +49,31 @@
     </div>
 
     <!-- 修改密码模态框 -->
-    <ModalComponent
-      v-if="showChangePasswordModal"
-      title="修改密码"
-      @close="showChangePasswordModal = false"
-    >
+    <ModalComponent v-if="showChangePasswordModal" title="修改密码" @close="showChangePasswordModal = false">
       <PasswordForm @cancel="showChangePasswordModal = false" />
     </ModalComponent>
   </div>
 </template>
 
 <script>
-import SectionTitle from "@/components/common/Sectiontitle.vue";
-import ModalComponent from "@/components/common/ModalComponent.vue";
-import PasswordForm from "@/components/form/PasswordForm.vue";
-import User from "@/api/User";
+import SectionTitle from "@/components/common/Sectiontitle.vue"
+import ModalComponent from "@/components/common/ModalComponent.vue"
+import PasswordForm from "@/components/form/PasswordForm.vue"
+import User from "@/api/User"
 
-// 导入拆分的组件
-import ProfileForm from "@/components/profile/ProfileForm.vue";
-import CollectionsComponent from "@/components/profile/Collections.vue";
-import ReadingHistoryComponent from "@/components/profile/ReadingHistory.vue";
+
+import ProfileForm from "@/components/profile/ProfileForm.vue"
+import CollectionsComponent from "@/components/profile/Collections.vue"
+import ReadingHistoryComponent from "@/components/profile/ReadingHistory.vue"
 // import SearchHistoryComponent from "@/components/profile/SearchHistory.vue";
 
-// Element Plus 图标
+
 import {
   User as UserIcon,
   Collection as BookmarkIcon,
   Clock as HistoryIcon,
   Search as SearchIcon,
-} from "@element-plus/icons-vue";
+} from "@element-plus/icons-vue"
 
 export default {
   name: "ProfileView",
@@ -113,84 +100,84 @@ export default {
         { id: "basic", label: "基本信息", icon: "UserIcon" },
         { id: "collections", label: "我的收藏夹", icon: "BookmarkIcon" },
         { id: "history", label: "阅读历史", icon: "HistoryIcon" },
-        // { id: "searches", label: "搜索历史", icon: "SearchIcon" },
+
       ],
-    };
+    }
   },
   methods: {
     async fetchUserInfo() {
-      this.loading = true;
+      this.loading = true
       try {
-        const response = await User.profile();
-        this.userInfo = response.data.data;
+        const response = await User.profile()
+        this.userInfo = response.data.data
       } catch (error) {
-        console.error("获取用户信息失败", error);
-        // 处理错误
+        ;
+
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
-    // 更新本地用户信息（来自子组件的更新通知）
+
     updateLocalUserInfo(updatedUserInfo) {
-      this.userInfo = updatedUserInfo;
+      this.userInfo = updatedUserInfo
     },
 
-    // 设置当前活跃标签并保存到sessionStorage
-    setActiveSection(sectionId) {
-      this.activeSection = sectionId;
-      sessionStorage.setItem("profileActiveSection", sectionId);
 
-      // 如果正在查看收藏夹详情，需要移除URL中的collectionId参数
+    setActiveSection(sectionId) {
+      this.activeSection = sectionId
+      sessionStorage.setItem("profileActiveSection", sectionId)
+
+
       if (sectionId !== "collections" && this.$route.query.collectionId) {
-        const query = { ...this.$route.query };
-        delete query.collectionId;
-        this.$router.replace({ query });
+        const query = { ...this.$route.query }
+        delete query.collectionId
+        this.$router.replace({ query })
       }
     },
 
-    // 从sessionStorage获取上次保存的标签ID
+
     getSavedSection() {
-      const savedSection = sessionStorage.getItem("profileActiveSection");
-      return savedSection || "basic"; // 如果没有保存过，默认为'basic'
+      const savedSection = sessionStorage.getItem("profileActiveSection")
+      return savedSection || "basic"
     },
 
     async logout() {
       try {
-        await User.logout();
-        this.$message.success("退出登录成功");
+        await User.logout()
+        this.$message.success("退出登录成功")
 
-        // 清除本地存储的用户信息和token
-        localStorage.removeItem("token");
-        sessionStorage.removeItem("profileActiveSection");
 
-        // 重定向到登录页面
-        this.$router.push("/login");
+        localStorage.removeItem("token")
+        sessionStorage.removeItem("profileActiveSection")
+
+
+        this.$router.push("/login")
       } catch (error) {
-        console.error("退出失败", error);
-        this.$message.error("退出失败，请重试");
+        ;
+        this.$message.error("退出失败，请重试")
       }
     },
   },
   created() {
-    this.fetchUserInfo();
+    this.fetchUserInfo()
 
-    // 监听路由变化，在URL中有查询参数时处理
-    const urlParams = new URLSearchParams(window.location.search);
-    const sectionParam = urlParams.get("section");
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const sectionParam = urlParams.get("section")
     if (
       sectionParam &&
       this.navItems.some((item) => item.id === sectionParam)
     ) {
-      this.setActiveSection(sectionParam);
+      this.setActiveSection(sectionParam)
     }
 
-    // 如果URL中有collectionId参数，确保激活收藏夹部分
+
     if (urlParams.get("collectionId")) {
-      this.setActiveSection("collections");
+      this.setActiveSection("collections")
     }
   },
-};
+}
 </script>
 
 <style scoped>

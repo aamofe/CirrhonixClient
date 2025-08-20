@@ -57,7 +57,7 @@ export default {
       this.loading = true
       try {
         const response = await Literature.getCollection(this.collectionId)
-        // console.log(response)
+
         this.collection = response.data.data
 
         this.literatures = this.collection.literatures || []
@@ -68,11 +68,11 @@ export default {
       }
     },
     goBack() {
-      // 仅更改URL参数，不实际切换路由
+
       this.$emit("back-to-collections")
     },
     viewArticleDetail(article) {
-      // 处理查看文献详情的逻辑
+
       this.$router.push({ name: "article-detail", params: { id: article.id } })
     },
   },

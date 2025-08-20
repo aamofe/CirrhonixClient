@@ -39,14 +39,14 @@ export default {
         { name: "文献检索", path: "/literature" },
         { name: "知识图谱", path: "/knowledge-graph" },
         { name: "爬虫中心", path: "/crawler" },
-        // { name: "个人中心", path: "/profile" },
+
       ],
       defaultAvatar,
     }
   },
   methods: {
     isActive(path) {
-      // 检查当前路由是否匹配导航项
+
       return this.$route.path === path
     },
     goToHome() {
@@ -65,7 +65,7 @@ export default {
         const data = response.data.data
         this.username = data.username
       } catch (error) {
-        console.error(error)
+
         if (error.response && error.response.status === 401) {
           this.username = ""
         } else {
