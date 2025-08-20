@@ -65,8 +65,7 @@ export default {
 
     const handleGraphUpdated = () => {
       console.log('Graph updated event received, could trigger data reload if needed.')
-      // If a full data reload is necessary after a relation update, call loadGraphData() here.
-      // loadGraphData();
+      loadGraphData()
     }
 
 

@@ -1,9 +1,7 @@
 <template>
   <div v-if="visible">
-    <!-- 背景遮罩层 -->
     <div class="card-overlay" @click="close"></div>
 
-    <!-- 卡片主体 -->
     <div class="edge-info-card" :style="{ left: position.x + 'px', top: position.y + 'px' }" @click.stop
       @wheel.stop="handleWheel" @touchmove.stop="handleTouchMove">
       <div class="card-header">
@@ -81,7 +79,7 @@
                 </div>
                 <div class="delete-action">
                   <el-popconfirm title="确定要删除这条关系吗？" confirm-button-text="确定" cancel-button-text="取消"
-                    @confirm="handleDelete(factor.id)">
+                    @confirm="handleDelete(factor.id)" popper-class="edge-card-popconfirm" :teleported="false">
                     <template #reference>
                       <button class="delete-btn" @click.stop>
                         <el-icon>
@@ -109,6 +107,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElPopconfirm } from 'element-plus'
 import { Close, Delete } from '@element-plus/icons-vue'
 import KnowledgeGraph from '@/api/knowledgeGraph'
+import bus from '@/utils/bus'
 
 const props = defineProps({
   visible: {
@@ -130,18 +129,14 @@ const emit = defineEmits(['close', 'deleted'])
 const router = useRouter()
 const deleting = ref(false)
 
-// 监听visible变化，控制body滚动
 watch(() => props.visible, (newVal) => {
   if (newVal) {
-    // 卡片显示时禁用body滚动
     document.body.style.overflow = 'hidden'
-    document.body.style.paddingRight = '15px' // 防止滚动条消失导致的抖动
+    document.body.style.paddingRight = '15px'
   } else {
-    // 卡片隐藏时恢复body滚动
     document.body.style.overflow = ''
     document.body.style.paddingRight = ''
 
-    // 清理触摸事件的临时数据
     const cardContent = document.querySelector('.edge-info-card .card-content')
     if (cardContent) {
       delete cardContent._startY
@@ -150,30 +145,24 @@ watch(() => props.visible, (newVal) => {
   }
 })
 
-// 处理滚轮事件
 const handleWheel = (event) => {
   const cardContent = event.currentTarget.querySelector('.card-content')
   const { scrollTop, scrollHeight, clientHeight } = cardContent
 
-  // 计算滚动方向
   const scrollingUp = event.deltaY < 0
   const scrollingDown = event.deltaY > 0
 
-  // 检查是否到达边界
   const atTop = scrollTop <= 0
   const atBottom = scrollTop >= scrollHeight - clientHeight
 
-  // 只在到达边界时阻止默认行为，其他情况允许卡片内滚动
   if ((scrollingUp && atTop) || (scrollingDown && atBottom)) {
     event.preventDefault()
   } else {
-    // 允许卡片内容滚动
     cardContent.scrollTop += event.deltaY
-    event.preventDefault() // 阻止页面滚动，但允许卡片内滚动
+    event.preventDefault()
   }
 }
 
-// 处理触摸移动事件
 const handleTouchMove = (event) => {
   const cardContent = event.currentTarget.querySelector('.card-content')
   const { scrollTop, scrollHeight, clientHeight } = cardContent
@@ -188,11 +177,9 @@ const handleTouchMove = (event) => {
   const deltaY = cardContent._startY - touch.clientY
   const newScrollTop = cardContent._startScrollTop + deltaY
 
-  // 检查边界
   const atTop = newScrollTop <= 0
   const atBottom = newScrollTop >= scrollHeight - clientHeight
 
-  // 允许卡片内容滚动，只在边界时阻止
   if (!atTop && !atBottom) {
     cardContent.scrollTop = newScrollTop
     event.preventDefault()
@@ -216,6 +203,8 @@ const handleDelete = async (factorId) => {
     await KnowledgeGraph.deleteRelation(factorId)
     ElMessage.success('关系删除成功')
     emit('deleted', factorId)
+    close()
+    bus.emit('graph-updated')
   } catch (error) {
     console.error('删除关系失败:', error)
     ElMessage.error(error.response?.data?.message || '删除关系失败，请重试')
@@ -250,8 +239,8 @@ const viewArticleDetail = (article) => {
 
 <style scoped>
 .edge-info-card {
+  z-index: 2000;
   position: fixed;
-  z-index: 10000;
   background: white;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -268,7 +257,7 @@ const viewArticleDetail = (article) => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 9999;
+  z-index: 1999;
 }
 
 .card-header {
@@ -307,7 +296,6 @@ const viewArticleDetail = (article) => {
   max-height: calc(80vh - 72px);
   overflow-y: auto;
   scroll-behavior: smooth;
-  /* 平滑滚动 */
 }
 
 .section {
@@ -413,6 +401,7 @@ const viewArticleDetail = (article) => {
 
 .factor-details {
   flex: 1;
+  position: relative;
 }
 
 .detail-row {
@@ -475,21 +464,30 @@ const viewArticleDetail = (article) => {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 10;
 }
 
 .delete-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e5e7eb;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: 6px;
   color: #ef4444;
   transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .delete-btn:hover {
   background: #fee2e2;
   color: #dc2626;
+  border-color: #fecaca;
+  transform: scale(1.05);
 }
 
 .empty-message {
@@ -515,5 +513,20 @@ const viewArticleDetail = (article) => {
 
 .card-content::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+</style>
+
+<!-- 全局样式 - 解决弹窗层级问题 -->
+<style>
+.edge-card-popconfirm {
+  z-index: 3000 !important;
+}
+
+.el-popper.is-pure {
+  z-index: 3000 !important;
+}
+
+.el-popconfirm__main {
+  z-index: 3001 !important;
 }
 </style>
