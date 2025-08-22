@@ -20,25 +20,25 @@
       <div class="content-section">
         <div class="logo-section">
           <img :src="require('@/assets/logo_below.svg')" alt="Logo" class="main-logo" />
-          <h1 class="system-title">Liver Cirrhosis Literature Intelligence System</h1>
+          <h1 class="system-title">肝硬化文献智能系统</h1>
         </div>
         <div class="features-section">
           <div class="feature-item">
             <div class="feature-icon">📚</div>
             <div class="feature-content">
-              <h3>Literature Search</h3>
+              <h3>文献搜索</h3>
             </div>
           </div>
           <div class="feature-item">
             <div class="feature-icon">🔗</div>
             <div class="feature-content">
-              <h3>Knowledge Graph</h3>
+              <h3>知识图谱</h3>
             </div>
           </div>
           <div class="feature-item">
             <div class="feature-icon">🔍</div>
             <div class="feature-content">
-              <h3>Crawler Center</h3>
+              <h3>爬虫中心</h3>
             </div>
           </div>
         </div>
@@ -46,15 +46,15 @@
         <div class="stats-section">
           <div class="stat-item">
             <div class="stat-number">10,000+</div>
-            <div class="stat-label">Research Papers</div>
+            <div class="stat-label">研究论文</div>
           </div>
           <div class="stat-item">
             <div class="stat-number">500+</div>
-            <div class="stat-label">Medical Journals</div>
+            <div class="stat-label">医学期刊</div>
           </div>
           <div class="stat-item">
             <div class="stat-number">2,000+</div>
-            <div class="stat-label">Researchers</div>
+            <div class="stat-label">研究人员</div>
           </div>
         </div>
       </div>
@@ -64,34 +64,34 @@
       <div class="auth-section">
         <div class="auth-box" :class="{ 'register-active': isRegisterMode }">
           <div class="auth-header">
-            <h2>{{ isRegisterMode ? "Create Account" : "Welcome Back" }}</h2>
-            <p>{{ isRegisterMode ? "Join our research community" : "Sign in to continue your research" }}</p>
+            <h2>{{ isRegisterMode ? "创建账户" : "欢迎回来" }}</h2>
+            <p>{{ isRegisterMode ? "加入我们" : "继续研究" }}</p>
           </div>
 
           <!-- 登录表单 -->
           <div v-if="!isRegisterMode">
             <form @submit.prevent="login">
-              <form-input id="username" label="Username" type="text" v-model="username"
-                placeholder="Enter your username" :required="true" />
+              <form-input id="username" label="用户名" type="text" v-model="username" placeholder="请输入用户名"
+                :required="true" />
 
-              <form-input id="password" label="Password" type="password" v-model="password"
-                placeholder="Enter your password" :required="true" />
+              <form-input id="password" label="密码" type="password" v-model="password" placeholder="请输入密码"
+                :required="true" />
 
               <div class="auth-options">
                 <label class="remember-me">
                   <input type="checkbox" v-model="rememberMe">
-                  <span>Remember me</span>
+                  <span>记住我</span>
                 </label>
-                <a href="#" class="forgot-link">Forgot password?</a>
+                <a href="#" class="forgot-link">忘记密码？</a>
               </div>
 
               <primary-button type="submit" :loading="isLoading">
-                Sign In
+                登录
               </primary-button>
 
               <div class="switch-mode">
-                Don't have an account?
-                <a href="#" @click.prevent="isRegisterMode = true">Sign up</a>
+                还没有账户？
+                <a href="#" @click.prevent="isRegisterMode = true">立即注册</a>
               </div>
             </form>
           </div>
@@ -99,32 +99,31 @@
           <!-- 注册表单 -->
           <div v-else>
             <form @submit.prevent="register">
-              <form-input id="reg-username" label="Username" type="text" v-model="username"
-                placeholder="Choose a username" :required="true" />
-
-              <form-input id="email" label="Email" type="email" v-model="email" placeholder="Enter your email address"
+              <form-input id="reg-username" label="用户名" type="text" v-model="username" placeholder="请选择用户名"
                 :required="true" />
 
-              <form-input id="reg-password" label="Password" type="password" v-model="password"
-                placeholder="Create a password" :required="true" />
+              <form-input id="email" label="邮箱" type="email" v-model="email" placeholder="请输入邮箱地址" :required="true" />
 
-              <form-input id="confirm-password" label="Confirm Password" type="password" v-model="confirmPassword"
-                placeholder="Confirm your password" :required="true" />
+              <form-input id="reg-password" label="密码" type="password" v-model="password" placeholder="请创建密码"
+                :required="true" />
+
+              <form-input id="confirm-password" label="确认密码" type="password" v-model="confirmPassword"
+                placeholder="请确认您的密码" :required="true" />
 
               <div class="terms-section">
                 <label class="terms-checkbox">
                   <input type="checkbox" v-model="agreeTerms" required>
-                  <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+                  <span>我同意<a href="#">服务条款</a>和<a href="#">隐私政策</a></span>
                 </label>
               </div>
 
               <primary-button type="submit" :loading="isLoading">
-                Create Account
+                创建账户
               </primary-button>
 
               <div class="switch-mode">
-                Already have an account?
-                <a href="#" @click.prevent="isRegisterMode = false">Sign in</a>
+                已有账户？
+                <a href="#" @click.prevent="isRegisterMode = false">立即登录</a>
               </div>
             </form>
           </div>
@@ -164,7 +163,7 @@ export default {
 
     async login() {
       if (!this.username || !this.password) {
-        this.$message.error("Username and password cannot be empty")
+        this.$message.error("用户名和密码不能为空")
         return
       }
 
@@ -173,7 +172,7 @@ export default {
         const loginRes = await User.login(this.username, this.password)
 
         if (!loginRes?.data) {
-          this.$message.error(loginRes?.data?.message || "Login failed")
+          this.$message.error(loginRes?.data?.message || "登录失败")
           return
         }
 
@@ -183,9 +182,9 @@ export default {
         this.setIsAdmin(userInfo.is_super_user)
         this.setUserId(userInfo.id)
         this.$router.push("/")
-        this.$message.success("Welcome back!")
+        this.$message.success("欢迎回来！")
       } catch (err) {
-        this.$message.error(err?.response?.data?.message || "Login request failed")
+        this.$message.error(err?.response?.data?.message || "登录请求失败")
       } finally {
         this.isLoading = false
       }
@@ -193,24 +192,24 @@ export default {
 
     async register() {
       if (!this.username || !this.password || !this.confirmPassword || !this.email) {
-        this.$message.error("All fields are required")
+        this.$message.error("所有字段都是必填的")
         return
       }
 
       if (this.password !== this.confirmPassword) {
-        this.$message.error("Passwords do not match")
+        this.$message.error("密码不匹配")
         return
       }
 
       if (!this.agreeTerms) {
-        this.$message.error("Please agree to the terms and conditions")
+        this.$message.error("请同意服务条款和条件")
         return
       }
 
       this.isLoading = true
       try {
         await User.register(this.username, this.email, this.password, this.confirmPassword)
-        this.$message.success("Registration successful! Please sign in")
+        this.$message.success("注册成功！请登录")
         this.isRegisterMode = false
         // 清空表单
         this.username = ""
@@ -219,7 +218,7 @@ export default {
         this.confirmPassword = ""
         this.agreeTerms = false
       } catch (error) {
-        this.$message.error(error?.response?.data?.message || "Registration failed")
+        this.$message.error(error?.response?.data?.message || "注册失败")
       } finally {
         this.isLoading = false
       }
@@ -233,9 +232,9 @@ export default {
         this.setUserId(null)
         this.setIsAdmin(false)
         this.$router.push("/login")
-        this.$message.success("Logged out successfully")
+        this.$message.success("退出登录成功")
       } catch (error) {
-        this.$message.error("Logout failed")
+        this.$message.error("退出登录失败")
       }
     },
 
@@ -243,9 +242,9 @@ export default {
       try {
         const response = await User.profile()
         const data = response.data.data
-        this.$message.success(`Current user: ${data.username}`)
+        this.$message.success(`当前用户：${data.username}`)
       } catch (error) {
-        this.$message.error("Failed to get user information")
+        this.$message.error("获取用户信息失败")
       }
     },
   },
