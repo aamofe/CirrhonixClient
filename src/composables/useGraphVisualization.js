@@ -334,7 +334,6 @@ export function useGraphVisualization(networkContainer, props) {
         typeof node.name === 'string' &&
         node.name.toLowerCase().includes(lowerCaseKeyword)
     )
-
     if (matchingNodes.length === 0) {
       return { nodes: [], edges: [], matchedNodeIds: [] }
     }
@@ -343,12 +342,9 @@ export function useGraphVisualization(networkContainer, props) {
     const matchedNodeIds = new Set(matchingNodes.map((node) => node.id))
 
     allEdges.forEach((edge) => {
-      if (
-        connectedNodeIds.has(edge.source_entity.id) ||
-        connectedNodeIds.has(edge.target_entity.id)
-      ) {
-        connectedNodeIds.add(edge.source_entity.id)
-        connectedNodeIds.add(edge.target_entity.id)
+      if (connectedNodeIds.has(edge.from) || connectedNodeIds.has(edge.to)) {
+        connectedNodeIds.add(edge.from)
+        connectedNodeIds.add(edge.to)
       }
     })
 
@@ -357,8 +353,8 @@ export function useGraphVisualization(networkContainer, props) {
     )
     const filteredEdges = allEdges.filter(
       (edge) =>
-        connectedNodeIds.has(edge.source_entity.id) &&
-        connectedNodeIds.has(edge.target_entity.id)
+        // 修复点: 访问转换后的 'from' 和 'to' 属性
+        connectedNodeIds.has(edge.from) && connectedNodeIds.has(edge.to)
     )
 
     return {
