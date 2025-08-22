@@ -6,7 +6,7 @@
       <input :id="id" :type="showPassword ? 'text' : 'password'" :value="modelValue" :placeholder="placeholder"
         @input="$emit('update:modelValue', $event.target.value)" :required="required" />
       <span class="password-toggle" @click="togglePassword">
-        {{ showPassword ? "隐藏" : "显示" }}
+        {{ showPassword ? 'Hide' : 'Show' }}
       </span>
     </div>
     <input v-else :id="id" :type="type" :value="modelValue" :placeholder="placeholder"

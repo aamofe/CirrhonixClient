@@ -1,66 +1,133 @@
 <template>
   <div class="login-page">
     <!-- 语言选择器 -->
-    <div class="language-selector">
+    <!-- <div class="language-selector">
       <select>
-        <option value="zh">中文</option>
         <option value="en">English</option>
+        <option value="zh">中文</option>
       </select>
+    </div> -->
+
+    <!-- 背景装饰 -->
+    <div class="background-elements">
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
+      <div class="circle circle-3"></div>
     </div>
 
-    <div class="liver-shape"></div>
-
     <div class="container">
-      <div class="login-box" :class="{ 'register-active': isRegisterMode }">
-        <!-- Logo区域 -->
-        <div class="logo-container">
-          <img :src="require('@/assets/logo_below.svg')" alt="Logo Below" />
+      <!-- 左侧内容介绍 -->
+      <div class="content-section">
+        <div class="logo-section">
+          <img :src="require('@/assets/logo_below.svg')" alt="Logo" class="main-logo" />
+          <h1 class="system-title">Liver Cirrhosis Literature Intelligence System</h1>
+        </div>
+        <div class="features-section">
+          <div class="feature-item">
+            <div class="feature-icon">📚</div>
+            <div class="feature-content">
+              <h3>Literature Search</h3>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">🔗</div>
+            <div class="feature-content">
+              <h3>Knowledge Graph</h3>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">🔍</div>
+            <div class="feature-content">
+              <h3>Crawler Center</h3>
+            </div>
+          </div>
         </div>
 
-        <!-- 标题 -->
-        <h1>{{ isRegisterMode ? "注册新账号" : "肝硬化文献智能检索系统" }}</h1>
-
-        <!-- 登录表单 -->
-        <div v-if="!isRegisterMode">
-          <form @submit.prevent="login">
-            <form-input id="username" label="用户名" type="text" v-model="username" placeholder="请输入您的用户名"
-              :required="true" />
-
-            <form-input id="password" label="密码" type="password" v-model="password" placeholder="请输入您的密码"
-              :required="true" />
-
-            <div class="forgot-password">
-              <a href="#">忘记密码？</a>
-            </div>
-
-            <primary-button type="submit"> 登 录 </primary-button>
-
-            <div class="register-link">
-              还没有账号？<a href="#" @click.prevent="isRegisterMode = true">立即注册</a>
-            </div>
-          </form>
+        <div class="stats-section">
+          <div class="stat-item">
+            <div class="stat-number">10,000+</div>
+            <div class="stat-label">Research Papers</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">500+</div>
+            <div class="stat-label">Medical Journals</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">2,000+</div>
+            <div class="stat-label">Researchers</div>
+          </div>
         </div>
+      </div>
 
-        <!-- 注册表单 -->
-        <div v-else>
-          <form @submit.prevent="register">
-            <form-input id="reg-username" label="用户名" type="text" v-model="username" placeholder="请输入用户名"
-              :required="true" />
+      <div class="divider"></div>
 
-            <form-input id="email" label="邮箱" type="email" v-model="email" placeholder="请输入您的邮箱" :required="true" />
+      <div class="auth-section">
+        <div class="auth-box" :class="{ 'register-active': isRegisterMode }">
+          <div class="auth-header">
+            <h2>{{ isRegisterMode ? "Create Account" : "Welcome Back" }}</h2>
+            <p>{{ isRegisterMode ? "Join our research community" : "Sign in to continue your research" }}</p>
+          </div>
 
-            <form-input id="reg-password" label="密码" type="password" v-model="password" placeholder="请输入密码"
-              :required="true" />
+          <!-- 登录表单 -->
+          <div v-if="!isRegisterMode">
+            <form @submit.prevent="login">
+              <form-input id="username" label="Username" type="text" v-model="username"
+                placeholder="Enter your username" :required="true" />
 
-            <form-input id="confirm-password" label="确认密码" type="password" v-model="confirmPassword"
-              placeholder="请再次输入密码" :required="true" />
+              <form-input id="password" label="Password" type="password" v-model="password"
+                placeholder="Enter your password" :required="true" />
 
-            <primary-button type="submit"> 注 册 </primary-button>
+              <div class="auth-options">
+                <label class="remember-me">
+                  <input type="checkbox" v-model="rememberMe">
+                  <span>Remember me</span>
+                </label>
+                <a href="#" class="forgot-link">Forgot password?</a>
+              </div>
 
-            <div class="register-link">
-              已有账号？<a href="#" @click.prevent="isRegisterMode = false">返回登录</a>
-            </div>
-          </form>
+              <primary-button type="submit" :loading="isLoading">
+                Sign In
+              </primary-button>
+
+              <div class="switch-mode">
+                Don't have an account?
+                <a href="#" @click.prevent="isRegisterMode = true">Sign up</a>
+              </div>
+            </form>
+          </div>
+
+          <!-- 注册表单 -->
+          <div v-else>
+            <form @submit.prevent="register">
+              <form-input id="reg-username" label="Username" type="text" v-model="username"
+                placeholder="Choose a username" :required="true" />
+
+              <form-input id="email" label="Email" type="email" v-model="email" placeholder="Enter your email address"
+                :required="true" />
+
+              <form-input id="reg-password" label="Password" type="password" v-model="password"
+                placeholder="Create a password" :required="true" />
+
+              <form-input id="confirm-password" label="Confirm Password" type="password" v-model="confirmPassword"
+                placeholder="Confirm your password" :required="true" />
+
+              <div class="terms-section">
+                <label class="terms-checkbox">
+                  <input type="checkbox" v-model="agreeTerms" required>
+                  <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+                </label>
+              </div>
+
+              <primary-button type="submit" :loading="isLoading">
+                Create Account
+              </primary-button>
+
+              <div class="switch-mode">
+                Already have an account?
+                <a href="#" @click.prevent="isRegisterMode = false">Sign in</a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -86,9 +153,10 @@ export default {
       password: "",
       email: "",
       confirmPassword: "",
-      showPassword: false,
-      showConfirmPassword: false,
       isRegisterMode: false,
+      isLoading: false,
+      rememberMe: false,
+      agreeTerms: false,
     }
   },
   methods: {
@@ -96,59 +164,66 @@ export default {
 
     async login() {
       if (!this.username || !this.password) {
-        this.$message.error("用户名和密码不得为空")
+        this.$message.error("Username and password cannot be empty")
         return
       }
+
+      this.isLoading = true
       try {
         const loginRes = await User.login(this.username, this.password)
 
         if (!loginRes?.data) {
-          this.$message.error(loginRes?.data?.message || "登录失败")
+          this.$message.error(loginRes?.data?.message || "Login failed")
           return
         }
+
         const userInfo = loginRes.data.data
         localStorage.setItem("token", userInfo.token)
 
         this.setIsAdmin(userInfo.is_super_user)
         this.setUserId(userInfo.id)
         this.$router.push("/")
+        this.$message.success("Welcome back!")
       } catch (err) {
-
-        this.$message.error(err?.response?.data?.message || "登录请求出错")
+        this.$message.error(err?.response?.data?.message || "Login request failed")
+      } finally {
+        this.isLoading = false
       }
     },
 
     async register() {
-      if (
-        !this.username ||
-        !this.password ||
-        !this.confirmPassword ||
-        !this.email
-      ) {
-        this.$message.error("所有字段均为必填")
+      if (!this.username || !this.password || !this.confirmPassword || !this.email) {
+        this.$message.error("All fields are required")
         return
       }
 
       if (this.password !== this.confirmPassword) {
-        this.$message.error("两次密码不一致")
+        this.$message.error("Passwords do not match")
         return
       }
 
+      if (!this.agreeTerms) {
+        this.$message.error("Please agree to the terms and conditions")
+        return
+      }
+
+      this.isLoading = true
       try {
-        await User.register(
-          this.username,
-          this.email,
-          this.password,
-          this.confirmPassword
-        )
-        // const res =
-        this.$message.success("注册成功，请登录")
+        await User.register(this.username, this.email, this.password, this.confirmPassword)
+        this.$message.success("Registration successful! Please sign in")
         this.isRegisterMode = false
+        // 清空表单
+        this.username = ""
+        this.email = ""
+        this.password = ""
+        this.confirmPassword = ""
+        this.agreeTerms = false
       } catch (error) {
-        this.$message.error(error?.response?.data?.message || "注册失败")
+        this.$message.error(error?.response?.data?.message || "Registration failed")
+      } finally {
+        this.isLoading = false
       }
     },
-
 
     async logout() {
       try {
@@ -158,20 +233,19 @@ export default {
         this.setUserId(null)
         this.setIsAdmin(false)
         this.$router.push("/login")
-        this.$message.success("已登出")
+        this.$message.success("Logged out successfully")
       } catch (error) {
-        this.$message.error("登出失败")
+        this.$message.error("Logout failed")
       }
     },
-
 
     async getProfile() {
       try {
         const response = await User.profile()
         const data = response.data.data
-        this.$message.success(`当前用户：${data.username}`)
+        this.$message.success(`Current user: ${data.username}`)
       } catch (error) {
-        this.$message.error("获取用户信息失败")
+        this.$message.error("Failed to get user information")
       }
     },
   },
@@ -180,18 +254,17 @@ export default {
 
 <style scoped>
 .login-page {
-  background: linear-gradient(135deg, #0e5a84 0%, #f5fbff 100%);
-  height: 100vh;
-  overflow: hidden;
+  background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 50%, #f5fbff 100%);
+  min-height: 100vh;
   position: relative;
+  overflow: hidden;
 }
 
+/* 语言选择器 */
 .language-selector {
   position: absolute;
   top: 20px;
   right: 20px;
-  color: white;
-  font-size: 14px;
   z-index: 10;
 }
 
@@ -199,11 +272,12 @@ export default {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
   outline: none;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  font-size: 14px;
 }
 
 .language-selector select:hover {
@@ -211,105 +285,475 @@ export default {
 }
 
 .language-selector select option {
-  background: #0e5a84;
+  background: #1a91c1;
   color: white;
 }
 
+/* 背景装饰 */
+.background-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  animation: float 6s ease-in-out infinite;
+}
+
+.circle-1 {
+  width: 200px;
+  height: 200px;
+  top: 10%;
+  left: 5%;
+  animation-delay: 0s;
+}
+
+.circle-2 {
+  width: 150px;
+  height: 150px;
+  top: 70%;
+  left: 10%;
+  animation-delay: 2s;
+}
+
+.circle-3 {
+  width: 100px;
+  height: 100px;
+  top: 50%;
+  right: 10%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* 主容器 */
 .container {
+  display: flex;
+  min-height: 100vh;
   position: relative;
   z-index: 1;
-  display: flex;
-  justify-content: center;
   align-items: center;
-  height: 100vh;
 }
 
-.login-box {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
+/* 左侧内容区 */
+.content-section {
+  flex: 1;
+  padding: 60px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 50%;
+  position: relative;
+}
+
+.logo-section {
+  margin-bottom: 50px;
+  text-align: center;
+}
+
+.main-logo {
+  height: 80px;
+  width: auto;
+  margin-bottom: 30px;
+  filter: brightness(0) invert(1);
+}
+
+.system-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.system-description {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+/* 功能特色 - 居中显示，移除抖动效果 */
+.features-section {
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+  opacity: 0;
+  animation: slideInUp 0.6s ease-out forwards;
+  max-width: 300px;
+}
+
+.feature-item:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.feature-item:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+.feature-item:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  /* 移除抖动动画 */
+}
+
+.feature-content h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.feature-content p {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 统计信息 */
+.stats-section {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+  background: linear-gradient(45deg, #ffffff, #a8e6cf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* 中间分隔线 - 更粗的白色线条 */
+.divider {
+  width: 4px;
+  background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 10%,
+      rgba(255, 255, 255, 0.8) 30%,
+      rgba(255, 255, 255, 1) 50%,
+      rgba(255, 255, 255, 0.8) 70%,
+      rgba(255, 255, 255, 0.3) 90%,
+      transparent 100%);
+  margin: 0 40px;
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  box-shadow:
+    0 0 20px rgba(255, 255, 255, 0.5),
+    0 0 40px rgba(255, 255, 255, 0.3);
+}
+
+/* 右侧认证区 */
+.auth-section {
+  flex: 0 0 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 40px;
-  border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(10, 30, 60, 0.2);
-  width: 400px;
-  max-width: 90%;
-  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.login-box.register-active {
-  width: 450px;
+.auth-box {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+  width: 100%;
+  max-width: 400px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(26, 145, 193, 0.1);
 }
 
-.logo-container {
+.auth-box.register-active {
+  max-width: 450px;
+}
+
+.auth-header {
   text-align: center;
   margin-bottom: 30px;
 }
 
-.logo-container svg {
-  height: 60px;
-  width: auto;
-}
-
-h1 {
-  font-size: 24px;
+.auth-header h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
   color: #1a91c1;
-  margin-bottom: 25px;
-  text-align: center;
-  font-weight: 500;
+  margin-bottom: 8px;
 }
 
-.forgot-password {
-  text-align: right;
-  margin-bottom: 25px;
+.auth-header p {
+  color: #666;
+  margin: 0;
 }
 
-.forgot-password a {
-  color: #1a91c1;
+/* 表单选项 */
+.auth-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
   font-size: 14px;
-  text-decoration: none;
 }
 
-.forgot-password a:hover {
+.remember-me {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #555;
+}
+
+.remember-me input {
+  margin-right: 8px;
+  accent-color: #1a91c1;
+}
+
+.forgot-link {
+  color: #1a91c1;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.forgot-link:hover {
+  color: #a8e6cf;
   text-decoration: underline;
 }
 
-.register-link {
+.terms-section {
+  margin-bottom: 25px;
+}
+
+.terms-checkbox {
+  display: flex;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  color: #555;
+}
+
+.terms-checkbox input {
+  margin-right: 8px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #1a91c1;
+}
+
+.terms-checkbox a {
+  color: #1a91c1;
+  text-decoration: none;
+}
+
+.terms-checkbox a:hover {
+  text-decoration: underline;
+}
+
+.switch-mode {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
   color: #666;
 }
 
-.register-link a {
+.switch-mode a {
   color: #1a91c1;
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
-.register-link a:hover {
+.switch-mode a:hover {
+  color: #a8e6cf;
   text-decoration: underline;
 }
 
-.liver-shape {
-  position: absolute;
-  bottom: -150px;
-  right: -100px;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(ellipse at center,
-      rgba(168, 230, 207, 0.15) 0%,
-      rgba(168, 230, 207, 0) 70%);
-  border-radius: 50% 50% 50% 70%;
-  transform: rotate(45deg);
-  z-index: 0;
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .content-section {
+    max-width: 100%;
+    padding: 40px 30px 20px;
+  }
+
+  .system-title {
+    font-size: 2.5rem;
+  }
+
+  .divider {
+    width: 100%;
+    height: 4px;
+    margin: 20px 0;
+    background: linear-gradient(to right,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 10%,
+        rgba(255, 255, 255, 0.8) 30%,
+        rgba(255, 255, 255, 1) 50%,
+        rgba(255, 255, 255, 0.8) 70%,
+        rgba(255, 255, 255, 0.3) 90%,
+        transparent 100%);
+    border-radius: 2px;
+  }
+
+  .divider::before {
+    top: 50%;
+    left: 50%;
+  }
+
+  .auth-section {
+    flex: none;
+    padding: 20px 30px 40px;
+  }
+
+  .stats-section {
+    gap: 30px;
+  }
 }
 
 @media (max-width: 768px) {
-  .login-box {
-    padding: 30px;
+  .content-section {
+    padding: 30px 20px 20px;
   }
 
-  .liver-shape {
-    opacity: 0.3;
+  .system-title {
+    font-size: 2rem;
+  }
+
+  .system-description {
+    font-size: 1.1rem;
+  }
+
+  .features-section {
+    margin-bottom: 30px;
+  }
+
+  .feature-item {
+    margin-bottom: 20px;
+  }
+
+  .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+  }
+
+  .stats-section {
+    gap: 20px;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+  }
+
+  .auth-section {
+    padding: 20px;
+  }
+
+  .auth-box {
+    padding: 30px 25px;
+  }
+
+  .language-selector {
+    top: 15px;
+    right: 15px;
+  }
+
+  .divider {
+    margin: 20px 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .system-title {
+    font-size: 1.8rem;
+  }
+
+  .stats-section {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .auth-box {
+    padding: 25px 20px;
+  }
+
+  .background-elements {
+    display: none;
+  }
+
+  .divider {
+    margin: 20px;
   }
 }
 </style>

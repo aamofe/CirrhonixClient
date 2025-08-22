@@ -1,19 +1,18 @@
 <template>
   <div id="app">
-    <!-- 只有当前路由不是 '/login' 时才显示 Header -->
     <HeaderComponent v-if="$route.path !== '/login'" />
     <router-view />
   </div>
 </template>
 
 <script>
-import HeaderComponent from "@/components/layout/HeaderComponent.vue";
+import HeaderComponent from "@/components/layout/HeaderComponent.vue"
 
 export default {
   components: {
     HeaderComponent,
   },
-};
+}
 </script>
 
 <style lang="scss">
