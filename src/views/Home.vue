@@ -3,83 +3,176 @@
   <div class="home-page">
     <section class="search-container">
       <h1>肝硬化文献智能检索系统</h1>
-      <p>
-        集成全球领先肝病研究资源，通过智能检索技术，为医师和研究人员提供精准专业的学术支持
-      </p>
-
       <search-box @search="onSearch" />
     </section>
 
     <div class="main-content">
-      <!-- 精选文献 -->
-      <section class="featured-article">
-        <div class="featured-content">
-          <h2>{{ featuredArticle.title }}</h2>
-          <div class="featured-meta">
-            <span>来源：{{ featuredArticle.journal }}</span>
-            <span>发表日期：{{ formatDate(featuredArticle.publicationDate) }}</span>
-            <span>引用：{{ featuredArticle.citations }}</span>
-          </div>
-          <p>{{ featuredArticle.abstract }}</p>
-          <primary-button @click="viewArticle(featuredArticle.id)" :fullWidth="false">
-            阅读全文
-          </primary-button>
-        </div>
-        <div class="featured-image">
-          <img src="@/assets/cover.avif" alt="肝硬化研究图片" />
-        </div>
-      </section>
-
-      <!-- AI助手 -->
-      <AiAssistant />
-
-      <!-- 研究热点 -->
-      <section class="hot-topics">
-        <h2 class="section-header">肝硬化研究热点</h2>
-        <div class="topics-grid">
-          <div v-for="(topic, index) in researchTopics" :key="index" class="topic-card"
-            @click="onSearch(topic.keyword)">
-            <div class="topic-icon">
-              <i :class="topic.icon"></i>
+      <section class="workflow-section">
+        <h2 class="section-header">研究工作流程</h2>
+        <div class="workflow-steps">
+          <div v-for="(step, index) in workflowSteps" :key="index" class="workflow-step" @click="navigateToStep(step)">
+            <div class="step-icon">
+              <i :class="step.icon"></i>
             </div>
-            <h3>{{ topic.title }}</h3>
-            <p>{{ topic.description }}</p>
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.description }}</p>
           </div>
         </div>
       </section>
 
-      <!-- 研究统计 -->
-      <section class="research-stats">
-        <h2 class="section-header">肝硬化研究统计</h2>
-        <div class="stats-container">
-          <div class="stat-item">
-            <div class="stat-number">{{ researchStats.totalArticles }}</div>
-            <div class="stat-label">收录文献</div>
+      <section class="tasks-section">
+        <h2 class="section-header">执行中心</h2>
+        <div class="tasks-grid">
+          <div class="task-card">
+            <div class="task-header">
+              <h3>智能解析任务</h3>
+              <span class="task-count">{{ analysisTasksCount }}</span>
+            </div>
+            <div class="task-content">
+              <div v-if="analysisTasksLoading" class="loading-state">
+                <div class="spinner"></div>
+                <span>加载中...</span>
+              </div>
+              <div v-else-if="recentAnalysisTasks.length === 0" class="empty-state">
+                <p>暂无解析任务</p>
+                <primary-button @click="$router.push('/literature')" size="small">
+                  开始解析
+                </primary-button>
+              </div>
+              <div v-else class="tasks-list">
+                <div v-for="task in recentAnalysisTasks.slice(0, 3)" :key="task.id" class="task-item"
+                  @click="viewAnalysisTask(task.id, task)">
+                  <div class="task-info">
+                    <span class="task-title">{{ getAnalysisTaskTitle(task) }}</span>
+                    <span class="task-time">{{ formatTime(task.start_time) }}</span>
+                  </div>
+                  <div class="task-status" :class="task.status">
+                    {{ getStatusText(task.status) }}
+                  </div>
+                </div>
+                <div v-if="recentAnalysisTasks.length > 3" class="view-all">
+                  <router-link to="/literature/analyze/list">查看全部</router-link>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ researchStats.totalAuthors }}</div>
-            <div class="stat-label">研究作者</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ researchStats.totalJournals }}</div>
-            <div class="stat-label">期刊来源</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ researchStats.lastUpdate }}</div>
-            <div class="stat-label">最近更新</div>
+
+          <div class="task-card">
+            <div class="task-header">
+              <h3>数据采集引擎</h3>
+              <span class="task-count">{{ crawlTasksCount }}</span>
+            </div>
+            <div class="task-content">
+              <div v-if="crawlTasksLoading" class="loading-state">
+                <div class="spinner"></div>
+                <span>加载中...</span>
+              </div>
+              <div v-else-if="crawlTasks.length === 0" class="empty-state">
+                <p>暂无采集任务</p>
+                <primary-button @click="$router.push('/crawler')" size="small">
+                  创建任务
+                </primary-button>
+              </div>
+              <div v-else class="tasks-list">
+                <div v-for="task in crawlTasks.slice(0, 3)" :key="task.id" class="task-item"
+                  @click="viewCrawlTask(task.id)">
+                  <div class="task-info">
+                    <span class="task-title">{{ getCrawlTaskTitle(task) }}</span>
+                    <span class="task-time">{{ formatTime(task.start_time) }}</span>
+                  </div>
+                  <div class="task-status" :class="task.status">
+                    {{ getStatusText(task.status) }}
+                    <span v-if="task.progress" class="task-progress">{{ formatProgress(task.progress) }}</span>
+                  </div>
+                </div>
+                <div v-if="crawlTasks.length > 3" class="view-all">
+                  <router-link to="/crawler">查看全部</router-link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- 语义分析 -->
-      <section class="semantic-analysis">
-        <h2 class="section-header">热门研究概念网络</h2>
-        <div class="concept-network">
-          <div class="network-placeholder">
-            <p>肝硬化相关概念图谱</p>
-            <primary-button @click="onSearch('肝硬化概念网络')" :fullWidth="false">
-              查看详情
-            </primary-button>
+      <section class="workspace-section">
+        <h2 class="section-header">学术工作台</h2>
+        <div class="workspace-grid">
+          <div class="workspace-card" @click="$router.push('/profile')">
+            <div class="card-icon">
+              <i class="icon-folder"></i>
+            </div>
+            <div class="card-content">
+              <h3>文献收藏库</h3>
+              <p class="card-count">{{ collectionsCount }} 个专题集</p>
+              <div v-if="recentCollections.length > 0" class="recent-items">
+                <div v-for="collection in recentCollections.slice(0, 2)" :key="collection.id" class="recent-item"
+                  @click.stop="$router.push(`/profile?collectionId=${collection.id}`)">
+                  {{ collection.name }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="workspace-card">
+            <div class="card-icon">
+              <i class="icon-analysis"></i>
+            </div>
+            <div class="card-content">
+              <h3>近期分析文献</h3>
+              <p class="card-count">{{ recentLiteratureCount }} 篇已解析</p>
+              <div v-if="recentAnalyzedLiterature.length > 0" class="recent-items">
+                <div v-for="literature in recentAnalyzedLiterature.slice(0, 2)" :key="literature.id" class="recent-item"
+                  @click="$router.push(`/literature/${literature.id}`)">
+                  {{ truncateTitle(literature.title) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="capabilities-section">
+        <h2 class="section-header">平台能力矩阵</h2>
+        <div class="capabilities-grid">
+          <div class="capability-card">
+            <div class="capability-header">
+              <h3>学术数据源</h3>
+              <span class="capability-count">{{ dataSources.length - 1 }}个数据源</span>
+            </div>
+            <div class="capability-content">
+              <div v-if="dataSourcesLoading" class="loading-state">
+                <div class="spinner"></div>
+              </div>
+              <div v-else class="data-sources-list">
+                <div v-for="source in dataSources.filter(s => s.name !== 'Local')" :key="source.id"
+                  class="data-source-item">
+                  <i :class="getSourceIcon(source.name)"></i>
+                  <span class="source-text">{{ source.name }} - {{ source.description }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="capability-card">
+            <div class="capability-header">
+              <h3>认知计算引擎</h3>
+            </div>
+            <div class="capability-content">
+              <div class="analysis-examples">
+                <div class="example-item">
+                  <h4>语义摘要生成</h4>
+                  <p>基于深度学习的文献核心信息提取</p>
+                </div>
+                <div class="example-item">
+                  <h4>关联文献发现</h4>
+                  <p>多维度语义相似性分析与推荐</p>
+                </div>
+                <div class="example-item">
+                  <h4>知识问答系统</h4>
+                  <p>上下文感知的文献内容交互式查询</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -92,461 +185,850 @@
 <script>
 import SearchBox from "@/components/common/SearchBox.vue"
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import LiteratureCard from "@/components/cards/LiteratureCard.vue"
-import AuthorCard from "@/components/cards/AuthorCard.vue"
-import AiAssistant from "@/components/AiAssistant.vue"
 import SiteFooter from "@/components/layout/SiteFooter.vue"
 import Literature from "@/api/Literature"
+import Crawling from "@/api/Crawler"
 
 export default {
   name: "HomeView",
   components: {
     SearchBox,
     PrimaryButton,
-    LiteratureCard,
-    AuthorCard,
-    AiAssistant,
     SiteFooter,
   },
   data() {
     return {
-      featuredArticle: {
-        id: null,
-        title: "最新研究焦点：非酒精性脂肪性肝炎向肝硬化转变的分子机制",
-        journal: "Nature",
-        publicationDate: "2025-04-28",
-        citations: 124,
-        abstract:
-          "本研究通过多组学分析揭示了NASH患者肝脏中炎症反应与细胞外基质累积的分子调控网络，发现了TGF-β1信号通路在肝纤维化进展中的关键作用，并验证了靶向干预的潜在治疗价值...",
-      },
-      recentArticles: [],
-      popularAuthors: [],
-      isLoading: false,
-      keywords: [],
-      researchTopics: [
+      workflowSteps: [
         {
-          title: "非酒精性脂肪性肝病",
-          keyword: "非酒精性脂肪性肝病 肝硬化",
-          description: "NAFLD向肝硬化进展的机制与诊断",
-          icon: "icon-liver",
+          title: "数据采集",
+          description: "全自动文献资源获取",
+          icon: "icon-crawler",
+          path: "/crawler"
         },
         {
-          title: "病毒性肝炎",
-          keyword: "病毒性肝炎 肝硬化",
-          description: "乙肝、丙肝病毒感染导致的肝硬化研究",
-          icon: "icon-virus",
+          title: "智能检索",
+          description: "语义级文献精准发现",
+          icon: "icon-search",
+          path: "/literature"
         },
         {
-          title: "肝硬化并发症",
-          keyword: "肝硬化 并发症",
-          description: "门静脉高压、腹水、肝性脑病研究",
-          icon: "icon-complication",
+          title: "深度解析",
+          description: "AI驱动的内容理解",
+          icon: "icon-ai",
+          id: Math.floor(Math.random() * 20) + 1,
+          path: "/literature"
         },
         {
-          title: "治疗进展",
-          keyword: "肝硬化 治疗",
-          description: "逆转肝纤维化的治疗策略研究",
-          icon: "icon-treatment",
-        },
+          title: "知识图谱",
+          description: "多维关系可视化呈现",
+          icon: "icon-graph",
+          path: "/knowledge-graph"
+        }
       ],
-      researchStats: {
-        totalArticles: "3,582",
-        totalAuthors: "1,245",
-        totalJournals: "87",
-        lastUpdate: "2025-05-06",
-      },
+
+      recentAnalysisTasks: [],
+      analysisTasksCount: 0,
+      analysisTasksLoading: false,
+
+      crawlTasks: [],
+      crawlTasksCount: 0,
+      crawlTasksLoading: false,
+
+      collectionsCount: 0,
+      recentCollections: [],
+      recentAnalyzedLiterature: [],
+      recentLiteratureCount: 0,
+
+      dataSources: [],
+      dataSourcesLoading: false,
     }
   },
+
   methods: {
-    formatDate(dateString) {
-      if (!dateString) return ""
-      const date = new Date(dateString)
-      return date.toLocaleDateString("zh-CN")
-    },
-    async loadRecentArticles() {
-      try {
-        this.isLoading = true
-        const response = await Literature.list({
-          sort: "-publication_date",
-          page: 1,
-          size: 4,
-        })
-        this.recentArticles = response.data.data.items || []
-      } catch (error) {
-
-      } finally {
-        this.isLoading = false
+    navigateToStep(step) {
+      if (step.title === "深度解析") {
+        this.$router.push(`/literature/${step.id}`)
+      } else {
+        this.$router.push(step.path)
       }
     },
-    async loadPopularAuthors() {
-      try {
-        this.isLoading = true
-        const response = await Literature.getAuthors({
-          sort: "publications",
-          page: 1,
-          size: 4,
-        })
-        this.popularAuthors = response.data.data.items || []
-      } catch (error) {
 
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async loadFeaturedArticle() {
-      try {
-        const response = await Literature.list({
-          sort: "-citation_count",
-          page: 1,
-          size: 1,
-        })
-
-        if (response.data.data.items && response.data.data.items.length > 0) {
-          const article = response.data.data.items[0]
-          this.featuredArticle = {
-            id: article.id,
-            title: article.title,
-            journal: article.source || "Unknown Journal",
-            publicationDate: article.publication_date,
-            citations: article.citation_count || 0,
-            abstract: article.abstract || "暂无摘要",
-          }
-        }
-      } catch (error) {
-
-      }
-    },
-    // async loadKeywords() {
-    //   try {
-    //     const response = await Search.getKeywords({
-    //       sort: "-weight",
-    //       size: 10,
-    //     });
-    //     this.keywords = response.data.data.items || [];
-    //   } catch (error) {
-
-    //   }
-    // },
     onSearch(query) {
       this.$router.push({
         name: "literature-list",
-        query: { q: query },
+        query: { q: query }
       })
     },
-    viewArticle(id) {
-      if (id) {
-        this.$router.push({
-          name: "literature-detail",
-          params: { id },
-        })
+
+    viewAnalysisTask(taskId, task) {
+      if (task && task.literature && task.literature.id) {
+        this.$router.push(`/literature/${task.literature.id}`)
+      } else {
+        this.$router.push('/literature')
       }
     },
-  },
-  async mounted() {
-    try {
 
-      await Promise.all([
-        this.loadRecentArticles(),
-        this.loadPopularAuthors(),
-        this.loadFeaturedArticle(),
-        // this.loadKeywords(),
-      ])
-    } catch (error) {
+    viewCrawlTask(taskId) {
+      this.$router.push('/crawler')
+    },
 
+    formatTime(dateString) {
+      if (!dateString) return "待启动"
+
+      try {
+        const date = new Date(dateString)
+        const now = new Date()
+        const diff = now - date
+
+        if (diff < 3600000) {
+          const minutes = Math.floor(diff / 60000)
+          return minutes > 0 ? `${minutes}分钟前` : "刚刚"
+        } else if (diff < 86400000) {
+          const hours = Math.floor(diff / 3600000)
+          return `${hours}小时前`
+        } else if (diff < 2592000000) {
+          const days = Math.floor(diff / 86400000)
+          return `${days}天前`
+        } else {
+          return date.toLocaleDateString('zh-CN')
+        }
+      } catch (error) {
+        console.error('时间格式化错误:', error)
+        return "时间未知"
+      }
+    },
+
+    formatProgress(progress) {
+      if (!progress) return ""
+      if (typeof progress === 'string' && progress.includes('%')) return progress
+      if (typeof progress === 'number') return `${(progress * 100).toFixed(1)}%`
+      return progress
+    },
+
+    getStatusText(status) {
+      const statusMap = {
+        'pending': '队列中',
+        'running': '执行中',
+        'processing': '解析中',
+        'completed': '已完成',
+        'failed': '执行失败',
+        'paused': '已暂停'
+      }
+      return statusMap[status] || '状态未知'
+    },
+
+    getAnalysisTaskTitle(task) {
+      if (task.literature && task.literature.title) {
+        return this.truncateTitle(task.literature.title)
+      }
+      return `解析任务 #${task.id}`
+    },
+
+    getCrawlTaskTitle(task) {
+      if (task.keywords && task.keywords.keywords) {
+        const keywords = task.keywords.keywords
+          .replace(/\bAND\b/gi, ' & ')
+          .replace(/\bOR\b/gi, ' | ')
+          .replace(/\bNOT\b/gi, ' ! ')
+        return `检索: ${keywords}`
+      }
+      return `采集任务 #${task.id}`
+    },
+
+    truncateTitle(title, maxLength = 30) {
+      if (!title) return "无标题"
+      return title.length > maxLength ? title.substring(0, maxLength) + '...' : title
+    },
+
+    getSourceIcon(sourceName) {
+      const icons = {
+        'PubMed Central': 'icon-pubmed',
+        'arXiv': 'icon-arxiv',
+        'Semantic Scholar': 'icon-semantic',
+        'bioRxiv': 'icon-biorxiv',
+        'DOAJ': 'icon-doaj'
+      }
+      return icons[sourceName] || 'icon-database'
+    },
+
+    async loadAnalysisTasks() {
+      try {
+        this.analysisTasksLoading = true
+        const response = await Literature.getAnalyzeList(null, null, true)
+        if (response.data && response.data.data) {
+          this.recentAnalysisTasks = response.data.data
+          this.analysisTasksCount = this.recentAnalysisTasks.length
+        }
+      } catch (error) {
+        console.error('加载分析任务失败:', error)
+        this.recentAnalysisTasks = []
+        this.analysisTasksCount = 0
+      } finally {
+        this.analysisTasksLoading = false
+      }
+    },
+
+    async loadCrawlTasks() {
+      try {
+        this.crawlTasksLoading = true
+        const [pendingResponse, runningResponse] = await Promise.all([
+          Crawling.getCrawlList('pending', null, 1, 10),
+          Crawling.getCrawlList('running', null, 1, 10)
+        ])
+
+        let allTasks = []
+        if (pendingResponse.data && pendingResponse.data.data) {
+          allTasks = allTasks.concat(pendingResponse.data.data)
+        }
+        if (runningResponse.data && runningResponse.data.data) {
+          allTasks = allTasks.concat(runningResponse.data.data)
+        }
+
+        allTasks.sort((a, b) => b.id - a.id)
+        this.crawlTasks = allTasks
+        this.crawlTasksCount = allTasks.length
+
+      } catch (error) {
+        console.error('加载爬虫任务失败:', error)
+        this.crawlTasks = []
+        this.crawlTasksCount = 0
+      } finally {
+        this.crawlTasksLoading = false
+      }
+    },
+
+    async loadCollections() {
+      try {
+        const response = await Literature.getCollections()
+        if (response.data && response.data.data) {
+          const collections = response.data.data
+          this.collectionsCount = collections.length
+          this.recentCollections = collections
+            .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+            .slice(0, 4)
+        }
+      } catch (error) {
+        console.error('加载收藏夹失败:', error)
+        this.collectionsCount = 0
+        this.recentCollections = []
+      }
+    },
+
+    async loadRecentAnalyzedLiterature() {
+      try {
+        const response = await Literature.getAnalyzeRecent()
+        if (response.data && response.data.data) {
+          this.recentAnalyzedLiterature = response.data.data
+          this.recentLiteratureCount = this.recentAnalyzedLiterature.length
+        }
+      } catch (error) {
+        console.error('加载最近分析文献失败:', error)
+        this.recentAnalyzedLiterature = []
+        this.recentLiteratureCount = 0
+      }
+    },
+
+    async loadDataSources() {
+      try {
+        this.dataSourcesLoading = true
+        const response = await Crawling.getSourceList()
+        if (response.data && response.data.data) {
+          this.dataSources = response.data.data
+        }
+      } catch (error) {
+        console.error('加载数据源失败:', error)
+        this.dataSources = []
+      } finally {
+        this.dataSourcesLoading = false
+      }
+    },
+
+    async initializeData() {
+      try {
+        await Promise.all([
+          this.loadAnalysisTasks(),
+          this.loadCrawlTasks(),
+          this.loadCollections(),
+          this.loadRecentAnalyzedLiterature(),
+          this.loadDataSources()
+        ])
+      } catch (error) {
+        console.error('页面初始化失败:', error)
+      }
     }
+  },
+
+  async mounted() {
+    await this.initializeData()
   },
 }
 </script>
 
 <style scoped>
 .home-page {
-  background-color: #f5fbff;
+  background-color: #f8fcff;
   min-height: 100vh;
 }
 
 .search-container {
   background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
-  padding: 60px 5%;
+  padding: 50px 5%;
   text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.search-container::before {
-  content: "";
-  position: absolute;
-  top: -50px;
-  right: -50px;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(ellipse at center,
-      rgba(255, 255, 255, 0.2) 0%,
-      rgba(255, 255, 255, 0) 70%);
-  border-radius: 50%;
-}
-
-.search-container::after {
-  content: "";
-  position: absolute;
-  bottom: -30px;
-  left: 10%;
-  width: 150px;
-  height: 150px;
-  background: radial-gradient(ellipse at center,
-      rgba(255, 255, 255, 0.15) 0%,
-      rgba(255, 255, 255, 0) 70%);
-  border-radius: 50%;
 }
 
 .search-container h1 {
   color: white;
-  font-size: 32px;
-  margin-bottom: 15px;
-}
-
-.search-container p {
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 30px;
-  max-width: 700px;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: 28px;
+  margin-bottom: 12px;
+  font-weight: 600;
 }
 
 .main-content {
   max-width: 1400px;
-  margin: 40px auto;
-  padding: 0 5%;
-}
-
-.featured-article {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 25px;
-  margin-bottom: 40px;
-  display: flex;
-  gap: 30px;
-}
-
-.featured-content {
-  flex: 1;
-}
-
-.featured-image {
-  width: 250px;
-  height: 180px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.featured-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.featured-image:hover img {
-  transform: scale(1.05);
-}
-
-.featured-article h2 {
-  color: #1a91c1;
-  font-size: 22px;
-  margin-bottom: 15px;
-}
-
-.featured-article p {
-  color: #555;
-  margin-bottom: 20px;
-}
-
-.featured-meta {
-  display: flex;
-  flex-wrap: wrap;
-  color: #888;
-  font-size: 14px;
-  margin-bottom: 20px;
-}
-
-.featured-meta span {
-  margin-right: 20px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
+  margin: 0 auto;
+  padding: 30px 5%;
 }
 
 .section-header {
   color: #1a91c1;
-  font-size: 22px;
+  font-size: 20px;
   margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e5f1f8;
-  position: relative;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
 }
 
-.section-header::after {
+.section-header::before {
   content: "";
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 80px;
-  height: 3px;
+  width: 4px;
+  height: 20px;
   background-color: #1a91c1;
+  margin-right: 12px;
+  border-radius: 2px;
 }
 
-/* 研究热点样式 */
-.hot-topics {
+/* 通用卡片样式 */
+.workflow-section,
+.task-card,
+.workspace-card,
+.capability-card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 25px;
-  margin-bottom: 40px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-.topics-grid {
+/* 工作流程区域 */
+.workflow-section {
+  padding: 25px;
+  margin-bottom: 30px;
+}
+
+.workflow-steps {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
 }
 
-.topic-card {
-  background-color: #f5fbff;
+.workflow-step {
+  background: #f8fcff;
   border-radius: 10px;
   padding: 20px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.topic-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(26, 145, 193, 0.1);
-}
-
-.topic-icon {
-  color: #1a91c1;
-  font-size: 24px;
-  margin-bottom: 15px;
-}
-
-.topic-card h3 {
-  font-size: 18px;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.topic-card p {
-  color: #666;
-  font-size: 14px;
-}
-
-/* 研究统计样式 */
-.research-stats {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 25px;
-  margin-bottom: 40px;
-}
-
-.stats-container {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-.stat-item {
   text-align: center;
-  padding: 20px;
-  flex-basis: calc(25% - 20px);
-  min-width: 120px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
-.stat-number {
-  font-size: 28px;
-  font-weight: bold;
-  color: #1a91c1;
-  margin-bottom: 10px;
+.workflow-step:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(26, 145, 193, 0.15);
+  border-color: rgba(26, 145, 193, 0.2);
 }
 
-.stat-label {
-  color: #666;
-  font-size: 14px;
-}
-
-/* 内容区域 */
-
-
-
-
-/* 语义分析区域 */
-.semantic-analysis {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 25px;
-  margin-bottom: 40px;
-}
-
-.concept-network {
-  height: 300px;
+.step-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #1a91c1, #a8e6cf);
+  border-radius: 50%;
+  margin: 0 auto 15px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  font-size: 20px;
 }
 
-.network-placeholder {
+.workflow-step h3 {
+  color: #333;
+  font-size: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.workflow-step p {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 任务区域 */
+.tasks-section {
+  margin-bottom: 30px;
+}
+
+.tasks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.task-card {
+  overflow: hidden;
+}
+
+.task-header {
+  padding: 20px 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-header h3 {
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.task-count {
+  background: #e8f4f8;
+  color: #1a91c1;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.task-content {
+  padding: 15px 20px 20px;
+}
+
+/* 加载和空状态 */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: #666;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e3e3e3;
+  border-top: 2px solid #1a91c1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
   text-align: center;
-  padding: 20px;
-  background-color: #f5fbff;
-  border-radius: 10px;
-  width: 100%;
-  height: 100%;
+  padding: 30px 20px;
+  color: #999;
+}
+
+.empty-state p {
+  margin: 0 0 20px;
+  font-size: 14px;
+}
+
+/* 任务列表 */
+.tasks-list {
+  margin-top: 1rem;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #f8fcff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.task-item:hover {
+  background: #e8f4f8;
+  transform: translateX(5px);
+}
+
+.task-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  color: #333;
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-time {
+  color: #888;
+  font-size: 12px;
+}
+
+.task-status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 2px;
+}
+
+.task-progress {
+  font-size: 10px;
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* 任务状态颜色 */
+.task-status.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.task-status.processing,
+.task-status.running {
+  background: #cce7ff;
+  color: #004085;
+}
+
+.task-status.completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.task-status.failed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.view-all {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.view-all a {
+  color: #1a91c1;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.view-all a:hover {
+  text-decoration: underline;
+}
+
+/* 工作空间区域 */
+.workspace-section {
+  margin-bottom: 30px;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.workspace-card {
+  padding: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.workspace-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.card-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #1a91c1, #a8e6cf);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  color: white;
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
-.network-placeholder p {
-  margin-bottom: 20px;
+.card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-content h3 {
+  color: #333;
+  font-size: 16px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.card-count {
+  color: #1a91c1;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+
+.recent-items {
+  margin-top: 10px;
+}
+
+.recent-item {
   color: #666;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (max-width: 980px) {
+.recent-item:last-child {
+  border-bottom: none;
+}
 
+/* 系统能力区域 */
+.capabilities-section {
+  margin-bottom: 30px;
+}
 
-  .stats-container {
-    justify-content: center;
-  }
+.capabilities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+}
 
-  .stat-item {
-    flex-basis: calc(50% - 20px);
+.capability-card {
+  overflow: hidden;
+}
+
+.capability-header {
+  padding: 20px 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.capability-header h3 {
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.capability-count {
+  background: #e8f4f8;
+  color: #1a91c1;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.capability-content {
+  padding: 15px 20px 20px;
+}
+
+.data-sources-list {
+  margin-top: 1rem;
+}
+
+.data-source-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  background: #f8fcff;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.data-source-item i {
+  font-size: 16px;
+  color: #1a91c1;
+  width: 20px;
+  text-align: center;
+}
+
+.source-text {
+  color: #333;
+  font-size: 14px;
+  flex: 1;
+}
+
+.analysis-examples {
+  margin-top: 1rem;
+}
+
+.example-item {
+  padding: 15px;
+  background: #f8fcff;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.example-item h4 {
+  color: #1a91c1;
+  font-size: 14px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.example-item p {
+  color: #666;
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 图标字体 */
+.icon-crawler:before {
+  content: "🕷️";
+}
+
+.icon-search:before {
+  content: "🔍";
+}
+
+.icon-ai:before {
+  content: "🤖";
+}
+
+.icon-graph:before {
+  content: "🕸️";
+}
+
+.icon-folder:before {
+  content: "📁";
+}
+
+.icon-analysis:before {
+  content: "📊";
+}
+
+.icon-pubmed:before {
+  content: "🏥";
+}
+
+.icon-arxiv:before {
+  content: "📄";
+}
+
+.icon-semantic:before {
+  content: "🧠";
+}
+
+.icon-biorxiv:before {
+  content: "🧬";
+}
+
+.icon-doaj:before {
+  content: "📖";
+}
+
+.icon-database:before {
+  content: "💾";
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .workflow-steps {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
+  .main-content {
+    padding: 20px 3%;
+  }
+
+  .workflow-steps,
+  .tasks-grid,
+  .workspace-grid,
+  .capabilities-grid {
+    grid-template-columns: 1fr;
+  }
+
   .search-container h1 {
     font-size: 24px;
-  }
-
-  .featured-article {
-    flex-direction: column;
-  }
-
-  .featured-image {
-    width: 100%;
-    margin-bottom: 20px;
-  }
-
-  .topics-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 
 @media (max-width: 480px) {
-  .stat-item {
-    flex-basis: 100%;
+  .search-container {
+    padding: 30px 3%;
+  }
+
+  .workflow-step {
+    padding: 15px;
+  }
+
+  .step-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .workspace-card {
+    padding: 20px;
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+
+  .card-icon {
+    margin-bottom: 10px;
+  }
+
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .task-status {
+    align-self: flex-end;
   }
 }
 </style>

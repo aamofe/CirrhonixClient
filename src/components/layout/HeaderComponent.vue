@@ -10,7 +10,7 @@
         <ul>
           <li v-for="(item, index) in navItems" :key="index">
             <router-link :to="item.path" :class="{ active: isActive(item.path) }">
-              {{ item.name }}
+              <span>{{ item.name }}</span>
             </router-link>
           </li>
         </ul>
@@ -29,6 +29,7 @@
 <script>
 import User from "@/api/User"
 import defaultAvatar from "@/assets/female.png"
+
 export default {
   name: "HeaderComponent",
   data() {
@@ -36,18 +37,19 @@ export default {
       username: "",
       navItems: [
         { name: "首页", path: "/" },
-        { name: "文献检索", path: "/literature" },
+        { name: "文献库", path: "/literature" },
         { name: "知识图谱", path: "/knowledge-graph" },
-        { name: "爬虫中心", path: "/crawler" },
-
+        { name: "数据源", path: "/crawler" }
       ],
       defaultAvatar,
     }
   },
   methods: {
     isActive(path) {
-
-      return this.$route.path === path
+      if (path === '/') {
+        return this.$route.path === path
+      }
+      return this.$route.path.startsWith(path)
     },
     goToHome() {
       this.$router.push("/")
@@ -65,7 +67,6 @@ export default {
         const data = response.data.data
         this.username = data.username
       } catch (error) {
-
         if (error.response && error.response.status === 401) {
           this.username = ""
         } else {
@@ -86,17 +87,18 @@ export default {
 <style scoped>
 header {
   background-color: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid #e8f4f8;
 }
 
 .header-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 1%;
+  padding: 12px 2%;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -105,22 +107,23 @@ header {
   cursor: pointer;
   display: flex;
   align-items: center;
-  flex: 0 0 auto;
-  width: 120px;
-  /* 固定宽度，与用户区域相匹配 */
+  flex: 0 0 140px;
+  transition: opacity 0.3s ease;
+}
+
+.logo-container:hover {
+  opacity: 0.8;
 }
 
 .logo {
-  height: 45px;
+  height: 42px;
   width: auto;
 }
 
 nav {
-  flex: 1 1 auto;
+  flex: 1;
   display: flex;
   justify-content: center;
-  margin: 0;
-  width: 100%;
 }
 
 nav ul {
@@ -128,56 +131,56 @@ nav ul {
   list-style: none;
   margin: 0;
   padding: 0;
-  justify-content: center;
-  /* 确保列表项居中 */
-}
-
-nav ul li {
-  margin: 0 15px;
+  gap: 8px;
 }
 
 nav ul li a {
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  color: #555;
-  font-weight: 600;
-  font-size: 16px;
-  transition: all 0.3s;
-  padding: 8px 12px;
-  border-radius: 4px;
+  color: #5a6c7d;
+  font-weight: 500;
+  font-size: 15px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  background-color: transparent;
 }
 
 nav ul li a:hover {
   color: #1a91c1;
-  background-color: rgba(26, 145, 193, 0.1);
+  background-color: rgba(26, 145, 193, 0.08);
+  transform: translateY(-1px);
 }
 
 nav ul li a.active {
   color: #1a91c1;
-  border-bottom: 3px solid #1a91c1;
-  padding-bottom: 5px;
-  font-weight: 700;
+  background-color: rgba(26, 145, 193, 0.12);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(26, 145, 193, 0.15);
 }
 
 .user-area {
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 20px;
-  transition: background-color 0.3s;
-  flex: 0 0 auto;
-  width: 120px;
-  /* 固定宽度，与logo区域相匹配 */
+  padding: 8px 16px;
+  border-radius: 24px;
+  transition: all 0.3s ease;
+  flex: 0 0 140px;
   justify-content: flex-end;
+  background-color: transparent;
 }
 
 .user-area:hover {
-  background-color: #f5f5f5;
+  background-color: rgba(26, 145, 193, 0.06);
+  transform: translateY(-1px);
 }
 
 .avatar-container {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   overflow: hidden;
   margin-right: 10px;
@@ -185,6 +188,11 @@ nav ul li a.active {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: border-color 0.3s ease;
+}
+
+.user-area:hover .avatar-container {
+  border-color: #0d7aa7;
 }
 
 .avatar-image {
@@ -194,147 +202,94 @@ nav ul li a.active {
 }
 
 .user-area .username {
-  color: #555;
+  color: #5a6c7d;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 15px;
+  transition: color 0.3s ease;
+}
+
+.user-area:hover .username {
+  color: #1a91c1;
 }
 
 @media (max-width: 1100px) {
   .header-container {
-    padding: 10px 1%;
+    padding: 10px 1.5%;
   }
 
   .logo-container {
-    width: 100px;
+    flex: 0 0 120px;
   }
 
   .user-area {
-    width: 100px;
+    flex: 0 0 120px;
   }
 
-  nav ul li {
-    margin: 0 8px;
+  nav ul {
+    gap: 4px;
   }
 
   nav ul li a {
-    padding: 7px 10px;
-    font-size: 16px;
-    /* 保持与原始字体相同的大小 */
+    padding: 9px 14px;
+    font-size: 14px;
   }
 }
 
 @media (max-width: 900px) {
   .logo {
-    height: 40px;
-  }
-
-  nav ul li {
-    margin: 0 5px;
+    height: 38px;
   }
 
   nav ul li a {
-    font-size: 15.5px;
-    /* 增加了字体大小 */
-    padding: 6px 8px;
-  }
-
-  .avatar-container {
-    width: 34px;
-    height: 34px;
-    margin-right: 8px;
-  }
-
-  .user-area .username {
-    font-size: 15.5px;
-    /* 与导航字体保持一致 */
+    padding: 10px 18px;
   }
 }
 
 @media (max-width: 768px) {
   .header-container {
-    flex-wrap: nowrap;
     padding: 8px 1%;
   }
 
-  .logo {
-    height: 36px;
-  }
-
   .logo-container {
-    width: 90px;
-    /* 稍微增加宽度 */
+    flex: 0 0 100px;
   }
 
   .user-area {
-    width: 90px;
-    /* 稍微增加宽度 */
-    padding: 4px 6px;
-  }
-
-  nav ul li {
-    margin: 0 2px;
-    /* 稍微减少外边距，给文字留更多空间 */
-  }
-
-  nav ul li a {
-    font-size: 15px;
-    /* 增加字体大小 */
-    padding: 5px 5px;
-    /* 稍微减少内边距，保持整体布局 */
+    flex: 0 0 100px;
   }
 
   .avatar-container {
     width: 32px;
     height: 32px;
-    margin-right: 6px;
+    margin-right: 8px;
   }
 
   .user-area .username {
-    font-size: 15px;
-    /* 增加字体大小 */
+    font-size: 14px;
   }
 }
 
 @media (max-width: 576px) {
   .header-container {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
+
+  .logo-container,
+  .user-area {
+    flex: 0 0 auto;
   }
 
   nav {
+    order: 3;
     width: 100%;
-    margin: 10px 0;
-  }
-
-  nav ul {
-    flex-wrap: wrap;
     justify-content: center;
-    width: 100%;
-  }
-
-  nav ul li {
-    margin: 5px 10px;
   }
 
   nav ul li a {
-    font-size: 16px;
     padding: 8px 12px;
-  }
-
-  .user-area {
-    align-self: flex-end;
-    margin-top: 5px;
-    width: auto;
-  }
-
-  .avatar-container {
-    width: 38px;
-    height: 38px;
-    margin-right: 10px;
-  }
-
-  .user-area .username {
-    font-size: 16px;
+    border-radius: 20px;
   }
 }
 </style>
