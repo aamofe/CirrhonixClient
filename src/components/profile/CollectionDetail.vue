@@ -71,10 +71,21 @@ export default {
 
       this.$emit("back-to-collections")
     },
-    viewArticleDetail(article) {
-
-      this.$router.push({ name: "article-detail", params: { id: article.id } })
-    },
+    viewArticleDetail(articleId) {
+      if (articleId === undefined || articleId === null || articleId === '') {
+        console.error('文章ID无效:', articleId)
+        this.$message.error('无法查看文章详情：文章ID无效')
+        return
+      }
+      try {
+        this.$router.push({
+          name: "literature-detail",
+          params: { id: String(articleId) }
+        })
+      } catch (error) {
+        this.$message.error('页面跳转失败')
+      }
+    }
   },
   watch: {
     collectionId: {

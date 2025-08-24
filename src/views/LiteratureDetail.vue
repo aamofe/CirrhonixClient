@@ -17,10 +17,10 @@
               {{ isInAnyCollection ? "已收藏" : "收藏" }}
             </button>
 
-            <button class="action-btn" @click="toggleTranslation">
+            <!-- <button class="action-btn" @click="toggleTranslation">
               <span class="icon">🔄</span>
               {{ showTranslation ? "原文" : "翻译" }}
-            </button>
+            </button> -->
 
             <button class="action-btn" @click="downloadPDF">
               <span class="icon">↓</span>
@@ -31,7 +31,7 @@
 
         <h1>{{ showTranslation && translatedTitle ? translatedTitle : article.title }}</h1>
 
-        <div class="article-meta-section">
+        <!-- <div class="article-meta-section">
           <div class="article-meta">
             <div class="meta-row">
               <span class="meta-label">作者:</span>
@@ -78,6 +78,48 @@
             <div class="meta-row" v-if="article.journal">
               <span class="meta-label">影响因子:</span>
               <span class="meta-value">{{ article.journal.impact_factor || "N/A" }}</span>
+            </div>
+          </div>
+        </div> -->
+
+        <div class="article-meta-section">
+          <div class="article-meta">
+            <div class="meta-row">
+              <span class="meta-label">作者:</span>
+              <span class="meta-value">
+                <span v-for="(author, index) in article.authors" :key="index" class="author-name">
+                  {{ author }}{{ index < article.authors.length - 1 ? ", " : "" }} </span>
+                </span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">期刊:</span>
+              <span class="meta-value">{{ article.source }}</span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">发表日期:</span>
+              <span class="meta-value">{{ formatDate(article.publication_date) }}</span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">DOI:</span>
+              <span class="meta-value">{{ article.doi }}</span>
+            </div>
+
+            <div class="meta-row" v-if="article.citation_count && article.citation_count > 0">
+              <span class="meta-label">引用次数:</span>
+              <span class="meta-value">{{ article.citation_count }}</span>
+            </div>
+
+            <div class="meta-row" v-if="article.publisher">
+              <span class="meta-label">出版商:</span>
+              <span class="meta-value">{{ article.publisher }}</span>
+            </div>
+
+            <div class="meta-row" v-if="article.journal && article.journal.impact_factor">
+              <span class="meta-label">影响因子:</span>
+              <span class="meta-value">{{ article.journal.impact_factor }}</span>
             </div>
           </div>
         </div>
@@ -237,7 +279,7 @@
       <p>正在加载文献详情...</p>
     </div>
     <!-- 收藏夹选择对话框 -->
-    <CollectionDialog title="选择收藏夹" :visible.sync="collectionDialogVisible" :literature-id="articleId"
+    <CollectionDialog title="选择收藏夹" v-model="collectionDialogVisible" :literature-id="articleId"
       :collections="collections" @collections-updated="onCollectionsUpdated"
       @cancel="collectionDialogVisible = false" />
 
@@ -317,10 +359,10 @@ export default {
     },
 
     async startAnalysis() {
-      if (!this.article.full_text) {
-        this.$message.warning('该文献暂无全文内容，无法进行分析')
-        return
-      }
+      // if (!this.article.full_text) {
+      //   this.$message.warning('该文献暂无全文内容，无法进行分析')
+      //   return
+      // }
 
       this.isAnalyzing = true
       try {
@@ -434,6 +476,10 @@ export default {
       } catch (error) {
 
       }
+    },
+    onCollectionCreated(newCollection) {
+      console.log('新收藏夹已创建:', newCollection)
+      this.loadUserCollections()
     },
     formatDate(dateString) {
       if (!dateString) return ""
@@ -632,6 +678,7 @@ export default {
 }
 
 /* 调整作者信息区域，与主内容宽度一致 */
+/* 文章元信息区域样式 */
 .article-meta-section {
   display: flex;
   gap: 24px;
@@ -644,12 +691,12 @@ export default {
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  /* 确保与摘要等卡片样式一致 */
 }
 
 .meta-row {
   display: flex;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
 }
 
 .meta-row:last-child {
@@ -661,16 +708,22 @@ export default {
   color: #555;
   width: 80px;
   flex-shrink: 0;
+  text-align: right;
+  padding-right: 8px;
 }
 
 .meta-value {
   color: #333;
+  flex: 1;
+  word-wrap: break-word;
+  word-break: break-all;
 }
 
 .author-name {
   color: #1a91c1;
-  cursor: pointer;
 }
+
+
 
 .author-name:hover {
   text-decoration: underline;
@@ -1085,11 +1138,14 @@ export default {
 
   .meta-row {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .meta-label {
     width: auto;
-    margin-bottom: 5px;
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: 4px;
   }
 }
 </style>

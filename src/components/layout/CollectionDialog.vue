@@ -40,7 +40,7 @@ export default {
       type: String,
       default: "选择收藏夹"
     },
-    visible: {
+    modelValue: {
       type: Boolean,
       default: false
     },
@@ -55,15 +55,21 @@ export default {
   },
   data() {
     return {
-      dialogVisible: this.visible,
       collectionsData: [],
       newCollectionName: "",
     }
   },
+  computed: {
+    dialogVisible: {
+      get() {
+        return this.modelValue
+      },
+      set(value) {
+        this.$emit('update:modelValue', value)
+      }
+    }
+  },
   watch: {
-    visible(newVal) {
-      this.dialogVisible = newVal
-    },
     collections: {
       handler(newCollections) {
         this.collectionsData = JSON.parse(JSON.stringify(newCollections))
@@ -74,30 +80,33 @@ export default {
   },
   methods: {
     handleClose() {
-      this.$emit("update:visible", false)
+      this.$emit("update:modelValue", false)
     },
     handleCancel() {
-      this.$emit("update:visible", false)
+      this.$emit("update:modelValue", false)
       this.$emit("cancel")
     },
     async handleSave() {
       try {
-
+        // 获取选中的收藏夹ID
         const selectedIds = this.collectionsData
           .filter(collection => collection.selected)
           .map(collection => collection.id)
 
-
+        // 更新文献的收藏夹关联
         await Literature.updateLiteratureCollections(this.literatureId, {
           collection_ids: selectedIds
         })
 
-
+        // 通知父组件更新收藏夹数据
         this.$emit("collections-updated", this.collectionsData)
-        this.$emit("update:visible", false)
-        this.$message.success('收藏夹已更新')
-      } catch (error) {
 
+        // 关闭对话框
+        this.$emit("update:modelValue", false)
+
+        this.$message.success('已收藏')
+      } catch (error) {
+        console.error('更新收藏夹失败:', error)
         this.$message.error('更新收藏夹失败')
       }
     },
@@ -113,7 +122,7 @@ export default {
       if (!name) return
 
       try {
-
+        // 只创建新收藏夹，不添加文献
         const response = await Literature.createCollection({
           name,
           description: '',
@@ -121,26 +130,24 @@ export default {
 
         const newCollection = response.data.data
 
-
-        await Literature.updateCollection(newCollection.id, {
-          add_literature_ids: [this.literatureId]
-        })
-
-
+        // 将新收藏夹添加到本地数据中，默认未选中
         const updatedCollection = {
           ...newCollection,
-          selected: true,
-          has_literature: true
+          selected: false, // 默认不选中，让用户自己决定是否添加
+          has_literature: false // 新创建的收藏夹还没有当前文献
         }
 
         this.collectionsData.push(updatedCollection)
 
-
+        // 清空输入框
         this.newCollectionName = ""
+
+        // 通知父组件有新的收藏夹创建
+        this.$emit("collection-created", updatedCollection)
 
         this.$message.success('收藏夹创建成功')
       } catch (error) {
-
+        console.error('创建收藏夹失败:', error)
         this.$message.error('创建收藏夹失败')
       }
     }

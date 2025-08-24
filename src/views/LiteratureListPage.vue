@@ -123,24 +123,35 @@ export default {
     },
   },
   created() {
+    console.log('=== LiteratureListPage created ===')
+    console.log('当前路由查询参数:', this.$route.query)
 
     const urlQuery = this.$route.query.q
+    console.log('URL中的q参数:', urlQuery)
+
     if (urlQuery !== undefined) {
+      console.log('检测到URL查询参数')
       this.searchQuery = urlQuery
       if (urlQuery) {
+        console.log('执行搜索:', urlQuery)
         this.searchLiterature()
       } else {
+        console.log('空查询，加载所有文献')
         this.loadAllLiterature()
       }
       return
     }
 
-
+    console.log('没有URL查询参数，尝试恢复状态')
     this.restoreListState()
+    console.log('恢复状态后 hasListState:', this.hasListState)
 
-
-    if (!this.hasListState) {
+    // 修改这里：即使有缓存状态，如果结果为空也要重新加载
+    if (!this.hasListState || this.results.length === 0) {
+      console.log('需要加载文献数据')
       this.loadAllLiterature()
+    } else {
+      console.log('使用缓存数据，共', this.results.length, '条')
     }
   },
   methods: {

@@ -135,7 +135,7 @@
 
 <script>
 import { mapMutations } from "vuex"
-import service from "@/utils/request"
+// import service from "@/utils/request"
 import User from "@/api/User"
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
 import FormInput from "@/components/form/FormInput.vue"
@@ -228,7 +228,7 @@ export default {
       try {
         await User.logout()
         localStorage.removeItem("token")
-        delete service.defaults.headers.common["Authorization"]
+        // delete service.defaults.headers.common["Authorization"]
         this.setUserId(null)
         this.setIsAdmin(false)
         this.$router.push("/login")

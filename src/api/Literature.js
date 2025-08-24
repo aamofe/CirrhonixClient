@@ -19,7 +19,7 @@ const url = {
 }
 export default class Literature {
   static async getAnalyzeRecent() {
-    return service.get(url.analyzeRecent())
+    return service.get(url.analyzeRecent)
   }
 
   static async analyzeLiterature(literature_id) {
@@ -30,7 +30,7 @@ export default class Literature {
   static async getAnalyzeList(
     status = null,
     literature_id = null,
-    recent = nul
+    recent = null
   ) {
     const params = {}
     if (status) params.status = status
