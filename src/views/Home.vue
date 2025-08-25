@@ -137,7 +137,7 @@
           <div class="capability-card">
             <div class="capability-header">
               <h3>学术数据源</h3>
-              <span class="capability-count">{{ dataSources.length - 1 }}个数据源</span>
+              <span class="capability-count">{{ dataSources.length }}个数据源</span>
             </div>
             <div class="capability-content">
               <div v-if="dataSourcesLoading" class="loading-state">

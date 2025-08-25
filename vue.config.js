@@ -21,9 +21,10 @@ module.exports = defineConfig({
   },
 
   devServer: {
+    port: 8091,
     proxy: {
       '/api': {
-        target: 'http://125.122.39.119:8000/',
+        target: 'http://125.122.39.119:8090/',
         changeOrigin: true,
         onProxyReq: function (proxyReq, req) {
           if (req.headers.authorization) {

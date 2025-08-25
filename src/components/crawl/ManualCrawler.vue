@@ -20,8 +20,7 @@
     <div class="query-section">
       <div class="form-group">
         <label for="keywords">关键词:</label>
-        <input type="text" id="keywords" v-model="manualCrawler.keywords" class="form-input"
-          placeholder="输入检索关键词，多个关键词用英文逗号分隔" />
+        <input type="text" id="keywords" v-model="manualCrawler.keywords" class="form-input" placeholder="输入检索关键词" />
       </div>
 
       <div class="form-row">
@@ -76,13 +75,13 @@
         <p><strong>数据源:</strong> {{ currentTask.data_sources?.join(', ') }}</p>
         <p><strong>关键词:</strong> {{ currentTask.keywords?.keywords || '无' }}</p>
         <!-- <p><strong>进度:</strong> {{ currentTask.progress || '0%' }}</p> -->
-        <p><strong>预计用时:</strong> 3min</p>
+        <!-- <p><strong>预计用时:</strong> 3min</p> -->
 
         <!-- <p v-if="currentTask.results_count > 0">
           <strong>已获取文献:</strong> {{ currentTask.results_count }} 篇
         </p> -->
         <p v-if="currentTask.error_message">
-          <strong>错误信息:</strong>
+          <strong>完成备注:</strong>
           <span class="error-text">{{ currentTask.error_message }}</span>
         </p>
         <!-- 显示任务恢复信息 -->
@@ -316,6 +315,22 @@ export default {
 
           this.clearTaskMemory()
           this.showMessage('warning', '无法恢复之前的任务，可能任务已过期')
+        }
+      }
+      else {
+        try {
+          const response = await Crawler.getCrawlList(null, null, 1, 10)
+          if (response.data && response.data.data) {
+            this.currentTask = response.data.data[0]
+            if (this.currentTask && Array.isArray(this.currentTask.literature)) {
+              this.crawlResults = this.currentTask.literature
+            }
+            if (['pending', 'running'].includes(this.currentTask.status)) {
+              this.startPolling(taskId)
+            }
+          }
+        } catch (error) {
+          console.error('获取最近爬虫记录失败:', error)
         }
       }
     },
