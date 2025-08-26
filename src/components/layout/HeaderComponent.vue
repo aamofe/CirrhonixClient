@@ -18,7 +18,7 @@
 
       <div class="user-area" @click="goToProfile">
         <div class="avatar-container">
-          <img :src="defaultAvatar" alt="用户头像" class="avatar-image" />
+          <img :src="avatar || defaultAvatar" alt="用户头像" class="avatar-image" />
         </div>
         <span class="username">{{ username || "登录" }}</span>
       </div>
@@ -29,7 +29,7 @@
 <script>
 import User from "@/api/User"
 import defaultAvatar from "@/assets/female.png"
-
+import bus from '@/utils/bus'
 export default {
   name: "HeaderComponent",
   data() {
@@ -42,6 +42,7 @@ export default {
         { name: "数据源", path: "/crawler" }
       ],
       defaultAvatar,
+      avatar: null,
     }
   },
   methods: {
@@ -66,6 +67,7 @@ export default {
         const response = await User.profile()
         const data = response.data.data
         this.username = data.username
+        this.avatar = data.avatar_url
       } catch (error) {
         if (error.response && error.response.status === 401) {
           this.username = ""
@@ -80,7 +82,15 @@ export default {
     if (token) {
       this.getProfile()
     }
+    bus.on('avatar-updated', (newAvatar) => {
+      console.log("收到收到")
+      this.avatar = newAvatar
+      console.log("已更换头像")
+    })
   },
+  beforeUnmount() {
+    bus.off('avatar-updated')
+  }
 }
 </script>
 

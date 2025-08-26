@@ -1,18 +1,18 @@
-<!-- src/components/profile/ProfileForm.vue -->
 <template>
   <div class="profile-form">
-    <!-- 非编辑状态：显示信息 -->
+    <!-- 头像上传 input，只有一份 -->
+    <input type="file" ref="fileInput" accept="image/*" style="display: none" @change="handleFileChange" />
+
     <div v-if="!isEditing" class="profile-info">
       <div class="profile-layout">
         <!-- 左侧头像 -->
         <div class="avatar-section">
-          <div class="avatar-container">
-            <img :src="defaultAvatar" alt="用户头像" class="avatar-image" />
-            <div class="avatar-overlay" @click="triggerFileInput">
+          <div class="avatar-container" @click="triggerFileInput">
+            <img :src="avatarUrl || defaultAvatar" alt="用户头像" class="avatar-image" />
+            <div class="avatar-overlay">
               <span>更换头像</span>
             </div>
           </div>
-          <input type="file" ref="fileInput" accept="image/*" style="display: none" @change="handleFileChange" />
         </div>
 
         <!-- 右侧信息 -->
@@ -34,40 +34,21 @@
 
           <div class="info-item">
             <div class="info-label">个人简介</div>
-            <div class="info-value">
-              {{ user.introduction || "暂无个人简介" }}
-            </div>
+            <div class="info-value">{{ user.introduction || "暂无个人简介" }}</div>
           </div>
 
           <div class="info-item">
             <div class="info-label">研究方向</div>
-            <div class="info-value">
-              {{ user.interest || "暂无研究方向" }}
-            </div>
+            <div class="info-value">{{ user.interest || "暂无研究方向" }}</div>
           </div>
         </div>
       </div>
 
-      <!-- 底部按钮区域 -->
+      <!-- 底部按钮 -->
       <div class="action-buttons">
-        <button @click="startEditing" class="edit-button">
-          <el-icon class="button-icon">
-            <Edit />
-          </el-icon>
-          编辑资料
-        </button>
-        <button @click="$emit('showPasswordModal')" class="password-button">
-          <el-icon class="button-icon">
-            <Lock />
-          </el-icon>
-          修改密码
-        </button>
-        <button @click="$emit('logout')" class="logout-button">
-          <el-icon class="button-icon">
-            <SwitchButton />
-          </el-icon>
-          退出登录
-        </button>
+        <button @click="startEditing" class="edit-button">编辑资料</button>
+        <button @click="$emit('showPasswordModal')" class="password-button">修改密码</button>
+        <button @click="$emit('logout')" class="logout-button">退出登录</button>
       </div>
     </div>
 
@@ -76,15 +57,14 @@
       <div class="profile-layout">
         <!-- 左侧头像 -->
         <div class="avatar-section">
-          <div class="avatar-container">
+          <div class="avatar-container" @click="triggerFileInput">
             <img :src="avatarUrl || defaultAvatar" alt="用户头像" class="avatar-image" />
-            <div class="avatar-overlay" @click="triggerFileInput">
+            <div class="avatar-overlay">
               <span>更换头像</span>
             </div>
           </div>
         </div>
 
-        <!-- 右侧表单 -->
         <div class="form-content">
           <div class="info-item">
             <div class="info-label">用户名</div>
@@ -114,11 +94,8 @@
         </div>
       </div>
 
-      <!-- 底部保存和取消按钮 -->
       <div class="form-actions">
-        <button type="button" @click="cancelEditing" class="cancel-button">
-          取消
-        </button>
+        <button type="button" @click="cancelEditing" class="cancel-button">取消</button>
         <PrimaryButton type="submit" :fullWidth="false">保存</PrimaryButton>
       </div>
     </form>
@@ -127,31 +104,17 @@
 
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import { Edit, Lock, SwitchButton } from "@element-plus/icons-vue"
 import defaultAvatar from "@/assets/female.png"
 import User from "@/api/User"
-
+import bus from '@/utils/bus'
 export default {
   name: "ProfileForm",
-  components: {
-    PrimaryButton,
-    Edit,
-    Lock,
-    SwitchButton,
-  },
-  props: {
-    user: {
-      type: Object,
-      required: true,
-    },
-  },
+  components: { PrimaryButton },
+  props: { user: { type: Object, required: true } },
   data() {
     return {
       isEditing: false,
-      form: {
-        introduction: "",
-        interest: "",
-      },
+      form: { introduction: "", interest: "" },
       avatarUrl: null,
       avatarFile: null,
       defaultAvatar,
@@ -159,21 +122,15 @@ export default {
     }
   },
   created() {
-
     this.initForm()
   },
   methods: {
     initForm() {
-
       this.form = {
         introduction: this.user.introduction || "",
         interest: this.user.interest || "",
       }
-
-
-      if (this.user.avatar_url) {
-        this.avatarUrl = this.user.avatar_url
-      }
+      this.avatarUrl = this.user.avatar_url || null
     },
     startEditing() {
       this.isEditing = true
@@ -184,12 +141,11 @@ export default {
       this.initForm()
     },
     triggerFileInput() {
-      this.$refs.fileInput.click()
+      if (this.$refs.fileInput) this.$refs.fileInput.click()
     },
     handleFileChange(event) {
       const file = event.target.files[0]
       if (!file) return
-
 
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -197,6 +153,20 @@ export default {
         this.avatarFile = file
       }
       reader.readAsDataURL(file)
+
+      const formData = new FormData()
+      formData.append("avatar", file)
+
+      User.preference(formData)
+        .then((res) => {
+          const newAvatar = res.data.data.avatar_url
+          this.$message.success("头像更新成功")
+          this.$emit("avatarUpdated", newAvatar)
+          bus.emit('avatar-updated', newAvatar)
+        })
+        .catch(() => {
+          this.$message.error("头像上传失败")
+        })
     },
     async handleSubmit() {
       this.loading = true
@@ -204,23 +174,16 @@ export default {
         const formData = new FormData()
         formData.append("introduction", this.form.introduction)
         formData.append("interest", this.form.interest)
-
-        if (this.avatarFile) {
-          formData.append("avatar", this.avatarFile)
-        }
-
         await User.preference(formData)
         this.$emit("profileUpdated", {
           ...this.user,
           introduction: this.form.introduction,
           interest: this.form.interest,
-          ...(this.avatarUrl && { avatar_url: this.avatarUrl }),
+          avatar_url: this.avatarUrl,
         })
-
         this.$message.success("个人信息更新成功")
         this.isEditing = false
-      } catch (error) {
-        ;
+      } catch {
         this.$message.error("个人信息更新失败")
       } finally {
         this.loading = false
@@ -229,6 +192,7 @@ export default {
   },
 }
 </script>
+
 
 <style scoped>
 .profile-form {
