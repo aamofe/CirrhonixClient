@@ -12,10 +12,10 @@
       <span class="divider" v-if="article.publication_type && formattedDate">|</span>
       <span class="type" v-if="article.publication_type">{{
         formatPublicationType
-      }}</span>
+        }}</span>
     </div>
 
-    <p class="abstract" v-if="article.abstract">{{ article.abstract }}</p>
+    <!-- <p class="abstract" v-if="article.abstract">{{ article.abstract }}</p> -->
 
     <div class="footer">
       <div class="left">
