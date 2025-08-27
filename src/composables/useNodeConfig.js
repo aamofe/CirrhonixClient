@@ -1,12 +1,13 @@
 // composables/useNodeConfig.js
 import { ref } from 'vue'
 import {
-  Bug,
+  
   Aim,
   FirstAidKit,
   Search,
-  MedicineBox,
-  Shield,
+  Connection as Bug,
+  SuitcaseLine as MedicineBox, 
+  TrophyBase as Shield,
   CopyDocument,
   Warning,
 } from '@element-plus/icons-vue'

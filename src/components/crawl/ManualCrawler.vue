@@ -325,7 +325,7 @@ export default {
             if (this.currentTask && Array.isArray(this.currentTask.literature)) {
               this.crawlResults = this.currentTask.literature
             }
-            if (['pending', 'running'].includes(this.currentTask.status)) {
+            if (['pending', 'running', 'queued'].includes(this.currentTask.status)) {
               this.startPolling(taskId)
             }
           }
@@ -349,7 +349,7 @@ export default {
           }
 
 
-          if (['pending', 'running'].includes(this.currentTask.status)) {
+          if (['pending', 'running', 'queued'].includes(this.currentTask.status)) {
             this.startPolling(taskId)
           }
 
@@ -400,6 +400,7 @@ export default {
     getStatusText(status) {
       const statusMap = {
         pending: '待执行',
+        queued: '已排队',
         running: '执行中',
         completed: '已完成',
         failed: '失败'
@@ -698,14 +699,19 @@ export default {
   color: #856404;
 }
 
+.status-queued {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
 .status-running {
   background-color: #cce5ff;
   color: #004085;
 }
 
 .status-completed {
-  background-color: #d1edff;
-  color: #0c5460;
+  background-color: #d4edda;
+  color: #155724;
 }
 
 .status-failed {

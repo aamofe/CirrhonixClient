@@ -17,10 +17,6 @@
               {{ isInAnyCollection ? "已收藏" : "收藏" }}
             </button>
 
-            <!-- <button class="action-btn" @click="toggleTranslation">
-              <span class="icon">🔄</span>
-              {{ showTranslation ? "原文" : "翻译" }}
-            </button> -->
 
             <button class="action-btn" @click="downloadPDF">
               <span class="icon">↓</span>
@@ -30,57 +26,6 @@
         </div>
 
         <h1>{{ showTranslation && translatedTitle ? translatedTitle : article.title }}</h1>
-
-        <!-- <div class="article-meta-section">
-          <div class="article-meta">
-            <div class="meta-row">
-              <span class="meta-label">作者:</span>
-              <span class="meta-value">
-                <span v-for="(author, index) in article.authors" :key="index" class="author-name">
-                  {{ author }}{{ index < article.authors.length - 1 ? ", " : "" }} </span>
-                </span>
-            </div>
-
-            <div class="meta-row">
-              <span class="meta-label">期刊:</span>
-              <span class="meta-value">{{ article.source }}</span>
-            </div>
-
-            <div class="meta-row">
-              <span class="meta-label">发表日期:</span>
-              <span class="meta-value">{{ formatDate(article.publication_date) }}</span>
-            </div>
-
-            <div class="meta-row">
-              <span class="meta-label">DOI:</span>
-              <span class="meta-value">
-                <a :href="'https://doi.org/' + article.doi" target="_blank" class="doi-link">
-                  {{ article.doi }}
-                </a>
-              </span>
-            </div>
-
-            <div class="meta-row">
-              <span class="meta-label">引用次数:</span>
-              <span class="meta-value">{{ article.citation_count || 0 }}</span>
-            </div>
-
-            <div class="meta-row">
-              <span class="meta-label">文献类型:</span>
-              <span class="meta-value">{{ article.publication_type || "研究文章" }}</span>
-            </div>
-
-            <div class="meta-row" v-if="article.publisher">
-              <span class="meta-label">出版商:</span>
-              <span class="meta-value">{{ article.publisher || "N/A" }}</span>
-            </div>
-
-            <div class="meta-row" v-if="article.journal">
-              <span class="meta-label">影响因子:</span>
-              <span class="meta-value">{{ article.journal.impact_factor || "N/A" }}</span>
-            </div>
-          </div>
-        </div> -->
 
         <div class="article-meta-section">
           <div class="article-meta">
@@ -402,6 +347,7 @@ export default {
     getStatusText(status) {
       const statusMap = {
         'pending': '等待中',
+        'queued': '已排队',
         'running': '分析中',
         'completed': '已完成',
         'failed': '失败'
@@ -435,12 +381,12 @@ export default {
 
         await this.loadUserCollections()
         await this.loadAnalysisTasks()
-        if (this.article.title) {
-          this.translateText(this.article.title, 'title')
-        }
-        if (this.article.abstract) {
-          this.translateText(this.article.abstract, 'abstract')
-        }
+        // if (this.article.title) {
+        //   this.translateText(this.article.title, 'title')
+        // }
+        // if (this.article.abstract) {
+        //   this.translateText(this.article.abstract, 'abstract')
+        // }
       } catch (error) {
 
         this.$message.error(error.response.data.message)
@@ -494,19 +440,19 @@ export default {
     toggleTranslation() {
       this.showTranslation = !this.showTranslation
     },
-    async translateText(text, type) {
-      try {
-        const response = await Literature.translate({ "text": text })
+    // async translateText(text, type) {
+    //   try {
+    //     const response = await Literature.translate({ "text": text })
 
-        if (type === 'title') {
-          this.translatedTitle = response.data.data.translated
-        } else if (type === 'abstract') {
-          this.translatedAbstract = response.data.data.translated
-        }
-      } catch (error) {
+    //     if (type === 'title') {
+    //       this.translatedTitle = response.data.data.translated
+    //     } else if (type === 'abstract') {
+    //       this.translatedAbstract = response.data.data.translated
+    //     }
+    //   } catch (error) {
 
-      }
-    },
+    //   }
+    // },
     async saveNotes() {
       if (this.isSavingNote) return
       this.isSavingNote = true

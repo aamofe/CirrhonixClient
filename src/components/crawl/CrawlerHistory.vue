@@ -19,6 +19,7 @@
         <select id="history-status" v-model="historyFilter.status" class="select-input">
           <option value="">全部</option>
           <option value="pending">等待中</option>
+          <option value="queued">已排队</option>
           <option value="running">运行中</option>
           <option value="completed">已完成</option>
           <option value="failed">失败</option>
@@ -41,7 +42,10 @@
         </thead>
         <tbody>
           <tr v-for="(history, index) in filteredHistory" :key="index">
-            <td>{{ formatDate(history.start_time) }}</td>
+            <td class="start-time-cell">
+              <span class="date">{{ history.start_time?.split(' ')[0] }}</span><br>
+              <span class="time">{{ history.start_time?.split(' ')[1] }}</span>
+            </td>
             <td>
               <div class="data-sources">
                 <span v-for="(source, idx) in history.data_sources" :key="idx" class="source-tag">
@@ -198,6 +202,8 @@ export default {
           return "运行中"
         case "failed":
           return "失败"
+        case "queued":
+          return "已排队"
         case "pending":
           return "等待中"
         default:
@@ -205,19 +211,6 @@ export default {
       }
     },
 
-
-    formatDate(dateString) {
-      if (!dateString) return ""
-
-      const date = new Date(dateString)
-      return date.toLocaleString("zh-CN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    },
   },
   created() {
 
@@ -288,9 +281,40 @@ export default {
   overflow-x: auto;
 }
 
+.start-time-cell {
+  line-height: 1.4;
+  text-align: center;
+}
+
+.start-time-cell .date {
+  font-weight: 500;
+  color: #333;
+}
+
+.start-time-cell .time {
+  font-size: 12px;
+  color: #666;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.start-time-cell {
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.start-time-cell .date {
+  font-weight: 500;
+  color: #333;
+}
+
+.start-time-cell .time {
+  font-size: 12px;
+  color: #666;
 }
 
 th,
@@ -354,6 +378,11 @@ th {
 /* 状态样式 */
 td.pending {
   color: #ffc107;
+  font-weight: 500;
+}
+
+td.queued {
+  color: #6c757d;
   font-weight: 500;
 }
 

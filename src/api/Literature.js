@@ -11,7 +11,7 @@ const url = {
   search: '/literature/search',
   uploadSinglePaper: '/literature/upload',
   uploadBatchPaper: '/literature/batch',
-  translate: '/literature/translate',
+  // translate: '/literature/translate',
   analyze: '/literature/analyze',
   analyzeDetail: (atask_id) => `/literature/analyze/${atask_id}`,
   analyzeList: '/literature/analyze/list',
@@ -57,9 +57,9 @@ export default class Literature {
   static async list(params = {}) {
     return service.get(url.list, { params })
   }
-  static async translate(data) {
-    return service.post(url.translate, data)
-  }
+  // static async translate(data) {
+  //   return service.post(url.translate, data)
+  // }
   static async detail(id) {
     return service.get(url.detail(id))
   }

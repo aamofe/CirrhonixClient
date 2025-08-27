@@ -44,7 +44,10 @@
                   @click="viewAnalysisTask(task.id, task)">
                   <div class="task-info">
                     <span class="task-title">{{ getAnalysisTaskTitle(task) }}</span>
-                    <span class="task-time">{{ formatTime(task.start_time) }}</span>
+                    <span class="task-time">
+                      <span class="date">{{ task.start_time?.split(' ')[0] }}</span><br>
+                      <span class="time">{{ task.start_time?.split(' ')[1] }}</span>
+                    </span>
                   </div>
                   <div class="task-status" :class="task.status">
                     {{ getStatusText(task.status) }}
@@ -78,7 +81,10 @@
                   @click="viewCrawlTask(task.id)">
                   <div class="task-info">
                     <span class="task-title">{{ getCrawlTaskTitle(task) }}</span>
-                    <span class="task-time">{{ formatTime(task.start_time) }}</span>
+                    <span class="task-time">
+                      <span class="date">{{ task.start_time?.split(' ')[0] }}</span><br>
+                      <span class="time">{{ task.start_time?.split(' ')[1] }}</span>
+                    </span>
                   </div>
                   <div class="task-status" :class="task.status">
                     {{ getStatusText(task.status) }}
@@ -272,31 +278,7 @@ export default {
       this.$router.push('/crawler')
     },
 
-    formatTime(dateString) {
-      if (!dateString) return "待启动"
 
-      try {
-        const date = new Date(dateString)
-        const now = new Date()
-        const diff = now - date
-
-        if (diff < 3600000) {
-          const minutes = Math.floor(diff / 60000)
-          return minutes > 0 ? `${minutes}分钟前` : "刚刚"
-        } else if (diff < 86400000) {
-          const hours = Math.floor(diff / 3600000)
-          return `${hours}小时前`
-        } else if (diff < 2592000000) {
-          const days = Math.floor(diff / 86400000)
-          return `${days}天前`
-        } else {
-          return date.toLocaleDateString('zh-CN')
-        }
-      } catch (error) {
-        console.error('时间格式化错误:', error)
-        return "时间未知"
-      }
-    },
 
     formatProgress(progress) {
       if (!progress) return ""
@@ -307,9 +289,9 @@ export default {
 
     getStatusText(status) {
       const statusMap = {
-        'pending': '队列中',
+        'pending': '待处理',
         'running': '执行中',
-        'processing': '解析中',
+        'queued': '队列中',
         'completed': '已完成',
         'failed': '执行失败',
         'paused': '已暂停'
@@ -373,6 +355,7 @@ export default {
         this.crawlTasksLoading = true
         const [pendingResponse, runningResponse] = await Promise.all([
           Crawling.getCrawlList('pending', null, 1, 10),
+          // Crawling.getCrawlList('pending', null, 1, 10),
           Crawling.getCrawlList('running', null, 1, 10)
         ])
 
@@ -695,6 +678,13 @@ export default {
 .task-time {
   color: #888;
   font-size: 12px;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.task-time .date,
+.task-time .time {
+  display: inline-block;
 }
 
 .task-status {

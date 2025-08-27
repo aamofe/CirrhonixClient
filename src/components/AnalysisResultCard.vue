@@ -101,7 +101,7 @@
                       <span class="relation-type">作用因子：{{ relation.factor?.factor_name || '未知关系' }}</span>
                       <!-- {{ relation }} -->
                       <span class="support-degree" v-if="relation.support_degree">(支持度: {{ relation.support_degree
-                      }})</span>
+                        }})</span>
                       <el-tag v-if="relation.is_verified" type="success" size="mini">已验证</el-tag>
                     </div>
                   </div>
@@ -137,16 +137,18 @@ import { ref, computed, watch } from 'vue'
 import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
 import Literature from '@/api/Literature'
 import { useNodeConfig } from '@/composables/useNodeConfig'
-import { Close, Document, Loading, SuccessFilled, WarningFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
+import { Close, Document, Loading, Clock, SuccessFilled, WarningFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 
 const STATUS_CONFIG = {
   pending: { text: '等待中', icon: 'Loading', description: '任务正在等待执行中，请稍候...' },
+  queued: { text: '已排队', icon: 'Clock', description: '任务已提交，等待处理器开始执行...' },
   running: { text: '分析中', icon: 'Loading', description: '任务正在分析中，请耐心等待...' },
   completed: { text: '已完成', icon: 'SuccessFilled', description: '' },
   failed: { text: '失败', icon: 'CircleCloseFilled', description: '任务执行失败，请检查错误信息或重新提交' }
 }
+
 
 const ENTITY_TAG_TYPES = {
   pathogen: 'danger',
@@ -406,6 +408,7 @@ export default {
 
 /* 状态样式 */
 .status-pending,
+.status-queued,
 .status-running {
   color: #3b82f6;
 }
@@ -619,6 +622,7 @@ export default {
 }
 
 .status-icon-wrapper.status-pending,
+.status-icon-wrapper.status-queued,
 .status-icon-wrapper.status-running {
   background-color: #dbeafe;
 }

@@ -51,7 +51,9 @@
             <!-- 用户的消息仍然使用普通格式 -->
             <p v-else>{{ message.content }}</p>
           </div>
-          <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+          <div class="message-time">
+            <span class="date">{{ message.created_at }}</span>
+          </div>
         </div>
 
         <!-- 加载中指示器 -->
@@ -363,15 +365,23 @@ export default {
     },
 
     addMessage(content, isUser) {
+      const now = new Date()
+      // 格式化为与后端一致的时间格式 "YYYY-MM-DD HH:MM:SS"
+      const created_at = now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0') + ':' +
+        String(now.getSeconds()).padStart(2, '0')
+
       this.messages.push({
         content,
         isUser,
-        timestamp: new Date(),
+        created_at, // 与后端格式一致
+        // 可以保留 timestamp 用于其他用途，但模板只使用 created_at
       })
 
-
       this.saveChatHistory()
-
 
       if (isUser) {
         this.$nextTick(() => {
@@ -387,15 +397,6 @@ export default {
       }
     },
 
-    formatTime(date) {
-      if (typeof date === "string") {
-        date = new Date(date)
-      }
-      return new Intl.DateTimeFormat("zh-CN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(date)
-    },
 
 
     saveChatHistory() {
@@ -718,11 +719,17 @@ export default {
   background: transparent;
 }
 
+
 .message-time {
-  font-size: 11px;
-  color: #6c757d;
-  margin-top: 4px;
-  align-self: flex-end;
+  color: #888;
+  font-size: 12px;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.message-time .date,
+.message-time .time {
+  display: inline-block;
 }
 
 .message-loading {
