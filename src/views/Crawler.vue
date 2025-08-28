@@ -133,10 +133,7 @@ export default {
     }
   },
   created() {
-
     this.fetchDataSources()
-
-
     const urlParams = new URLSearchParams(window.location.search)
     const sectionParam = urlParams.get("section")
     if (

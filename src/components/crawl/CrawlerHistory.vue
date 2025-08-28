@@ -35,9 +35,9 @@
             <th>数据源</th>
             <th>关键词</th>
             <th>爬取数量</th>
-            <th>进度</th>
+            <th>任务类型</th>
             <th>状态</th>
-            <th>备注</th>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody>
@@ -48,8 +48,8 @@
             </td>
             <td>
               <div class="data-sources">
-                <span v-for="(source, idx) in history.data_sources" :key="idx" class="source-tag">
-                  {{ source }}
+                <span class="source-tag">
+                  {{ getDisplaySources(history.data_sources) }}
                 </span>
               </div>
             </td>
@@ -63,18 +63,19 @@
               {{ history.results_count }}
             </td>
             <td>
-              <div class="progress-container">
-                <div class="progress-bar">
-                  <div class="progress-fill" :style="{ width: history.progress || '0%' }"></div>
-                </div>
-                <span class="progress-text">{{ history.progress || '0%' }}</span>
-              </div>
+              <span class="task-type" :class="{ 'scheduled': history.scheduled, 'manual': !history.scheduled }">
+                {{ history.scheduled ? '定时任务' : '手动任务' }}
+              </span>
             </td>
             <td :class="history.status">
               {{ formatStatus(history.status) }}
             </td>
             <td>
-              {{ history.error_message || '-' }}
+              <button
+                v-if="(history.status === 'completed' || history.status === 'failed') && history.results_count >= 0"
+                @click="viewResults(history)" class="view-results-btn" :disabled="loadingTaskId === history.id">
+                {{ loadingTaskId === history.id ? '加载中...' : '查看结果' }}
+              </button>
             </td>
           </tr>
         </tbody>
@@ -85,25 +86,49 @@
       </div>
     </div>
 
-    <!-- 分页 -->
-    <div v-if="filteredHistory.length" class="pagination">
-      <button class="pagination-btn prev" @click="currentPage > 1 && changePage(currentPage - 1)"
-        :disabled="currentPage === 1">
+    <div v-if="totalPages > 1" class="pagination">
+      <span class="page-btn" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
         上一页
-      </button>
-      <span class="page-info">第 {{ currentPage }} 页</span>
-      <button class="pagination-btn next" @click="hasNextPage && changePage(currentPage + 1)" :disabled="!hasNextPage">
+      </span>
+
+      <template v-for="page in displayedPages" :key="page">
+        <span v-if="page === '...'" class="page-ellipsis"> ... </span>
+        <span v-else class="page-number" :class="{ active: page === currentPage }" @click="changePage(page)">
+          {{ page }}
+        </span>
+      </template>
+
+      <span class="page-btn" :class="{ disabled: currentPage === totalPages }" @click="changePage(currentPage + 1)">
         下一页
-      </button>
+      </span>
+    </div>
+
+    <!-- 结果详情卡片 -->
+    <div v-if="showResultCard" class="result-card-overlay" @click="closeResultCard">
+      <div class="result-card" @click.stop>
+        <div class="result-card-header">
+          <h4>爬取结果详情</h4>
+          <button @click="closeResultCard" class="close-btn">×</button>
+        </div>
+        <div class="result-card-content">
+          <CrawlResults :crawlResults="currentResults" :task="currentTask" :isPolling="false" :isRestoredTask="false"
+            :itemsPerPage="5" @clear-memory="handleClearMemory" @clear-results="handleClearResults"
+            @view-detail="handleViewDetail" @page-change="handlePageChange" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import Crawler from "@/api/Crawler"
+import CrawlResults from "./CrawlResults.vue"
 
 export default {
   name: "CrawlerHistory",
+  components: {
+    CrawlResults,
+  },
   props: {
     availableSources: {
       type: Array,
@@ -119,15 +144,18 @@ export default {
       },
       currentPage: 1,
       pageSize: 10,
+      totalHistoryCount: 0,
+      showResultCard: false,
+      currentResults: [],
+      currentTask: null,
+      loadingTaskId: null,
     }
   },
   computed: {
-
     filteredHistory() {
       let filtered = this.crawlerHistory
 
       if (this.historyFilter.source_id) {
-
         filtered = filtered.filter(
           (item) => item.data_sources && item.data_sources.includes(this.historyFilter.source_id)
         )
@@ -139,15 +167,12 @@ export default {
         )
       }
 
-
       const start = (this.currentPage - 1) * this.pageSize
       const end = start + this.pageSize
 
       return filtered.slice(start, end)
     },
-
     hasNextPage() {
-
       const filteredTotal = this.crawlerHistory.filter((item) => {
         let match = true
 
@@ -164,9 +189,63 @@ export default {
 
       return this.currentPage * this.pageSize < filteredTotal
     },
+    filteredTotal() {
+      return this.crawlerHistory.filter((item) => {
+        let match = true
+
+        if (this.historyFilter.source_id) {
+          match = match && item.data_sources && item.data_sources.includes(this.historyFilter.source_id)
+        }
+
+        if (this.historyFilter.status) {
+          match = match && item.status === this.historyFilter.status
+        }
+
+        return match
+      }).length
+    },
+
+    totalPages() {
+      return Math.ceil(this.filteredTotal / this.pageSize)
+    },
+
+    displayedPages() {
+      const total = this.totalPages
+      const current = this.currentPage
+      const delta = 2 // You can adjust this value
+
+      if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1)
+      }
+
+      const pages = []
+
+      if (current <= delta + 1) {
+        for (let i = 1; i <= delta + 3; i++) {
+          pages.push(i)
+        }
+        pages.push('...')
+        pages.push(total)
+      } else if (current >= total - delta) {
+        pages.push(1)
+        pages.push('...')
+        for (let i = total - delta - 2; i <= total; i++) {
+          pages.push(i)
+        }
+      } else {
+        pages.push(1)
+        pages.push('...')
+        for (let i = current - delta; i <= current + delta; i++) {
+          pages.push(i)
+        }
+        pages.push('...')
+        pages.push(total)
+      }
+
+      return pages
+    }
   },
   methods: {
-
     async fetchCrawlerHistory() {
       try {
         const response = await Crawler.getCrawlList(
@@ -178,21 +257,21 @@ export default {
 
         if (response.data && response.data.data) {
           this.crawlerHistory = response.data.data
+          this.totalHistoryCount = response.data.data?.length
         } else {
           this.crawlerHistory = []
         }
       } catch (error) {
-
         this.$message.error("获取爬取历史失败")
       }
     },
 
-
     changePage(page) {
+      if (page < 1 || page > this.totalPages || page === this.currentPage) return
       this.currentPage = page
+      this.fetchCrawlerHistory() // Call API to get data for the new page
       this.$emit("page-changed", page)
     },
-
 
     formatStatus(status) {
       switch (status) {
@@ -210,10 +289,71 @@ export default {
           return status
       }
     },
+    getDisplaySources(dataSources) {
+      if (!dataSources || !Array.isArray(dataSources)) {
+        return ""
+      }
+      if (dataSources.length === 0) {
+        return ""
+      }
+      let displayString = dataSources[0]
+      if (dataSources.length > 1) {
+        displayString += "..."
+      }
+      return displayString
+    },
+    async viewResults(history) {
+      try {
+        this.loadingTaskId = history.id
+        const response = await Crawler.getCrawlDetail(history.id)
 
+        if (response.data && response.data.data) {
+          this.currentResults = response.data.data.literature || []
+          this.currentTask = {
+            id: history.id,
+            status: history.status,
+            data_sources: history.data_sources,
+            keywords: history.keywords,
+            start_time: history.start_time,
+            end_time: history.end_time,
+            results_count: history.results_count,
+            error_message: history.error_message,
+          }
+          this.showResultCard = true
+        } else {
+          this.$message.warning("该任务暂无结果数据")
+        }
+      } catch (error) {
+        console.error("获取爬取结果详情失败:", error)
+        this.$message.error("获取爬取结果详情失败")
+      } finally {
+        this.loadingTaskId = null
+      }
+    },
+
+    closeResultCard() {
+      this.showResultCard = false
+      this.currentResults = []
+      this.currentTask = null
+    },
+
+    handleClearMemory() {
+      console.log("清除记忆任务")
+    },
+
+    handleClearResults() {
+      this.currentResults = []
+    },
+
+    handleViewDetail(articleId) {
+      this.$emit("view-article-detail", articleId)
+    },
+
+    handlePageChange(page) {
+      console.log("结果页面变化:", page)
+    },
   },
   created() {
-
     this.fetchCrawlerHistory()
   },
 
@@ -346,33 +486,24 @@ th {
   font-weight: 500;
 }
 
-/* 进度条样式 */
-.progress-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.progress-bar {
-  flex: 1;
-  height: 6px;
-  background-color: #e0e0e0;
-  border-radius: 3px;
-  overflow: hidden;
-  min-width: 60px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #4caf50, #8bc34a);
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
+/* 任务类型样式 */
+.task-type {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
   font-size: 0.75rem;
-  color: #666;
-  min-width: 35px;
+  font-weight: 500;
+  text-align: center;
+  display: inline-block;
+}
+
+.task-type.scheduled {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.task-type.manual {
+  background-color: #fff3e0;
+  color: #f57c00;
 }
 
 /* 状态样式 */
@@ -399,6 +530,145 @@ td.completed {
 td.failed {
   color: #dc3545;
   font-weight: 500;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 2rem 0;
+}
+
+.page-btn,
+.page-number {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dee2e6;
+  background-color: white;
+  color: #495057;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+  font-size: 14px;
+  min-width: 40px;
+  text-align: center;
+}
+
+.page-btn:hover:not(.disabled),
+.page-number:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.page-number.active {
+  background-color: #a8e6cf;
+  border-color: #a8e6cf;
+  color: white;
+}
+
+.page-btn.disabled {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+  border-color: #dee2e6;
+}
+
+.page-ellipsis {
+  padding: 0.5rem 0.25rem;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* 查看结果按钮 */
+.view-results-btn {
+  padding: 0.5rem 1rem;
+  background-color: #a8e6cf;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.view-results-btn:hover:not(:disabled) {
+  background-color: #90d4a8;
+}
+
+.view-results-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 结果卡片样式 */
+.result-card-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.result-card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin-top: 2rem;
+}
+
+.result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.result-card-header h4 {
+  margin: 0;
+  color: #333;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.3s;
+}
+
+.close-btn:hover {
+  background-color: #e9ecef;
+  color: #333;
+}
+
+.result-card-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
 }
 
 .empty-history {
@@ -450,14 +720,21 @@ td.failed {
     flex-direction: column;
   }
 
-  .progress-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+  .result-card-overlay {
+    padding: 1rem;
   }
 
-  .progress-bar {
-    width: 100%;
+  .result-card {
+    width: 95%;
+    margin-top: 1rem;
+  }
+
+  .result-card-header {
+    padding: 1rem;
+  }
+
+  .result-card-content {
+    padding: 1rem;
   }
 }
 </style>

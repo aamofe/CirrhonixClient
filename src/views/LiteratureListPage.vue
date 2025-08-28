@@ -1,4 +1,3 @@
-<!-- src/views/LiteratureListPage.vue -->
 <template>
   <div class="literature-list-page">
     <section class="list-header">
@@ -123,45 +122,13 @@ export default {
     },
   },
   created() {
-    console.log('=== LiteratureListPage created ===')
-    console.log('当前路由查询参数:', this.$route.query)
-
-    const urlQuery = this.$route.query.q
-    console.log('URL中的q参数:', urlQuery)
-
-    if (urlQuery !== undefined) {
-      console.log('检测到URL查询参数')
-      this.searchQuery = urlQuery
-      if (urlQuery) {
-        console.log('执行搜索:', urlQuery)
-        this.searchLiterature()
-      } else {
-        console.log('空查询，加载所有文献')
-        this.loadAllLiterature()
-      }
-      return
-    }
-
-    console.log('没有URL查询参数，尝试恢复状态')
-    this.restoreListState()
-    console.log('恢复状态后 hasListState:', this.hasListState)
-
-    // 修改这里：即使有缓存状态，如果结果为空也要重新加载
-    if (!this.hasListState || this.results.length === 0) {
-      console.log('需要加载文献数据')
-      this.loadAllLiterature()
-    } else {
-      console.log('使用缓存数据，共', this.results.length, '条')
-    }
+    this.parseQueryParams()
   },
   methods: {
-
     clearListState() {
       sessionStorage.removeItem("literatureListState")
       this.hasListState = false
     },
-
-
     saveListState() {
       const listState = {
         searchQuery: this.searchQuery,
@@ -171,60 +138,58 @@ export default {
         totalPages: this.totalPages,
         sortBy: this.sortBy,
       }
-
       sessionStorage.setItem("literatureListState", JSON.stringify(listState))
       this.hasListState = true
     },
-
-
     restoreListState() {
       const savedState = sessionStorage.getItem("literatureListState")
-
       if (savedState) {
         try {
           const state = JSON.parse(savedState)
-
-
           this.searchQuery = state.searchQuery || ""
           this.results = state.results || []
           this.totalResults = state.totalResults || 0
           this.currentPage = state.currentPage || 1
           this.sortBy = state.sortBy || "relevance"
-
-
-          this.totalPages = Math.ceil(this.results.length / this.pageSize)
-
+          this.totalPages = Math.ceil(this.totalResults / this.pageSize)
           this.hasListState = true
         } catch (error) {
-
           this.hasListState = false
         }
       } else {
         this.hasListState = false
       }
     },
-
-    async loadAllLiterature() {
+    async fetchData() {
       this.isLoading = true
-
       try {
-        const response = await Literature.list({
-          page: this.currentPage,
-          size: this.pageSize,
-          sort_by: this.sortBy
-        })
-        if (response && response.data) {
-          this.results = response?.data?.data?.items || []
-          this.totalResults = response?.data?.data?.total || 0
+        let response
+        if (this.searchQuery) {
+          response = await Literature.search(
+            this.searchQuery,
+            this.currentPage,
+            this.pageSize,
+            this.sortBy
+          )
+        } else {
+          response = await Literature.list({
+            page: this.currentPage,
+            size: this.pageSize,
+            sort_by: this.sortBy
+          })
+        }
+
+        if (response && response.data && response.data.data) {
+          this.results = response.data.data.items || []
+          this.totalResults = response.data.data.total || 0
           this.totalPages = Math.ceil(this.totalResults / this.pageSize)
         } else {
-
           this.results = []
           this.totalResults = 0
           this.totalPages = 1
         }
       } catch (error) {
-
+        console.error("获取文献数据失败:", error)
         this.results = []
         this.totalResults = 0
         this.totalPages = 1
@@ -232,133 +197,45 @@ export default {
         this.isLoading = false
       }
     },
-
-    async onSearch(query) {
-
+    onSearch(query) {
       this.currentPage = 1
-
-
       this.searchQuery = query
-
-
       this.clearListState()
-
-      if (!query) {
-
-        await this.loadAllLiterature()
-
-
-        this.updateUrl()
-      } else {
-
-        await this.searchLiterature()
-
-
-        this.updateUrl()
-      }
-
-
-      this.saveListState()
+      this.updateUrl()
     },
-
-    async searchLiterature() {
-      this.isLoading = true
-
-      try {
-
-        const response = await Literature.search(
-          this.searchQuery,
-          this.currentPage,
-          this.pageSize,
-          this.sortBy
-        )
-
-        if (response && response.data) {
-          this.results = response?.data?.data?.items || []
-          this.totalResults = response?.data?.data?.total || 0
-          this.totalPages = Math.ceil(this.totalResults / this.pageSize)
-        } else {
-
-          this.results = []
-          this.totalResults = 0
-          this.totalPages = 1
-        }
-      } catch (error) {
-
-        this.results = []
-        this.totalResults = 0
-        this.totalPages = 1
-      } finally {
-        this.isLoading = false
-      }
-    },
-
     updateUrl() {
       const query = { ...this.$route.query }
-
       if (this.searchQuery) {
         query.q = this.searchQuery
       } else {
         delete query.q
       }
-
       query.page = this.currentPage
       query.sort_by = this.sortBy
-
       this.$router.replace({
         query
       }).catch(err => {
-
         if (err.name !== 'NavigationDuplicated') {
           throw err
         }
       })
     },
-
     setSortBy(sort) {
       if (this.sortBy === sort) return
-
       this.sortBy = sort
       this.currentPage = 1
-
-
-      if (this.searchQuery) {
-        this.searchLiterature()
-      } else {
-        this.loadAllLiterature()
-      }
-
-
+      this.clearListState()
       this.updateUrl()
-
-
-      this.saveListState()
     },
-
     changePage(page) {
       if (page < 1 || page > this.totalPages || page === this.currentPage) {
         return
       }
-
       this.currentPage = page
-
-
+      this.clearListState()
       this.updateUrl()
-
-
-      if (this.searchQuery) {
-        this.searchLiterature()
-      } else {
-        this.loadAllLiterature()
-      }
-
-
-      this.saveListState()
-
-
       window.scrollTo(0, 0)
     },
-
     viewArticleDetail(id) {
       this.saveListState()
       this.$router.push({
@@ -366,47 +243,21 @@ export default {
         params: { id },
       })
     },
-
     parseQueryParams() {
       const query = this.$route.query
-
-      if (this.hasListState && !query.q && !query.page && !query.sort_by) {
-        return
-      }
-
-      if (query.q !== undefined) {
-        this.searchQuery = query.q || ""
-      }
-
-      if (query.sort_by) {
-        this.sortBy = query.sort_by
-      }
-
-      if (query.page) {
-        const page = parseInt(query.page, 10)
-        if (!isNaN(page) && page > 0) {
-          this.currentPage = page
-        }
-      }
-
-
-      if (this.searchQuery) {
-        this.searchLiterature()
-      } else {
-        this.loadAllLiterature()
-      }
+      this.searchQuery = query.q || ""
+      this.sortBy = query.sort_by || "relevance"
+      const page = parseInt(query.page, 10)
+      this.currentPage = (!isNaN(page) && page > 0) ? page : 1
+      this.fetchData()
     },
   },
-  mounted() {
-    this.parseQueryParams()
-  },
   watch: {
-    "$route.query"(newQuery) {
+    "$route.query"() {
       this.parseQueryParams()
     },
   },
   beforeUnmount() {
-
     this.saveListState()
   },
 }
@@ -507,44 +358,47 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 30px;
-  gap: 5px;
+  gap: 0.5rem;
+  margin: 2rem 0;
 }
 
 .page-btn,
-.page-number,
-.page-ellipsis {
-  min-width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.page-number {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dee2e6;
+  background-color: white;
+  color: #495057;
   cursor: pointer;
   border-radius: 4px;
+  transition: all 0.3s;
   font-size: 14px;
+  min-width: 40px;
+  text-align: center;
 }
 
-.page-number {
-  color: #666;
+.page-btn:hover:not(.disabled),
+.page-number:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
 }
 
 .page-number.active {
-  background: #1a91c1;
+  background-color: #a8e6cf;
+  border-color: #a8e6cf;
   color: white;
 }
 
-.page-btn {
-  padding: 0 10px;
-  color: #1a91c1;
-}
-
 .page-btn.disabled {
-  color: #ccc;
+  background-color: #f8f9fa;
+  color: #6c757d;
   cursor: not-allowed;
+  border-color: #dee2e6;
 }
 
 .page-ellipsis {
-  cursor: default;
+  padding: 0.5rem 0.25rem;
+  color: #6c757d;
+  font-size: 14px;
 }
 
 @media (max-width: 768px) {
