@@ -1,3 +1,4 @@
+<!-- src/views/LiteratureListPage.vue -->
 <template>
   <div class="literature-list-page">
     <section class="list-header">
@@ -39,23 +40,9 @@
           <literature-item v-for="article in results" :key="article.id" :article="article"
             @view-detail="viewArticleDetail" />
 
-          <div class="pagination">
-            <span class="page-btn" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
-              上一页
-            </span>
+          <Pagination v-if="totalPages > 1" :currentPage="currentPage" :totalPages="totalPages"
+            @page-change="changePage" />
 
-            <template v-for="page in displayedPages" :key="page">
-              <span v-if="page === '...'" class="page-ellipsis"> ... </span>
-              <span v-else class="page-number" :class="{ active: page === currentPage }" @click="changePage(page)">
-                {{ page }}
-              </span>
-            </template>
-
-            <span class="page-btn" :class="{ disabled: currentPage === totalPages }"
-              @click="changePage(currentPage + 1)">
-              下一页
-            </span>
-          </div>
         </template>
       </div>
     </div>
@@ -69,13 +56,14 @@ import SearchBox from "@/components/common/SearchBox.vue"
 import SiteFooter from "@/components/layout/SiteFooter.vue"
 import Literature from "@/api/Literature"
 import LiteratureItem from "@/components/layout/LiteratureItem.vue"
-
+import Pagination from "@/components/common/Pagination.vue"
 export default {
   name: "LiteratureListPage",
   components: {
     SearchBox,
     SiteFooter,
     LiteratureItem,
+    Pagination,
   },
   data() {
     return {
@@ -92,34 +80,7 @@ export default {
     }
   },
   computed: {
-    displayedPages() {
-      const pages = []
-      if (this.totalPages <= 7) {
-        for (let i = 1; i <= this.totalPages; i++) {
-          pages.push(i)
-        }
-      } else {
-        pages.push(1)
 
-        if (this.currentPage > 3) {
-          pages.push("...")
-        }
-
-        const start = Math.max(2, this.currentPage - 1)
-        const end = Math.min(this.totalPages - 1, this.currentPage + 1)
-
-        for (let i = start; i <= end; i++) {
-          pages.push(i)
-        }
-
-        if (this.currentPage < this.totalPages - 2) {
-          pages.push("...")
-        }
-
-        pages.push(this.totalPages)
-      }
-      return pages
-    },
   },
   created() {
     this.parseQueryParams()
@@ -360,45 +321,6 @@ export default {
   align-items: center;
   gap: 0.5rem;
   margin: 2rem 0;
-}
-
-.page-btn,
-.page-number {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #dee2e6;
-  background-color: white;
-  color: #495057;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.3s;
-  font-size: 14px;
-  min-width: 40px;
-  text-align: center;
-}
-
-.page-btn:hover:not(.disabled),
-.page-number:hover {
-  background-color: #e9ecef;
-  border-color: #adb5bd;
-}
-
-.page-number.active {
-  background-color: #a8e6cf;
-  border-color: #a8e6cf;
-  color: white;
-}
-
-.page-btn.disabled {
-  background-color: #f8f9fa;
-  color: #6c757d;
-  cursor: not-allowed;
-  border-color: #dee2e6;
-}
-
-.page-ellipsis {
-  padding: 0.5rem 0.25rem;
-  color: #6c757d;
-  font-size: 14px;
 }
 
 @media (max-width: 768px) {

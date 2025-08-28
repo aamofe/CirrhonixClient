@@ -59,23 +59,9 @@
           @view-detail="$emit('view-detail', article.id)" />
       </div>
 
-      <!-- 分页控件 -->
-      <div v-if="totalPages > 1" class="pagination">
-        <span class="page-btn" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
-          上一页
-        </span>
+      <Pagination v-if="totalPages > 1" :current-page="currentPage" :total-pages="totalPages"
+        @page-change="changePage" />
 
-        <template v-for="page in displayedPages" :key="page">
-          <span v-if="page === '...'" class="page-ellipsis"> ... </span>
-          <span v-else class="page-number" :class="{ active: page === currentPage }" @click="changePage(page)">
-            {{ page }}
-          </span>
-        </template>
-
-        <span class="page-btn" :class="{ disabled: currentPage === totalPages }" @click="changePage(currentPage + 1)">
-          下一页
-        </span>
-      </div>
     </div>
 
     <!-- 无结果提示 -->
@@ -87,11 +73,12 @@
 
 <script>
 import LiteratureItem from "@/components/layout/LiteratureItem.vue"
-
+import Pagination from "@/components/common/Pagination.vue"
 export default {
   name: "CrawlResults",
   components: {
     LiteratureItem,
+    Pagination,
   },
   props: {
     // 爬虫结果数组
@@ -431,55 +418,6 @@ export default {
   margin-bottom: 2rem;
 }
 
-/* 分页样式 */
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 2rem 0;
-}
-
-.page-btn,
-.page-number {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #dee2e6;
-  background-color: white;
-  color: #495057;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.3s;
-  font-size: 14px;
-  min-width: 40px;
-  text-align: center;
-}
-
-.page-btn:hover:not(.disabled),
-.page-number:hover {
-  background-color: #e9ecef;
-  border-color: #adb5bd;
-}
-
-.page-number.active {
-  background-color: #a8e6cf;
-  border-color: #a8e6cf;
-  color: white;
-}
-
-.page-btn.disabled {
-  background-color: #f8f9fa;
-  color: #6c757d;
-  cursor: not-allowed;
-  border-color: #dee2e6;
-}
-
-.page-ellipsis {
-  padding: 0.5rem 0.25rem;
-  color: #6c757d;
-  font-size: 14px;
-}
-
-/* 无结果提示 */
 .no-results {
   text-align: center;
   padding: 3rem 2rem;

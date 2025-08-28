@@ -86,24 +86,8 @@
       </div>
     </div>
 
-    <div v-if="totalPages > 1" class="pagination">
-      <span class="page-btn" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
-        上一页
-      </span>
+    <Pagination v-if="totalPages > 1" :current-page="currentPage" :total-pages="totalPages" @page-change="changePage" />
 
-      <template v-for="page in displayedPages" :key="page">
-        <span v-if="page === '...'" class="page-ellipsis"> ... </span>
-        <span v-else class="page-number" :class="{ active: page === currentPage }" @click="changePage(page)">
-          {{ page }}
-        </span>
-      </template>
-
-      <span class="page-btn" :class="{ disabled: currentPage === totalPages }" @click="changePage(currentPage + 1)">
-        下一页
-      </span>
-    </div>
-
-    <!-- 结果详情卡片 -->
     <div v-if="showResultCard" class="result-card-overlay" @click="closeResultCard">
       <div class="result-card" @click.stop>
         <div class="result-card-header">
@@ -123,11 +107,12 @@
 <script>
 import Crawler from "@/api/Crawler"
 import CrawlResults from "./CrawlResults.vue"
-
+import Pagination from "@/components/common/Pagination.vue"
 export default {
   name: "CrawlerHistory",
   components: {
     CrawlResults,
+    Pagination,
   },
   props: {
     availableSources: {
@@ -208,42 +193,6 @@ export default {
     totalPages() {
       return Math.ceil(this.filteredTotal / this.pageSize)
     },
-
-    displayedPages() {
-      const total = this.totalPages
-      const current = this.currentPage
-      const delta = 2 // You can adjust this value
-
-      if (total <= 7) {
-        return Array.from({ length: total }, (_, i) => i + 1)
-      }
-
-      const pages = []
-
-      if (current <= delta + 1) {
-        for (let i = 1; i <= delta + 3; i++) {
-          pages.push(i)
-        }
-        pages.push('...')
-        pages.push(total)
-      } else if (current >= total - delta) {
-        pages.push(1)
-        pages.push('...')
-        for (let i = total - delta - 2; i <= total; i++) {
-          pages.push(i)
-        }
-      } else {
-        pages.push(1)
-        pages.push('...')
-        for (let i = current - delta; i <= current + delta; i++) {
-          pages.push(i)
-        }
-        pages.push('...')
-        pages.push(total)
-      }
-
-      return pages
-    }
   },
   methods: {
     async fetchCrawlerHistory() {
@@ -678,36 +627,6 @@ td.failed {
   font-style: italic;
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.pagination-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: white;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  border-color: #a8e6cf;
-  background-color: rgba(168, 230, 207, 0.1);
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-info {
-  color: #666;
-}
 
 /* 响应式设计 */
 @media (max-width: 768px) {
