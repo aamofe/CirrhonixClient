@@ -1,17 +1,26 @@
 <template>
   <div class="knowledge-graph">
-    <div class="graph-search-bar">
-      <input type="text" v-model="globalState.searchKeyword" @input="handleSearchKeywordChange($event.target.value)"
-        placeholder="搜索节点..." />
-    </div>
+    <!-- 统一的头部样式 -->
+    <section class="graph-header">
+      <h1>知识图谱</h1>
+      <p>展现最新的病原体、细胞、分子之间的关系</p>
 
-    <div class="graph-container">
-      <GraphSidebar :graph-settings="globalState.graphSettings" @settings-change="handleSettingsChange"
-        @reset-settings="handleResetSettings" />
+      <!-- 搜索框移到头部 -->
+      <div class="graph-search-container">
+        <input type="text" v-model="globalState.searchKeyword" @input="handleSearchKeywordChange($event.target.value)"
+          placeholder="搜索节点..." class="graph-search-input" />
+      </div>
+    </section>
 
-      <div class="graph-main">
-        <GraphVisualization :graph-data="graphData" :graph-settings="globalState.graphSettings"
-          :is-loading="isLoading" />
+    <div class="container">
+      <div class="graph-container">
+        <GraphSidebar :graph-settings="globalState.graphSettings" @settings-change="handleSettingsChange"
+          @reset-settings="handleResetSettings" />
+
+        <div class="graph-main">
+          <GraphVisualization :graph-data="graphData" :graph-settings="globalState.graphSettings"
+            :is-loading="isLoading" />
+        </div>
       </div>
     </div>
 
@@ -52,11 +61,9 @@ export default {
     // Use the new composable to fetch graph data
     const { graphData, isLoading, loadGraphData } = useGraphData()
 
-
     // Event handlers for bus
     const handleEntitySelected = (entity) => {
       globalState.selectedEntity = entity
-
     }
 
     const handleEntityDeselected = () => {
@@ -64,10 +71,8 @@ export default {
     }
 
     const handleGraphUpdated = () => {
-
       loadGraphData()
     }
-
 
     const handleSearchKeywordChange = (keyword) => {
       globalState.searchKeyword = keyword
@@ -119,35 +124,56 @@ export default {
   position: relative;
 }
 
-.graph-search-bar {
-  padding: 30px 5%;
+/* 统一的头部样式 - 参考 LiteratureListPage */
+.graph-header {
   background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
-  color: white;
+  padding: 40px 5%;
+  text-align: center;
+  position: relative;
 }
 
-.graph-search-bar h1 {
+.graph-header h1 {
+  color: white;
   font-size: 28px;
   margin-bottom: 10px;
 }
 
-.graph-search-bar p {
+.graph-header p {
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 20px;
-  max-width: 800px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.graph-search-bar input {
-  width: 300px;
-  padding: 10px 15px;
+.graph-search-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.graph-search-input {
+  width: 100%;
+  padding: 12px 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 14px;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.graph-search-input:focus {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 30px auto;
+  padding: 0 5%;
 }
 
 .graph-container {
   display: flex;
-  max-width: 1400px;
-  margin: 30px auto;
-  padding: 0 5%;
   gap: 30px;
 }
 
@@ -155,12 +181,18 @@ export default {
   flex: 1;
   position: relative;
   min-height: 600px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 /* 响应式设计 */
 @media (max-width: 1200px) {
-  .graph-container {
+  .container {
     padding: 0 3%;
+  }
+
+  .graph-container {
     gap: 20px;
   }
 }
@@ -168,16 +200,14 @@ export default {
 @media (max-width: 768px) {
   .graph-container {
     flex-direction: column;
+  }
+
+  .graph-header {
+    padding: 30px 20px;
+  }
+
+  .container {
     padding: 0 20px;
-  }
-
-  .graph-search-bar {
-    padding: 20px;
-  }
-
-  .graph-search-bar input {
-    width: 100%;
-    max-width: 300px;
   }
 }
 </style>

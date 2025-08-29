@@ -53,11 +53,9 @@
               <div class="entity-tags">
                 <el-tag v-for="entity in taskData.entities.slice(0, 20)" :key="entity.id" class="entity-tag"
                   :type="getEntityTagType(entity.entity_type)" size="small">
-                  <el-icon class="entity-icon">
-                    <component :is="getNodeIcon(entity.entity_type)" />
-                  </el-icon>
+
                   {{ entity.name }}
-                  <span class="entity-type">{{ entity.entity_type_display || getNodeLabel(entity.entity_type) }}</span>
+                  <span class="entity-type">{{ entity.entity_type_display }}</span>
                 </el-tag>
                 <el-tag v-if="taskData.entities.length > 20" type="info" size="small">
                   +{{ taskData.entities.length - 20 }} 更多...
@@ -74,7 +72,7 @@
                   <div class="relationship-content">
                     <span class="relationship-name">{{ relationship.name }}</span>
                     <span class="relationship-type">{{ relationship.relation_type_display ||
-                      getRelationLabel(relationship.relation_type) }}</span>
+                      relationship.relation_type }}</span>
                   </div>
                 </div>
                 <div v-if="taskData.relationships.length > 10" class="more-relationships">
@@ -136,7 +134,6 @@
 import { ref, computed, watch } from 'vue'
 import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
 import Literature from '@/api/Literature'
-import { useNodeConfig } from '@/composables/useNodeConfig'
 import { Close, Document, Loading, Clock, SuccessFilled, WarningFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -180,7 +177,6 @@ export default {
   },
   emits: ['close'],
   setup(props, { emit }) {
-    const { getNodeColor, getNodeLabel, getNodeIcon, getRelationLabel } = useNodeConfig()
 
     const taskData = ref(null)
     const isLoading = ref(false)
@@ -285,9 +281,6 @@ export default {
       getStatusIcon,
       getStatusDescription,
       formatDateTime,
-      getNodeIcon,
-      getNodeLabel,
-      getRelationLabel
     }
   }
 }

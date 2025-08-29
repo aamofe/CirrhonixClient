@@ -18,7 +18,7 @@
 
       <div class="user-area" @click="goToProfile">
         <div class="avatar-container">
-          <img :src="avatar || defaultAvatar" alt="用户头像" class="avatar-image" />
+          <img :src="avatar" alt="用户头像" class="avatar-image" />
         </div>
         <span class="username">{{ username || "登录" }}</span>
       </div>
@@ -28,7 +28,6 @@
 
 <script>
 import User from "@/api/User"
-import defaultAvatar from "@/assets/female.png"
 import bus from '@/utils/bus'
 export default {
   name: "HeaderComponent",
@@ -41,7 +40,6 @@ export default {
         { name: "知识图谱", path: "/knowledge-graph" },
         { name: "数据源", path: "/crawler" }
       ],
-      defaultAvatar,
       avatar: null,
     }
   },

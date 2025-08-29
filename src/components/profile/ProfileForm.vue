@@ -8,7 +8,7 @@
         <!-- 左侧头像 -->
         <div class="avatar-section">
           <div class="avatar-container" @click="triggerFileInput">
-            <img :src="avatarUrl || defaultAvatar" alt="用户头像" class="avatar-image" />
+            <img :src="avatarUrl" alt="用户头像" class="avatar-image" />
             <div class="avatar-overlay">
               <span>更换头像</span>
             </div>
@@ -58,7 +58,7 @@
         <!-- 左侧头像 -->
         <div class="avatar-section">
           <div class="avatar-container" @click="triggerFileInput">
-            <img :src="avatarUrl || defaultAvatar" alt="用户头像" class="avatar-image" />
+            <img :src="avatarUrl" alt="用户头像" class="avatar-image" />
             <div class="avatar-overlay">
               <span>更换头像</span>
             </div>
@@ -104,7 +104,6 @@
 
 <script>
 import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import defaultAvatar from "@/assets/female.png"
 import User from "@/api/User"
 import bus from '@/utils/bus'
 export default {
@@ -117,7 +116,6 @@ export default {
       form: { introduction: "", interest: "" },
       avatarUrl: null,
       avatarFile: null,
-      defaultAvatar,
       loading: false,
     }
   },

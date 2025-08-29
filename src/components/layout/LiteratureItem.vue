@@ -61,7 +61,7 @@ export default {
   computed: {
     formatAuthors() {
       const authors = this.article.authors || []
-      if (authors.length === 0) return "未知作者"
+      if (authors.length === 0) return ""
       if (authors.length === 1) return authors[0]
       if (authors.length === 2)
         return `${authors[0]} 和 ${authors[1]}`

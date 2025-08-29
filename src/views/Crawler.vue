@@ -1,9 +1,13 @@
 <!-- src/views/CrawlerPage.vue -->
 <template>
   <div class="crawler-page">
-    <div class="container">
-      <SectionTitle title="文献爬虫管理" subtitle="从学术资源库抓取最新的肝脏研究文献" />
+    <!-- 参考 LiteratureListPage 的头部样式 -->
+    <section class="crawler-header">
+      <h1>文献爬虫管理</h1>
+      <p>从学术资源库抓取最新的肝脏研究文献</p>
+    </section>
 
+    <div class="container">
       <div class="crawler-content">
         <!-- 左侧导航 -->
         <div class="crawler-sidebar">
@@ -50,16 +54,13 @@
 
 <script>
 import SiteFooter from "@/components/layout/SiteFooter.vue"
-import SectionTitle from "@/components/common/Sectiontitle.vue"
 
 import ManualCrawler from "@/components/crawl/ManualCrawler.vue"
 import AutoCrawler from "@/components/crawl/AutoCrawler.vue"
 import CrawlerHistory from "@/components/crawl/CrawlerHistory.vue"
 import UploadPaper from "@/components/crawl/UploadPaper.vue"
 
-
 import Crawler from "@/api/Crawler"
-
 
 import {
   Search as SearchIcon,
@@ -72,7 +73,6 @@ export default {
   name: "CrawlerView",
   components: {
     SiteFooter,
-    SectionTitle,
     ManualCrawler,
     AutoCrawler,
     CrawlerHistory,
@@ -102,30 +102,23 @@ export default {
       try {
         const response = await Crawler.getSourceList()
         if (response.data && response.data.data) {
-
           this.availableSources = Array.isArray(response.data.data)
             ? response.data.data
             : [response.data.data]
-
-
         } else {
-
           this.$message.error("获取数据源列表返回的数据格式有误")
         }
       } catch (error) {
-
         this.$message.error("获取数据源列表失败")
       } finally {
         this.isLoading = false
       }
     },
 
-
     setActiveSection(sectionId) {
       this.activeSection = sectionId
       sessionStorage.setItem("crawlerActiveSection", sectionId)
     },
-
 
     getSavedSection() {
       const savedSection = sessionStorage.getItem("crawlerActiveSection")
@@ -149,24 +142,50 @@ export default {
 <style scoped>
 .crawler-page {
   min-height: 100vh;
-  background-color: #f9f9f9;
+  background-color: #f5fbff;
+}
+
+/* 参考 LiteratureListPage 的头部样式 */
+.crawler-header {
+  background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
+  padding: 40px 5%;
+  text-align: center;
+  position: relative;
+}
+
+.crawler-header h1 {
+  color: white;
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.crawler-header p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .container {
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+  margin: 30px auto;
+  padding: 0 1rem;
 }
 
 .crawler-content {
   display: flex;
   gap: 2rem;
-  margin-top: 2rem;
 }
 
 .crawler-sidebar {
-  width: 200px;
+  width: 250px;
   flex-shrink: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem 0;
+  height: fit-content;
 }
 
 .crawler-main {
@@ -176,34 +195,38 @@ export default {
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 12px 15px;
+  padding: 1rem 1.5rem;
   margin-bottom: 8px;
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
   transition: all 0.3s;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  color: #555;
 }
 
 .nav-item:hover {
-  background-color: #f0f7ff;
+  background-color: rgba(168, 230, 207, 0.1);
+  color: #1a91c1;
 }
 
 .nav-item.active {
-  background-color: #1a91c1;
-  color: white;
+  background-color: rgba(168, 230, 207, 0.2);
+  color: #1a91c1;
+  border-left: 3px solid #1a91c1;
 }
 
 .nav-icon {
   margin-right: 10px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
 }
 
 .crawler-section {
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 24px;
 }
 
@@ -218,7 +241,7 @@ export default {
   }
 
   .nav-item {
-    padding: 10px;
+    padding: 0.75rem 1.25rem;
     margin-bottom: 5px;
   }
 }
