@@ -103,7 +103,7 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import User from "@/api/User"
 import bus from '@/utils/bus'
 export default {

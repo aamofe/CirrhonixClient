@@ -107,7 +107,7 @@
 <script>
 import Crawler from "@/api/Crawler"
 import CrawlResults from "./CrawlResults.vue"
-import Pagination from "@/components/common/Pagination.vue"
+import Pagination from "@/components/navigation/Pagination.vue"
 export default {
   name: "CrawlerHistory",
   components: {

@@ -2,7 +2,7 @@
   <div class="reading-history-component">
     <h3>阅读历史</h3>
     <div v-if="!loading && allReadingHistory.length" class="reading-history">
-      <LiteratureItem v-for="item in readingHistory" :key="item.id" :article="formatArticleData(item)"
+      <LiteratureCard v-for="item in readingHistory" :key="item.id" :article="formatArticleData(item)"
         @view-detail="handleViewDetail" />
       <Pagination :currentPage="currentPage" :totalPages="totalPages" @page-change="handlePageChange" />
     </div>
@@ -12,14 +12,14 @@
 </template>
 
 <script>
-import LiteratureItem from "@/components/layout/LiteratureItem.vue"
-import Pagination from "@/components/common/Pagination.vue"
+import LiteratureCard from "@/components/literature/LiteratureCard.vue"
+import Pagination from "@/components/navigation/Pagination.vue"
 import Literature from "@/api/Literature"
 
 export default {
   name: "ReadingHistoryComponent",
   components: {
-    LiteratureItem,
+    LiteratureCard,
     Pagination,
   },
   data() {
@@ -57,7 +57,7 @@ export default {
       }
     },
     formatArticleData(item) {
-      // 将阅读历史记录格式化为 LiteratureItem 所需的 article 格式
+      // 将阅读历史记录格式化为 LiteratureCard 所需的 article 格式
       // 基于实际API返回的字段结构
       return {
         id: item.literature_id,

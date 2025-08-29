@@ -1,4 +1,4 @@
-<!-- src/components/FormInput.vue -->
+<!-- src/components/BaseInput.vue -->
 <template>
   <div class="input-group">
     <label :for="id">{{ label }}</label>

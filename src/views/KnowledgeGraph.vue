@@ -35,7 +35,7 @@ import { useGraphData } from '@/composables/useGraphData' // New composable
 import bus from '@/utils/bus' // Import the event bus
 import GraphSidebar from '@/components/knowledge/GraphSidebar.vue'
 import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
-import SiteFooter from '@/components/layout/SiteFooter.vue'
+import SiteFooter from '@/components/navigation/SiteFooter.vue'
 
 export default {
   name: 'KnowledgeGraph',

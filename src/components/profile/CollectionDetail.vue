@@ -29,14 +29,14 @@
 </template>
 
 <script>
-import LiteratureItem from "@/components/layout/LiteratureItem.vue"
+import LiteratureCard from "@/components/literature/LiteratureCard.vue"
 import { Back } from "@element-plus/icons-vue"
 import Literature from "@/api/Literature"
 
 export default {
   name: "CollectionDetail",
   components: {
-    LiteratureItem,
+    LiteratureCard,
     Back,
   },
   props: {

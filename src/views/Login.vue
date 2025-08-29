@@ -135,10 +135,9 @@
 
 <script>
 import { mapMutations } from "vuex"
-// import service from "@/utils/request"
 import User from "@/api/User"
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import FormInput from "@/components/form/FormInput.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import FormInput from "@/components/ui/BaseInput.vue"
 
 export default {
   name: "LoginView",

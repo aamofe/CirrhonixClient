@@ -189,9 +189,9 @@
 </template>
 
 <script>
-import SearchBox from "@/components/common/SearchBox.vue"
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import SiteFooter from "@/components/layout/SiteFooter.vue"
+import SearchBox from "@/components/navigation/SearchBox.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import SiteFooter from "@/components/navigation/SiteFooter.vue"
 import Literature from "@/api/Literature"
 import Crawling from "@/api/Crawler"
 

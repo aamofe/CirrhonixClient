@@ -71,9 +71,9 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import ModalComponent from "@/components/common/ModalComponent.vue"
-import CollectionCard from "@/components/cards/CollectionCard.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import ModalComponent from "@/components/ui/BaseModal.vue"
+import CollectionCard from "@/components/profile/CollectionCard.vue"
 import CollectionDetail from "@/components/profile/CollectionDetail.vue"
 import Literature from "@/api/Literature"
 

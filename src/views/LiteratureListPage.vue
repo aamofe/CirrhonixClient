@@ -52,17 +52,17 @@
 </template>
 
 <script>
-import SearchBox from "@/components/common/SearchBox.vue"
-import SiteFooter from "@/components/layout/SiteFooter.vue"
+import SearchBox from "@/components/navigation/SearchBox.vue"
+import SiteFooter from "@/components/navigation/SiteFooter.vue"
 import Literature from "@/api/Literature"
-import LiteratureItem from "@/components/layout/LiteratureItem.vue"
-import Pagination from "@/components/common/Pagination.vue"
+import LiteratureCard from "@/components/literature/LiteratureCard.vue"
+import Pagination from "@/components/navigation/Pagination.vue"
 export default {
   name: "LiteratureListPage",
   components: {
     SearchBox,
     SiteFooter,
-    LiteratureItem,
+    LiteratureCard,
     Pagination,
   },
   data() {

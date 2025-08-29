@@ -1,4 +1,4 @@
-<!-- src/components/layout/CollectionDialog.vue -->
+<!-- src/components/layout/CollectionSelector.vue -->
 <template>
   <el-dialog :title="title" v-model="dialogVisible" width="400px" @close="handleClose">
     <div class="collections-dialog">
@@ -34,7 +34,7 @@
 import Literature from "@/api/Literature"
 
 export default {
-  name: "CollectionDialog",
+  name: "CollectionSelector",
   props: {
     title: {
       type: String,

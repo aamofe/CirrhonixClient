@@ -1,4 +1,3 @@
-<!-- src/components/cards/CollectionCard.vue -->
 <template>
   <div class="collection-card">
     <div class="collection-header">
@@ -10,18 +9,24 @@
       <!-- 修改后的三点式下拉菜单部分 -->
       <el-dropdown trigger="click" size="small">
         <button class="action-btn more-btn">
-          <el-icon><MoreFilled /></el-icon>
+          <el-icon>
+            <MoreFilled />
+          </el-icon>
         </button>
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item @click="$emit('edit', collection)">
-              <el-icon><EditPen /></el-icon>
+              <el-icon>
+                <EditPen />
+              </el-icon>
               <span>编辑信息</span>
             </el-dropdown-item>
 
             <!-- 修改后的删除选项 -->
             <el-dropdown-item @click="confirmDelete">
-              <el-icon><Delete /></el-icon>
+              <el-icon>
+                <Delete />
+              </el-icon>
               <span>删除收藏夹</span>
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -35,11 +40,15 @@
 
     <div class="collection-meta">
       <div class="meta-item">
-        <el-icon><Document /></el-icon>
+        <el-icon>
+          <Document />
+        </el-icon>
         <span>{{ collection.literature_count || 0 }} 篇文献</span>
       </div>
       <div class="meta-item">
-        <el-icon><Calendar /></el-icon>
+        <el-icon>
+          <Calendar />
+        </el-icon>
         <span>{{ formatDate(collection.updated_at) }}</span>
       </div>
     </div>
@@ -57,8 +66,8 @@ import {
   MoreFilled,
   EditPen,
   Delete,
-} from "@element-plus/icons-vue";
-import { ElMessageBox } from "element-plus";
+} from "@element-plus/icons-vue"
+import { ElMessageBox } from "element-plus"
 export default {
   name: "CollectionCard",
   components: {
@@ -76,14 +85,14 @@ export default {
   },
   methods: {
     formatDate(dateString) {
-      if (!dateString) return "";
+      if (!dateString) return ""
 
-      const date = new Date(dateString);
+      const date = new Date(dateString)
       return date.toLocaleDateString("zh-CN", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
-      });
+      })
     },
     confirmDelete() {
       ElMessageBox.confirm("确定要删除该收藏夹吗？", "警告", {
@@ -92,12 +101,12 @@ export default {
         type: "warning",
       })
         .then(() => {
-          this.$emit("delete", this.collection);
+          this.$emit("delete", this.collection)
         })
-        .catch(() => {});
+        .catch(() => { })
     },
   },
-};
+}
 </script>
 
 <style scoped>

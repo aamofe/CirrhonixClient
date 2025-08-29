@@ -179,8 +179,8 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import ModalComponent from "@/components/common/ModalComponent.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import ModalComponent from "@/components/ui/BaseModal.vue"
 import { ElMessage, ElMessageBox } from "element-plus"
 import {
   Edit,

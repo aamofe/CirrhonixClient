@@ -63,7 +63,7 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import CrawlResults from "@/components/crawl/CrawlResults.vue"
 import { Search, Loading } from '@element-plus/icons-vue'
 import { ElIcon } from 'element-plus'

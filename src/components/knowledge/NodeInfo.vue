@@ -189,7 +189,7 @@ import { Close, Plus } from '@element-plus/icons-vue'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
 export default {
-  name: 'NodeInfoCard',
+  name: 'NodeInfo',
   components: { Close, Plus, ElSkeleton, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElRadioGroup, ElRadio },
   props: {
     visible: { type: Boolean, default: false },

@@ -12,7 +12,7 @@
           </router-link>
 
           <div class="action-buttons">
-            <button class="action-btn" @click="showCollectionDialog">
+            <button class="action-btn" @click="showCollectionSelector">
               <span :class="['icon', isInAnyCollection ? 'favorited' : '']">★</span>
               {{ isInAnyCollection ? "已收藏" : "收藏" }}
             </button>
@@ -224,24 +224,24 @@
       <p>正在加载文献详情...</p>
     </div>
     <!-- 收藏夹选择对话框 -->
-    <CollectionDialog title="选择收藏夹" v-model="collectionDialogVisible" :literature-id="articleId"
+    <CollectionSelector title="选择收藏夹" v-model="CollectionSelectorVisible" :literature-id="articleId"
       :collections="collections" @collections-updated="onCollectionsUpdated"
-      @cancel="collectionDialogVisible = false" />
+      @cancel="CollectionSelectorVisible = false" />
 
     <!-- 分析任务详情卡片 -->
-    <AnalysisResultCard :visible="showAnalysisCard" :task-id="taskId" @close="closeAnalysisCard" />
+    <LiteratureAnalysis :visible="showAnalysisCard" :task-id="taskId" @close="closeAnalysisCard" />
     <site-footer />
   </div>
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import SiteFooter from "@/components/layout/SiteFooter.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import SiteFooter from "@/components/navigation/SiteFooter.vue"
 import Literature from "@/api/Literature"
 import { Back } from "@element-plus/icons-vue"
-import AiAssistant from "@/components/AiAssistant.vue"
-import CollectionDialog from "@/components/layout/CollectionDialog.vue"
-import AnalysisResultCard from "@/components/AnalysisResultCard.vue"
+import AiAssistant from "@/components/ai/AiAssistant.vue"
+import CollectionSelector from "@/components/literature/CollectionSelector.vue"
+import LiteratureAnalysis from "@/components/literature/LiteratureAnalysis.vue"
 
 export default {
   name: "LiteratureDetail",
@@ -250,8 +250,8 @@ export default {
     SiteFooter,
     Back,
     AiAssistant,
-    CollectionDialog,
-    AnalysisResultCard
+    CollectionSelector,
+    LiteratureAnalysis
   },
   data() {
     return {
@@ -283,7 +283,7 @@ export default {
       collections: [],
       // selectedCollectionIds: [],
       // newCollectionName: "",
-      collectionDialogVisible: false,
+      CollectionSelectorVisible: false,
       aiSummary: "",
       isGeneratingSummary: false,
       isAnalyzing: false,
@@ -433,8 +433,8 @@ export default {
       const date = new Date(dateString)
       return date.toLocaleDateString("zh-CN")
     },
-    showCollectionDialog() {
-      this.collectionDialogVisible = true
+    showCollectionSelector() {
+      this.CollectionSelectorVisible = true
     },
 
     toggleTranslation() {

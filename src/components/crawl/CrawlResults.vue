@@ -72,12 +72,12 @@
 </template>
 
 <script>
-import LiteratureItem from "@/components/layout/LiteratureItem.vue"
-import Pagination from "@/components/common/Pagination.vue"
+import LiteratureCard from "@/components/literature/LiteratureCard.vue"
+import Pagination from "@/components/navigation/Pagination.vue"
 export default {
   name: "CrawlResults",
   components: {
-    LiteratureItem,
+    LiteratureCard,
     Pagination,
   },
   props: {

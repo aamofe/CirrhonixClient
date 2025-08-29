@@ -56,10 +56,9 @@
       </div>
     </div>
 
-    <EdgeInfoCard :visible="showEdgeCard" :edge-data="selectedEdgeData" :position="cardPosition"
-      @close="closeEdgeCard" />
+    <EdgeInfo :visible="showEdgeCard" :edge-data="selectedEdgeData" :position="cardPosition" @close="closeEdgeCard" />
 
-    <NodeInfoCard :visible="showNodeCard" :node-data="selectedNodeData" :position="cardPosition" @close="closeNodeCard"
+    <NodeInfo :visible="showNodeCard" :node-data="selectedNodeData" :position="cardPosition" @close="closeNodeCard"
       @relation-updated="handleRelationUpdated" />
 
   </div>
@@ -67,13 +66,13 @@
 <script>
 import { ref } from 'vue'
 import { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick } from '@element-plus/icons-vue'
-import EdgeInfoCard from './EdgeInfoCard.vue'
-import NodeInfoCard from './NodeInfoCard.vue'
+import EdgeInfo from './EdgeInfo.vue'
+import NodeInfo from './NodeInfo.vue'
 import { useGraphVisualization } from '@/composables/useGraphVisualization' // New composable
 
 export default {
   name: 'GraphVisualization',
-  components: { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick, EdgeInfoCard, NodeInfoCard },
+  components: { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick, EdgeInfo, NodeInfo },
   props: {
     graphData: { type: Object, default: () => ({ nodes: [], edges: [] }) },
     graphSettings: { type: Object, required: true },

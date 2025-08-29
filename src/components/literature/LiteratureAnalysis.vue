@@ -1,4 +1,3 @@
-<!-- src/components/AnalysisResultCard.vue -->
 <template>
   <div class="analysis-result-card" v-if="visible" @click.self="handleClose">
     <div class="card-overlay" @click.self="handleClose">
@@ -99,7 +98,7 @@
                       <span class="relation-type">作用因子：{{ relation.factor?.factor_name || '未知关系' }}</span>
                       <!-- {{ relation }} -->
                       <span class="support-degree" v-if="relation.support_degree">(支持度: {{ relation.support_degree
-                        }})</span>
+                      }})</span>
                       <el-tag v-if="relation.is_verified" type="success" size="mini">已验证</el-tag>
                     </div>
                   </div>
@@ -132,7 +131,7 @@
 
 <script>
 import { ref, computed, watch } from 'vue'
-import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
+import PrimaryButton from '@/components/ui/PrimaryButton.vue'
 import Literature from '@/api/Literature'
 import { Close, Document, Loading, Clock, SuccessFilled, WarningFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -160,7 +159,7 @@ const ENTITY_TAG_TYPES = {
 }
 
 export default {
-  name: 'AnalysisResultCard',
+  name: 'LiteratureAnalysis',
   components: {
     PrimaryButton,
     Close,

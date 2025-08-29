@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import SiteFooter from "@/components/layout/SiteFooter.vue"
+import SiteFooter from "@/components/navigation/SiteFooter.vue"
 
 import ManualCrawler from "@/components/crawl/ManualCrawler.vue"
 import AutoCrawler from "@/components/crawl/AutoCrawler.vue"

@@ -84,7 +84,7 @@
 </template>
 
 <script>
-import ModalComponent from "@/components/common/ModalComponent.vue"
+import ModalComponent from "@/components/ui/BaseModal.vue"
 import User from "@/api/User"
 
 import ProfileForm from "@/components/profile/ProfileForm.vue"

@@ -102,7 +102,7 @@
     <div v-if="uploadedLiteratures.length > 0" class="uploaded-literature">
       <h4>已上传的文献</h4>
       <div class="literature-list">
-        <LiteratureItem v-for="literature in uploadedLiteratures" :key="literature.id" :article="literature"
+        <LiteratureCard v-for="literature in uploadedLiteratures" :key="literature.id" :article="literature"
           @view-detail="viewArticleDetail" />
       </div>
     </div>
@@ -110,8 +110,8 @@
 </template>
 
 <script>
-import PrimaryButton from "@/components/buttons/PrimaryButton.vue"
-import LiteratureItem from "../layout/LiteratureItem.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import LiteratureCard from "../literature/LiteratureCard.vue"
 import Literature from "@/api/Literature"
 import { ElMessage, ElInput, ElDatePicker, ElSelect, ElOption, ElAlert } from "element-plus"
 import "element-plus/es/components/message/style/css"
@@ -125,7 +125,7 @@ export default {
   name: "UploadPaper",
   components: {
     PrimaryButton,
-    LiteratureItem,
+    LiteratureCard,
     Document,
     Upload,
     Loading,

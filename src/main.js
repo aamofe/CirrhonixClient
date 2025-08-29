@@ -5,7 +5,7 @@ import store from './store'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import mitt from 'mitt'
-import AiAssistant from './components/AiAssistant.vue'
+import AiAssistant from './components/ai/AiAssistant.vue'
 
 const app = createApp(App)
 app.config.globalProperties.$bus = mitt()

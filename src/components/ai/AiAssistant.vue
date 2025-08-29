@@ -1,4 +1,3 @@
-<!-- src/components/AiAssistant.vue -->
 <template>
   <div class="ai-assistant-container" :class="{ 'is-expanded': isExpanded }">
     <!-- 收起状态的浮动按钮 -->
@@ -104,7 +103,7 @@
 
 <script>
 import AI from "@/api/Ai"
-import MarkdownDisplayer from "@/components/markdown/MarkdownDisplayer.vue"
+import MarkdownDisplayer from "@/components/ai/MarkdownDisplayer.vue"
 
 const STORAGE_KEY = "aiAssistantMessages"
 const CONTEXT_KEY = "aiAssistantContext"

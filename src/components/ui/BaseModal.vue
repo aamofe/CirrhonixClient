@@ -1,4 +1,4 @@
-<!-- src/components/ModalComponent.vue -->
+<!-- src/components/BaseModal.vue -->
 <template>
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-container">
