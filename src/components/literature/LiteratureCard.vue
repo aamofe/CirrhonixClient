@@ -1,5 +1,5 @@
 <template>
-  <div class="literature-item" @click="handleClick">
+  <div class="literature-card" @click="handleClick">
     <h3 class="title">{{ article.title }}</h3>
 
     <div class="meta-info">
@@ -12,7 +12,7 @@
       <span class="divider" v-if="article.publication_type && formattedDate">|</span>
       <span class="type" v-if="article.publication_type">{{
         formatPublicationType
-      }}</span>
+        }}</span>
     </div>
     <div class="footer">
       <div class="left">
@@ -116,7 +116,7 @@ export default {
 </script>
 
 <style scoped>
-.literature-item {
+.literature-card {
   background: white;
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
@@ -127,7 +127,7 @@ export default {
   cursor: pointer;
 }
 
-.literature-item:hover {
+.literature-card:hover {
   background: #f5fbff;
   border-color: #a8e6cf;
 }
@@ -141,7 +141,7 @@ export default {
   text-align: left;
 }
 
-.literature-item:hover .title {
+.literature-card:hover .title {
   color: #1a91c1;
 }
 

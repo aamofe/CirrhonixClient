@@ -1,10 +1,6 @@
-<!-- src/components/buttons/CancelButton.vue -->
+<!-- src/components/ui/CancelButton.vue -->
 <template>
-  <button
-    class="cancel-button"
-    :class="{ 'full-width': fullWidth }"
-    @click="$emit('click')"
-  >
+  <button class="cancel-button" :class="{ 'full-width': fullWidth }" @click="$emit('click')">
     <slot></slot>
   </button>
 </template>
@@ -19,7 +15,7 @@ export default {
     },
   },
   emits: ["click"],
-};
+}
 </script>
 
 <style scoped>

@@ -1,4 +1,3 @@
-<!-- src/components/profile/Collections.vue -->
 <template>
   <div class="collections-component">
     <div v-if="!showCollectionDetail">
@@ -20,11 +19,9 @@
       <div v-else class="empty-state">您还没有创建任何收藏夹</div>
     </div>
 
-    <!-- 收藏夹详情组件 -->
     <CollectionDetail v-if="showCollectionDetail" :collectionId="selectedCollectionId"
       @back-to-collections="backToCollections" />
 
-    <!-- 创建收藏夹模态框 -->
     <ModalComponent v-if="showNewCollectionModal" title="创建新收藏夹" @close="closeNewCollectionModal">
       <form @submit.prevent="submitForm" class="collection-form">
         <div class="form-group">
@@ -38,7 +35,7 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="cancel-button" @click="closeNewCollectionModal">取消</button>
+          <CancelButton @click="closeNewCollectionModal">取消</CancelButton>
           <button type="submit" class="submit-button" :disabled="isSubmitting">
             保存
           </button>
@@ -46,7 +43,6 @@
       </form>
     </ModalComponent>
 
-    <!-- 编辑收藏夹模态框 -->
     <ModalComponent v-if="showEditCollectionModal" title="编辑收藏夹" @close="closeEditCollectionModal">
       <form @submit.prevent="submitForm" class="collection-form" v-if="selectedCollection">
         <div class="form-group">
@@ -60,7 +56,7 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="cancel-button" @click="closeEditCollectionModal">取消</button>
+          <CancelButton @click="closeEditCollectionModal">取消</CancelButton>
           <button type="submit" class="submit-button" :disabled="isSubmitting">
             保存
           </button>
@@ -75,6 +71,7 @@ import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import ModalComponent from "@/components/ui/BaseModal.vue"
 import CollectionCard from "@/components/profile/CollectionCard.vue"
 import CollectionDetail from "@/components/profile/CollectionDetail.vue"
+import CancelButton from "@/components/ui/CancelButton.vue" // Import CancelButton
 import Literature from "@/api/Literature"
 
 export default {
@@ -84,6 +81,7 @@ export default {
     ModalComponent,
     CollectionCard,
     CollectionDetail,
+    CancelButton,
   },
   data() {
     return {
@@ -346,20 +344,6 @@ export default {
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 1.5rem;
-}
-
-.cancel-button {
-  padding: 0.75rem 1.5rem;
-  background-color: #f2f2f2;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.cancel-button:hover {
-  background-color: #e0e0e0;
 }
 
 .submit-button {

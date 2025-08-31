@@ -166,9 +166,9 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="cancel-btn" @click="showNewScheduleModal = false">
+          <CancelButton @click="showNewScheduleModal = false">
             取消
-          </button>
+          </CancelButton>
           <PrimaryButton :fullWidth="false" @click="saveSchedule">
             {{ newSchedule.id ? "保存修改" : "创建任务" }}
           </PrimaryButton>
@@ -180,6 +180,7 @@
 
 <script>
 import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import CancelButton from "@/components/ui/CancelButton.vue"
 import ModalComponent from "@/components/ui/BaseModal.vue"
 import { ElMessage, ElMessageBox } from "element-plus"
 import {
@@ -197,6 +198,7 @@ export default {
   name: "AutoCrawler",
   components: {
     PrimaryButton,
+    CancelButton,
     ModalComponent,
     Edit,
     Delete,
@@ -390,7 +392,7 @@ export default {
           }
         })
         .catch(() => {
-          ElMessage.info("已取消删除")
+          // ElMessage.info("已取消删除")
         })
     },
 
@@ -813,22 +815,6 @@ textarea.form-input {
   border-top: 1px solid #eee;
 }
 
-.cancel-btn {
-  padding: 0.75rem 1.5rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: white;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-
-.cancel-btn:hover {
-  border-color: #bbb;
-  background-color: #f8f9fa;
-}
-
 /* 响应式设计 */
 @media (max-width: 768px) {
   .schedule-item {
@@ -875,10 +861,6 @@ textarea.form-input {
 
   .form-actions {
     flex-direction: column;
-  }
-
-  .cancel-btn {
-    width: 100%;
   }
 
   .checkbox-group {

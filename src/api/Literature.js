@@ -11,7 +11,6 @@ const url = {
   search: '/literature/search',
   uploadSinglePaper: '/literature/upload',
   uploadBatchPaper: '/literature/batch',
-  // translate: '/literature/translate',
   analyze: '/literature/analyze',
   analyzeDetail: (atask_id) => `/literature/analyze/${atask_id}`,
   analyzeList: '/literature/analyze/list',

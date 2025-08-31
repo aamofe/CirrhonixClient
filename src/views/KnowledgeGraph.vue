@@ -30,9 +30,8 @@
 
 <script>
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
-import { useGraphData } from '@/composables/useGraphData' // New composable
-import bus from '@/utils/bus' // Import the event bus
+import { useGraphData } from '@/composables/useGraphData'
+import bus from '@/utils/bus'
 import GraphSidebar from '@/components/knowledge/GraphSidebar.vue'
 import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
 import SiteFooter from '@/components/navigation/SiteFooter.vue'
@@ -45,11 +44,10 @@ export default {
     SiteFooter,
   },
   setup() {
-    const router = useRouter()
 
     const globalState = reactive({
       searchKeyword: '',
-      selectedEntity: null, // Unified selected entity state
+      selectedEntity: null,
       graphSettings: {
         nodeSize: 10,
         edgeWidth: 2,
@@ -58,10 +56,8 @@ export default {
       }
     })
 
-    // Use the new composable to fetch graph data
     const { graphData, isLoading, loadGraphData } = useGraphData()
 
-    // Event handlers for bus
     const handleEntitySelected = (entity) => {
       globalState.selectedEntity = entity
     }

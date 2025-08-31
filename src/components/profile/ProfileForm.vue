@@ -1,11 +1,9 @@
 <template>
   <div class="profile-form">
-    <!-- 头像上传 input，只有一份 -->
     <input type="file" ref="fileInput" accept="image/*" style="display: none" @change="handleFileChange" />
 
     <div v-if="!isEditing" class="profile-info">
       <div class="profile-layout">
-        <!-- 左侧头像 -->
         <div class="avatar-section">
           <div class="avatar-container" @click="triggerFileInput">
             <img :src="avatarUrl" alt="用户头像" class="avatar-image" />
@@ -15,7 +13,6 @@
           </div>
         </div>
 
-        <!-- 右侧信息 -->
         <div class="info-content">
           <div class="info-item">
             <div class="info-label">用户名</div>
@@ -34,7 +31,9 @@
 
           <div class="info-item">
             <div class="info-label">个人简介</div>
-            <div class="info-value">{{ user.introduction || "暂无个人简介" }}</div>
+            <div class="info-value">
+              {{ user.introduction || "暂无个人简介" }}
+            </div>
           </div>
 
           <div class="info-item">
@@ -44,18 +43,17 @@
         </div>
       </div>
 
-      <!-- 底部按钮 -->
       <div class="action-buttons">
         <button @click="startEditing" class="edit-button">编辑资料</button>
-        <button @click="$emit('showPasswordModal')" class="password-button">修改密码</button>
+        <button @click="$emit('showPasswordModal')" class="password-button">
+          修改密码
+        </button>
         <button @click="$emit('logout')" class="logout-button">退出登录</button>
       </div>
     </div>
 
-    <!-- 编辑状态：表单 -->
     <form v-else @submit.prevent="handleSubmit" class="profile-form-edit">
       <div class="profile-layout">
-        <!-- 左侧头像 -->
         <div class="avatar-section">
           <div class="avatar-container" @click="triggerFileInput">
             <img :src="avatarUrl" alt="用户头像" class="avatar-image" />
@@ -95,7 +93,7 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" @click="cancelEditing" class="cancel-button">取消</button>
+        <CancelButton @click="cancelEditing">取消</CancelButton>
         <PrimaryButton type="submit" :fullWidth="false">保存</PrimaryButton>
       </div>
     </form>
@@ -104,11 +102,13 @@
 
 <script>
 import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import CancelButton from "@/components/ui/CancelButton.vue" // Import CancelButton
 import User from "@/api/User"
-import bus from '@/utils/bus'
+import bus from "@/utils/bus"
+
 export default {
   name: "ProfileForm",
-  components: { PrimaryButton },
+  components: { PrimaryButton, CancelButton }, // Register CancelButton
   props: { user: { type: Object, required: true } },
   data() {
     return {
@@ -160,7 +160,7 @@ export default {
           const newAvatar = res.data.data.avatar_url
           this.$message.success("头像更新成功")
           this.$emit("avatarUpdated", newAvatar)
-          bus.emit('avatar-updated', newAvatar)
+          bus.emit("avatar-updated", newAvatar)
         })
         .catch(() => {
           this.$message.error("头像上传失败")
@@ -190,7 +190,6 @@ export default {
   },
 }
 </script>
-
 
 <style scoped>
 .profile-form {
@@ -333,19 +332,6 @@ export default {
   justify-content: flex-start;
   margin-top: 1.5rem;
   gap: 1rem;
-}
-
-.cancel-button {
-  padding: 0.5rem 1.5rem;
-  background-color: transparent;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.cancel-button:hover {
-  background-color: #f5f5f5;
 }
 
 .form-group {

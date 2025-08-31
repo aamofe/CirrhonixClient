@@ -168,7 +168,7 @@
 
       <template #footer>
         <span class="dialog-footer">
-          <button @click="handleCloseAddDialog" class="cancel-btn">取消</button>
+          <CancelButton @click="handleCloseAddDialog">取消</CancelButton>
           <button @click="handleAddRelation" :disabled="submitting" class="confirm-btn">
             <span v-if="submitting">提交中...</span>
             <span v-else>确定</span>
@@ -186,11 +186,25 @@
 import { ref, watch, reactive } from 'vue'
 import { ElMessage, ElSkeleton, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElRadioGroup, ElRadio } from 'element-plus'
 import { Close, Plus } from '@element-plus/icons-vue'
+import CancelButton from '@/components/ui/CancelButton.vue'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
 export default {
   name: 'NodeInfo',
-  components: { Close, Plus, ElSkeleton, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElRadioGroup, ElRadio },
+  components: {
+    Close,
+    Plus,
+    CancelButton,
+    ElSkeleton,
+    ElDialog,
+    ElForm,
+    ElFormItem,
+    ElInput,
+    ElSelect,
+    ElOption,
+    ElRadioGroup,
+    ElRadio
+  },
   props: {
     visible: { type: Boolean, default: false },
     nodeData: { type: Object, default: () => ({}) },
@@ -847,22 +861,6 @@ export default {
   gap: 10px;
 }
 
-.cancel-btn {
-  background-color: #f5f5f5;
-  color: #606266;
-  border: 1px solid #dcdfe6;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.cancel-btn:hover {
-  background-color: #e6e8eb;
-  border-color: #c0c4cc;
-}
-
 .confirm-btn {
   background-color: #409eff;
   color: white;
@@ -942,7 +940,6 @@ export default {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
-/* Responsive design */
 @media (max-width: 768px) {
   .node-info-card {
     width: 95vw;

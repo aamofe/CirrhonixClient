@@ -37,7 +37,7 @@
         </div>
 
         <template v-else>
-          <literature-item v-for="article in results" :key="article.id" :article="article"
+          <literature-card v-for="article in results" :key="article.id" :article="article"
             @view-detail="viewArticleDetail" />
 
           <Pagination v-if="totalPages > 1" :currentPage="currentPage" :totalPages="totalPages"
@@ -151,6 +151,8 @@ export default {
         }
       } catch (error) {
         console.error("获取文献数据失败:", error)
+        if (error.response)
+          console.log("错误回答：", error.response)
         this.results = []
         this.totalResults = 0
         this.totalPages = 1

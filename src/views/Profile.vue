@@ -1,4 +1,3 @@
-<!-- src/views/Profile.vue -->
 <template>
   <div class="profile-page">
     <div class="container">
@@ -8,7 +7,6 @@
         </div>
       </div>
       <div class="profile-content">
-        <!-- 左侧导航 -->
         <div class="profile-sidebar">
           <nav>
             <div v-for="(item, index) in navItems" :key="index" @click="setActiveSection(item.id)"
@@ -23,9 +21,7 @@
           </nav>
         </div>
 
-        <!-- 右侧内容 -->
         <div class="profile-main">
-          <!-- 基本信息 -->
           <div v-if="activeSection === 'basic'" class="profile-section">
             <h3>基本信息</h3>
             <ProfileForm v-if="!loading" :user="userInfo" @profileUpdated="updateLocalUserInfo"
@@ -33,21 +29,17 @@
             <div v-else class="loading">加载中...</div>
           </div>
 
-          <!-- 收藏夹 -->
           <div v-if="activeSection === 'collections'" class="profile-section">
             <CollectionsComponent />
           </div>
 
-          <!-- 阅读历史 -->
           <div v-if="activeSection === 'history'" class="profile-section">
             <ReadingHistoryComponent />
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- 修改密码模态框 -->
     <ModalComponent v-if="showChangePasswordModal" title="修改密码" @close="closePasswordModal">
       <form @submit.prevent="handlePasswordSubmit" class="password-form">
         <div class="form-group">
@@ -71,9 +63,7 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="cancel-btn" @click="closePasswordModal">
-            取消
-          </button>
+          <CancelButton @click="closePasswordModal"> 取消 </CancelButton>
           <button type="submit" class="submit-btn" :disabled="isPasswordSubmitting || passwordMismatch">
             {{ isPasswordSubmitting ? "提交中..." : "确认修改" }}
           </button>
@@ -85,6 +75,7 @@
 
 <script>
 import ModalComponent from "@/components/ui/BaseModal.vue"
+import CancelButton from "@/components/ui/CancelButton.vue" // Import CancelButton
 import User from "@/api/User"
 
 import ProfileForm from "@/components/profile/ProfileForm.vue"
@@ -104,8 +95,8 @@ export default {
     ProfileForm,
     CollectionsComponent,
     ReadingHistoryComponent,
-    // SearchHistoryComponent,
     ModalComponent,
+    CancelButton, // Register CancelButton
     UserIcon,
     BookmarkIcon,
     HistoryIcon,
@@ -391,22 +382,6 @@ export default {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-}
-
-.cancel-btn {
-  padding: 0.75rem 1.5rem;
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-  color: #555;
-}
-
-.cancel-btn:hover {
-  background-color: #f5f5f5;
-  border-color: #ccc;
 }
 
 .submit-btn {

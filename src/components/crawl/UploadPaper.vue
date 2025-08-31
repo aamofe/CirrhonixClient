@@ -114,13 +114,7 @@ import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import LiteratureCard from "../literature/LiteratureCard.vue"
 import Literature from "@/api/Literature"
 import { ElMessage, ElInput, ElDatePicker, ElSelect, ElOption, ElAlert } from "element-plus"
-import "element-plus/es/components/message/style/css"
-import "element-plus/es/components/input/style/css"
-import "element-plus/es/components/date-picker/style/css"
-import "element-plus/es/components/select/style/css"
-import "element-plus/es/components/alert/style/css"
 import { Document, Upload, Loading, Close } from "@element-plus/icons-vue"
-
 export default {
   name: "UploadPaper",
   components: {
@@ -135,6 +129,8 @@ export default {
     ElSelect,
     ElOption,
     ElAlert,
+  },
+  setup() {
   },
   data() {
     return {
@@ -161,12 +157,16 @@ export default {
   },
   computed: {
     isFormValid() {
-      // 检查必填项：文件、标题、作者、发表日期、摘要
-      return this.singleUpload.file && this.singleUpload.title && this.singleUpload.authors && this.singleUpload.publication_date && this.singleUpload.abstract
+      return (
+        this.singleUpload.file &&
+        this.singleUpload.title &&
+        this.singleUpload.authors &&
+        this.singleUpload.publication_date &&
+        this.singleUpload.abstract
+      )
     },
   },
   methods: {
-    // ... (其他方法保持不变)
     triggerFileInput() {
       this.$refs.fileInput.click()
     },
@@ -195,10 +195,21 @@ export default {
       this.uploadResult.show = false
     },
     viewArticleDetail(id) {
-      // Your existing logic
+      if (id) {
+        setTimeout(() => {
+          this.$router.push({ name: "literature-detail", params: { id } })
+        }, 100)
+      } else {
+        ElMessage.warning('文献ID不存在，无法跳转')
+      }
     },
     saveTaskToMemory(taskId) {
-      // Your existing logic
+      if (taskId) {
+        sessionStorage.setItem("uploadedTaskId", taskId)
+      }
+    },
+    getTaskIdFromMemory() {
+      return sessionStorage.getItem("uploadedTaskId")
     },
     async uploadSinglePaper() {
       if (!this.isFormValid) {
@@ -213,10 +224,19 @@ export default {
         formData.append("pdf_file", this.singleUpload.file)
         formData.append("title", this.singleUpload.title)
         formData.append("authors", this.singleUpload.authors)
-        formData.append("publication_date", this.singleUpload.publication_date)
-        formData.append("abstract", this.singleUpload.abstract) // 摘要作为必填项
 
-        // Append optional fields only if they have values
+        let formattedDate = ""
+        if (this.singleUpload.publication_date) {
+          if (this.singleUpload.publication_date instanceof Date) {
+            formattedDate = this.singleUpload.publication_date.toISOString().split('T')[0]
+          } else if (typeof this.singleUpload.publication_date === 'string') {
+            const date = new Date(this.singleUpload.publication_date)
+            formattedDate = date.toISOString().split('T')[0]
+          }
+        }
+        formData.append("publication_date", formattedDate)
+
+        formData.append("abstract", this.singleUpload.abstract)
         if (this.singleUpload.publication_type) formData.append("publication_type", this.singleUpload.publication_type)
         if (this.singleUpload.language) formData.append("language", this.singleUpload.language)
         if (this.singleUpload.doi) formData.append("doi", this.singleUpload.doi)
@@ -270,6 +290,7 @@ export default {
   },
 }
 </script>
+
 
 <style scoped>
 .upload-paper {

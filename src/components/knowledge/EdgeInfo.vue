@@ -103,7 +103,6 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage, ElPopconfirm } from 'element-plus'
 import { Close, Delete } from '@element-plus/icons-vue'
 import KnowledgeGraph from '@/api/knowledgeGraph'
@@ -126,7 +125,6 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'deleted'])
 
-const router = useRouter()
 const deleting = ref(false)
 
 watch(() => props.visible, (newVal) => {
@@ -229,7 +227,7 @@ const viewArticleDetail = (article) => {
   if (article && article.id) {
     close()
     setTimeout(() => {
-      router.push({ name: "literature-detail", params: { id: article.id } })
+      this.$router.push({ name: "literature-detail", params: { id: article.id } })
     }, 100)
   } else {
     ElMessage.warning('文献ID不存在，无法跳转')
