@@ -27,8 +27,10 @@
 </template>
 
 <script>
+import { mapMutations } from 'vuex'
 import User from "@/api/User"
 import bus from '@/utils/bus'
+
 export default {
   name: "HeaderComponent",
   data() {
@@ -44,6 +46,8 @@ export default {
     }
   },
   methods: {
+    ...mapMutations(["setIsAdmin", "setUserId", "setUserAvatar"]),
+
     isActive(path) {
       if (path === '/') {
         return this.$route.path === path
@@ -64,11 +68,27 @@ export default {
       try {
         const response = await User.profile()
         const data = response.data.data
+        
+        // 更新本地数据
         this.username = data.username
         this.avatar = data.avatar_url
+        
+        // 更新 Vuex store - 注意：后端字段是 is_superuser（没有下划线）
+        this.setIsAdmin(data.is_superuser || false)
+        this.setUserId(data.id)
+        this.setUserAvatar(data.avatar_url)
+        
+        console.log('用户信息已更新到 store:', {
+          isAdmin: data.is_superuser,
+          userId: data.id
+        })
       } catch (error) {
         if (error.response && error.response.status === 401) {
           this.username = ""
+          // 清空 store
+          this.setIsAdmin(false)
+          this.setUserId("")
+          this.setUserAvatar("")
         } else {
           this.$message.error("获取用户信息失败")
         }
@@ -81,9 +101,8 @@ export default {
       this.getProfile()
     }
     bus.on('avatar-updated', (newAvatar) => {
-      console.log("收到收到")
       this.avatar = newAvatar
-      console.log("已更换头像")
+      this.setUserAvatar(newAvatar)
     })
   },
   beforeUnmount() {

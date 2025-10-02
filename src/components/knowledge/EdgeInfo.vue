@@ -5,8 +5,15 @@
     <div class="edge-info-card" :style="{ left: position.x + 'px', top: position.y + 'px' }" @click.stop
       @wheel.stop="handleWheel" @touchmove.stop="handleTouchMove">
       <div class="card-header">
-        <h3 class="card-title">关系详情 ({{ edgeData.factors?.length || 0 }} 条)</h3>
+        <h3 class="card-title">
+          {{ mode === 'view' ? `关系详情 (${edgeData.factors?.length || 0} 条)` : mode === 'edit' ? '编辑关系' : '创建关系' }}
+        </h3>
         <div class="header-actions">
+          <button v-if="mode === 'view'" @click="mode = 'create'" class="action-btn create-btn">
+            <el-icon>
+              <Plus />
+            </el-icon>
+          </button>
           <button @click="close" class="close-btn">
             <el-icon>
               <Close />
@@ -16,85 +23,153 @@
       </div>
 
       <div class="card-content">
-        <div class="section">
-          <div class="section-title">实体信息</div>
-          <div class="relation-flow">
-            <div class="entity-box source">
-              <div class="entity-name">{{ edgeData.source_entity.name }}</div>
-              <div class="entity-meta">
-                <span class="level-badge" :class="`level-${edgeData.source_entity.level}`">
-                  Level {{ edgeData.source_entity.level }}
-                </span>
-                <span v-if="edgeData.source_entity.entity_type" class="entity-type">
-                  {{ edgeData.source_entity.entity_type }}
-                </span>
+        <!-- 查看模式 -->
+        <div v-if="mode === 'view'">
+          <div class="section">
+            <div class="section-title">实体信息</div>
+            <div class="relation-flow">
+              <div class="entity-box source">
+                <div class="entity-name">{{ edgeData.source_entity.name }}</div>
+                <div class="entity-meta">
+                  <span class="level-badge" :class="`level-${edgeData.source_entity.level}`">
+                    Level {{ edgeData.source_entity.level }}
+                  </span>
+                  <span v-if="edgeData.source_entity.entity_type" class="entity-type">
+                    {{ edgeData.source_entity.entity_type }}
+                  </span>
+                </div>
+              </div>
+              <div class="arrow-container">
+                <div class="arrow">→</div>
+              </div>
+              <div class="entity-box target">
+                <div class="entity-name">{{ edgeData.target_entity.name }}</div>
+                <div class="entity-meta">
+                  <span class="level-badge" :class="`level-${edgeData.target_entity.level}`">
+                    Level {{ edgeData.target_entity.level }}
+                  </span>
+                  <span v-if="edgeData.target_entity.entity_type" class="entity-type">
+                    {{ edgeData.target_entity.entity_type }}
+                  </span>
+                </div>
               </div>
             </div>
-            <div class="arrow-container">
-              <div class="arrow">→</div>
-            </div>
-            <div class="entity-box target">
-              <div class="entity-name">{{ edgeData.target_entity.name }}</div>
-              <div class="entity-meta">
-                <span class="level-badge" :class="`level-${edgeData.target_entity.level}`">
-                  Level {{ edgeData.target_entity.level }}
-                </span>
-                <span v-if="edgeData.target_entity.entity_type" class="entity-type">
-                  {{ edgeData.target_entity.entity_type }}
-                </span>
+          </div>
+
+          <div v-if="edgeData.factors && edgeData.factors.length > 0" class="section">
+            <div class="section-title">详细关系列表</div>
+            <div class="factors-list">
+              <div v-for="(factor, index) in edgeData.factors" :key="factor.id" class="factor-item">
+                <div class="factor-index">{{ index + 1 }}.</div>
+                <div class="factor-details">
+                  <div class="detail-row">
+                    <span class="label">因子：</span>
+                    <span class="value">{{ factor.factor_name || '无' }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">类型：</span>
+                    <span class="value">{{ factor.factor_type || '无' }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">效果：</span>
+                    <span class="value effect" :class="getEffectClass(factor.effect)">
+                      {{ factor.effect || '无' }}
+                    </span>
+                  </div>
+                  <div v-if="factor.description" class="detail-row">
+                    <span class="label">描述：</span>
+                    <span class="value">{{ factor.description }}</span>
+                  </div>
+                  <div v-if="factor.literature" class="detail-row literature-row">
+                    <span class="label">文献：</span>
+                    <button @click.stop="viewArticleDetail(factor.literature)" class="literature-link" type="button">
+                      {{ factor.literature.title || '无标题' }}
+                    </button>
+                  </div>
+                  <div class="action-buttons">
+                    <button class="edit-btn" @click="startEdit(factor)">
+                      <el-icon>
+                        <Edit />
+                      </el-icon>
+                    </button>
+                    <el-popconfirm title="确定要删除这条关系吗？" confirm-button-text="确定" cancel-button-text="取消"
+                      @confirm="handleDelete(factor.id)" popper-class="edge-card-popconfirm" :teleported="false">
+                      <template #reference>
+                        <button class="delete-btn" @click.stop>
+                          <el-icon>
+                            <Delete />
+                          </el-icon>
+                        </button>
+                      </template>
+                    </el-popconfirm>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
+          <div v-else class="section">
+            <p class="empty-message">暂无关系详情。</p>
           </div>
         </div>
 
-        <div v-if="edgeData.factors && edgeData.factors.length > 0" class="section">
-          <div class="section-title">详细关系列表</div>
-          <div class="factors-list">
-            <div v-for="(factor, index) in edgeData.factors" :key="factor.id" class="factor-item">
-              <div class="factor-index">{{ index + 1 }}.</div>
-              <div class="factor-details">
-                <div class="detail-row">
-                  <span class="label">因子：</span>
-                  <span class="value">{{ factor.factor_name || '无' }}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">类型：</span>
-                  <span class="value">{{ factor.factor_type || '无' }}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">效果：</span>
-                  <span class="value effect" :class="getEffectClass(factor.effect)">
-                    {{ factor.effect || '无' }}
+        <!-- 编辑/创建模式 -->
+        <div v-else class="edit-form">
+          <div class="section">
+            <div class="section-title">实体信息</div>
+            <div class="relation-flow">
+              <div class="entity-box source">
+                <div class="entity-name">{{ edgeData.source_entity.name }}</div>
+                <div class="entity-meta">
+                  <span class="level-badge" :class="`level-${edgeData.source_entity.level}`">
+                    Level {{ edgeData.source_entity.level }}
                   </span>
                 </div>
-                <div v-if="factor.description" class="detail-row">
-                  <span class="label">描述：</span>
-                  <span class="value">{{ factor.description }}</span>
-                </div>
-                <div v-if="factor.literature" class="detail-row literature-row">
-                  <span class="label">文献：</span>
-                  <button @click.stop="viewArticleDetail(factor.literature)" class="literature-link" type="button">
-                    {{ factor.literature.title || '无标题' }}
-                  </button>
-                </div>
-                <div class="delete-action">
-                  <el-popconfirm title="确定要删除这条关系吗？" confirm-button-text="确定" cancel-button-text="取消"
-                    @confirm="handleDelete(factor.id)" popper-class="edge-card-popconfirm" :teleported="false">
-                    <template #reference>
-                      <button class="delete-btn" @click.stop>
-                        <el-icon>
-                          <Delete />
-                        </el-icon>
-                      </button>
-                    </template>
-                  </el-popconfirm>
+              </div>
+              <div class="arrow-container">
+                <div class="arrow">→</div>
+              </div>
+              <div class="entity-box target">
+                <div class="entity-name">{{ edgeData.target_entity.name }}</div>
+                <div class="entity-meta">
+                  <span class="level-badge" :class="`level-${edgeData.target_entity.level}`">
+                    Level {{ edgeData.target_entity.level }}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div v-else class="section">
-          <p class="empty-message">暂无关系详情。</p>
+
+          <div class="section">
+            <div class="section-title">关系信息</div>
+            <el-form :model="formData" label-width="90px" label-position="left">
+              <el-form-item label="因子名称" required>
+                <el-input v-model="formData.factor_name" placeholder="请输入因子名称" />
+              </el-form-item>
+              <el-form-item label="因子类型">
+                <el-input v-model="formData.factor_type" placeholder="请输入因子类型" />
+              </el-form-item>
+              <el-form-item label="因子缩写">
+                <el-input v-model="formData.factor_abbreviation" placeholder="请输入因子缩写" />
+              </el-form-item>
+              <el-form-item label="效果" required>
+                <el-input v-model="formData.effect" placeholder="例如：促进、抑制" />
+              </el-form-item>
+              <el-form-item label="描述">
+                <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入关系描述" />
+              </el-form-item>
+              <el-form-item label="文献名称">
+                <el-input v-model="formData.literature_name" placeholder="请输入支持文献名称" />
+              </el-form-item>
+            </el-form>
+          </div>
+
+          <div class="form-actions">
+            <el-button @click="cancelEdit">取消</el-button>
+            <el-button type="primary" @click="submitForm" :loading="submitting"
+              :disabled="!formData.factor_name || !formData.effect">
+              {{ mode === 'edit' ? '保存' : '创建' }}
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -102,11 +177,13 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { useStore } from 'vuex'
 import { ElMessage, ElPopconfirm } from 'element-plus'
-import { Close, Delete } from '@element-plus/icons-vue'
+import { Close, Delete, Edit, Plus } from '@element-plus/icons-vue'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 import bus from '@/utils/bus'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   visible: {
@@ -125,10 +202,27 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'deleted'])
 
-const deleting = ref(false)
+const router = useRouter()
+const store = useStore()
+const isAdmin = computed(() => store.getters.isAdmin)
+
+const mode = ref('view') // 'view' | 'edit' | 'create'
+const submitting = ref(false)
+const formData = ref({
+  relation_id: null,
+  source_id: null,
+  target_id: null,
+  factor_name: '',
+  factor_type: '',
+  factor_abbreviation: '',
+  effect: '',
+  description: '',
+  literature_name: '',
+})
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
+    mode.value = 'view'
     document.body.style.overflow = 'hidden'
     document.body.style.paddingRight = '15px'
   } else {
@@ -187,7 +281,100 @@ const handleTouchMove = (event) => {
 }
 
 const close = () => {
+  mode.value = 'view'
   emit('close')
+}
+
+const startEdit = (factor) => {
+  formData.value = {
+    relation_id: factor.id,
+    source_id: props.edgeData.source_entity.id,
+    target_id: props.edgeData.target_entity.id,
+    factor_name: factor.factor_name || '',
+    factor_type: factor.factor_type || '',
+    factor_abbreviation: factor.factor_abbreviation || '',
+    effect: factor.effect || '',
+    description: factor.description || '',
+    literature_name: factor.literature?.name || '',
+  }
+  mode.value = 'edit'
+}
+
+const cancelEdit = () => {
+  mode.value = 'view'
+  resetForm()
+}
+
+const resetForm = () => {
+  formData.value = {
+    relation_id: null,
+    source_id: null,
+    target_id: null,
+    factor_name: '',
+    factor_type: '',
+    factor_abbreviation: '',
+    effect: '',
+    description: '',
+    literature_name: '',
+  }
+}
+
+const submitForm = async () => {
+  if (!formData.value.factor_name || !formData.value.effect) {
+    ElMessage.warning('请填写必填项')
+    return
+  }
+
+  submitting.value = true
+  try {
+    if (mode.value === 'create') {
+      const createData = {
+        source_id: props.edgeData.source_entity.id,
+        target_id: props.edgeData.target_entity.id,
+        factor_name: formData.value.factor_name,
+        factor_type: formData.value.factor_type,
+        factor_abbreviation: formData.value.factor_abbreviation,
+        effect: formData.value.effect,
+        description: formData.value.description,
+        literature_name: formData.value.literature_name,
+      }
+      const res = await KnowledgeGraph.createRelation(createData)
+      
+      if (isAdmin.value) {
+        ElMessage.success('关系创建成功')
+      } else {
+        ElMessage.success('创建申请已提交，等待管理员审核')
+      }
+    } else {
+      const updateData = {
+        relation_id: formData.value.relation_id,
+        source_id: formData.value.source_id,
+        target_id: formData.value.target_id,
+        factor_name: formData.value.factor_name,
+        factor_type: formData.value.factor_type,
+        factor_abbreviation: formData.value.factor_abbreviation,
+        effect: formData.value.effect,
+        description: formData.value.description,
+        literature_name: formData.value.literature_name,
+      }
+      const res = await KnowledgeGraph.updateRelation(updateData)
+      
+      if (isAdmin.value) {
+        ElMessage.success('关系更新成功')
+      } else {
+        ElMessage.success('修改申请已提交，等待管理员审核')
+      }
+    }
+
+    mode.value = 'view'
+    resetForm()
+    bus.emit('graph-updated')
+    emit('deleted')
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '操作失败，请重试')
+  } finally {
+    submitting.value = false
+  }
 }
 
 const handleDelete = async (factorId) => {
@@ -196,18 +383,20 @@ const handleDelete = async (factorId) => {
     return
   }
 
-  deleting.value = true
   try {
-    await KnowledgeGraph.deleteRelation(factorId)
-    ElMessage.success('关系删除成功')
+    const res = await KnowledgeGraph.deleteRelation(factorId)
+    
+    if (isAdmin.value) {
+      ElMessage.success('关系删除成功')
+    } else {
+      ElMessage.success('删除申请已提交，等待管理员审核')
+    }
+    
     emit('deleted', factorId)
     close()
     bus.emit('graph-updated')
   } catch (error) {
-
     ElMessage.error(error.response?.data?.message || '删除关系失败，请重试')
-  } finally {
-    deleting.value = false
   }
 }
 
@@ -223,11 +412,10 @@ const getEffectClass = (effect) => {
 }
 
 const viewArticleDetail = (article) => {
-
   if (article && article.id) {
     close()
     setTimeout(() => {
-      this.$router.push({ name: "literature-detail", params: { id: article.id } })
+      router.push({ name: "literature-detail", params: { id: article.id } })
     }, 100)
   } else {
     ElMessage.warning('文献ID不存在，无法跳转')
@@ -272,6 +460,28 @@ const viewArticleDetail = (article) => {
   font-size: 16px;
   font-weight: 600;
   color: #1f2937;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  color: #1a91c1;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  background: #e0f2fe;
 }
 
 .close-btn {
@@ -458,20 +668,22 @@ const viewArticleDetail = (article) => {
   text-decoration: none;
 }
 
-.delete-action {
+.action-buttons {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  gap: 6px;
   z-index: 10;
 }
 
+.edit-btn,
 .delete-btn {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #e5e7eb;
   cursor: pointer;
   padding: 6px;
   border-radius: 6px;
-  color: #ef4444;
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 28px;
@@ -479,6 +691,20 @@ const viewArticleDetail = (article) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.edit-btn {
+  color: #1a91c1;
+}
+
+.edit-btn:hover {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  color: #ef4444;
 }
 
 .delete-btn:hover {
@@ -493,6 +719,19 @@ const viewArticleDetail = (article) => {
   font-style: italic;
   text-align: center;
   margin: 0;
+}
+
+.edit-form {
+  padding: 20px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
 }
 
 /* 自定义滚动条 */

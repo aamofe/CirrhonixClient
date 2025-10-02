@@ -1,13 +1,5 @@
 <template>
   <div class="login-page">
-    <!-- 语言选择器 -->
-    <!-- <div class="language-selector">
-      <select>
-        <option value="en">English</option>
-        <option value="zh">中文</option>
-      </select>
-    </div> -->
-
     <!-- 背景装饰 -->
     <div class="background-elements">
       <div class="circle circle-1"></div>
@@ -178,8 +170,15 @@ export default {
         const userInfo = loginRes.data.data
         localStorage.setItem("token", userInfo.token)
 
-        this.setIsAdmin(userInfo.is_super_user)
+        this.setIsAdmin(userInfo.is_superuser || false)
         this.setUserId(userInfo.id)
+        
+        console.log('登录成功 - 用户信息:', {
+          isAdmin: userInfo.is_superuser,
+          userId: userInfo.id,
+          username: userInfo.username
+        })
+        
         this.$router.push("/")
         this.$message.success("欢迎回来！")
       } catch (err) {
@@ -227,7 +226,6 @@ export default {
       try {
         await User.logout()
         localStorage.removeItem("token")
-        // delete service.defaults.headers.common["Authorization"]
         this.setUserId(null)
         this.setIsAdmin(false)
         this.$router.push("/login")
@@ -258,36 +256,6 @@ export default {
   overflow: hidden;
 }
 
-/* 语言选择器 */
-.language-selector {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 10;
-}
-
-.language-selector select {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
-  outline: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-}
-
-.language-selector select:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.language-selector select option {
-  background: #1a91c1;
-  color: white;
-}
-
-/* 背景装饰 */
 .background-elements {
   position: absolute;
   top: 0;
@@ -329,18 +297,14 @@ export default {
 }
 
 @keyframes float {
-
-  0%,
-  100% {
+  0%, 100% {
     transform: translateY(0px);
   }
-
   50% {
     transform: translateY(-20px);
   }
 }
 
-/* 主容器 */
 .container {
   display: flex;
   min-height: 100vh;
@@ -349,7 +313,6 @@ export default {
   align-items: center;
 }
 
-/* 左侧内容区 */
 .content-section {
   flex: 1;
   padding: 60px 40px 40px;
@@ -380,14 +343,6 @@ export default {
   line-height: 1.2;
 }
 
-.system-description {
-  font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.6;
-  margin-bottom: 0;
-}
-
-/* 功能特色 - 居中显示，移除抖动效果 */
 .features-section {
   margin-bottom: 40px;
   display: flex;
@@ -423,7 +378,6 @@ export default {
     opacity: 0;
     transform: translateY(30px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -433,7 +387,6 @@ export default {
 .feature-icon {
   font-size: 3rem;
   margin-bottom: 15px;
-  /* 移除抖动动画 */
 }
 
 .feature-content h3 {
@@ -443,13 +396,6 @@ export default {
   margin-bottom: 8px;
 }
 
-.feature-content p {
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* 统计信息 */
 .stats-section {
   display: flex;
   gap: 40px;
@@ -478,7 +424,6 @@ export default {
   letter-spacing: 1px;
 }
 
-/* 中间分隔线 - 更粗的白色线条 */
 .divider {
   width: 4px;
   background: linear-gradient(to bottom,
@@ -511,7 +456,6 @@ export default {
     0 0 40px rgba(255, 255, 255, 0.3);
 }
 
-/* 右侧认证区 */
 .auth-section {
   flex: 0 0 480px;
   display: flex;
@@ -555,7 +499,6 @@ export default {
   margin: 0;
 }
 
-/* 表单选项 */
 .auth-options {
   display: flex;
   justify-content: space-between;
@@ -635,7 +578,6 @@ export default {
   text-decoration: underline;
 }
 
-/* 响应式设计 */
 @media (max-width: 1024px) {
   .container {
     flex-direction: column;
@@ -689,10 +631,6 @@ export default {
     font-size: 2rem;
   }
 
-  .system-description {
-    font-size: 1.1rem;
-  }
-
   .features-section {
     margin-bottom: 30px;
   }
@@ -720,11 +658,6 @@ export default {
 
   .auth-box {
     padding: 30px 25px;
-  }
-
-  .language-selector {
-    top: 15px;
-    right: 15px;
   }
 
   .divider {

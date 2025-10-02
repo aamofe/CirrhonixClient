@@ -74,8 +74,9 @@
 </template>
 
 <script>
+import { mapMutations } from 'vuex'
 import ModalComponent from "@/components/ui/BaseModal.vue"
-import CancelButton from "@/components/ui/CancelButton.vue" // Import CancelButton
+import CancelButton from "@/components/ui/CancelButton.vue"
 import User from "@/api/User"
 
 import ProfileForm from "@/components/profile/ProfileForm.vue"
@@ -96,7 +97,7 @@ export default {
     CollectionsComponent,
     ReadingHistoryComponent,
     ModalComponent,
-    CancelButton, // Register CancelButton
+    CancelButton,
     UserIcon,
     BookmarkIcon,
     HistoryIcon,
@@ -113,7 +114,6 @@ export default {
         { id: "collections", label: "我的收藏夹", icon: "BookmarkIcon" },
         { id: "history", label: "阅读历史", icon: "HistoryIcon" },
       ],
-      // 密码表单相关数据
       passwordForm: {
         oldPassword: "",
         newPassword: "",
@@ -132,13 +132,25 @@ export default {
     },
   },
   methods: {
+    ...mapMutations(["setIsAdmin", "setUserId", "setUserAvatar"]),
+
     async fetchUserInfo() {
       this.loading = true
       try {
         const response = await User.profile()
         this.userInfo = response.data.data
+        
+        // 更新 Vuex store - 注意：后端字段是 is_superuser（没有下划线）
+        this.setIsAdmin(this.userInfo.is_superuser || false)
+        this.setUserId(this.userInfo.id)
+        this.setUserAvatar(this.userInfo.avatar_url)
+        
+        console.log('Profile 页面 - 用户信息已更新到 store:', {
+          isAdmin: this.userInfo.is_superuser,
+          userId: this.userInfo.id
+        })
       } catch (error) {
-        // 错误处理
+        this.$message.error("获取用户信息失败")
       } finally {
         this.loading = false
       }
@@ -146,6 +158,10 @@ export default {
 
     updateLocalUserInfo(updatedUserInfo) {
       this.userInfo = updatedUserInfo
+      // 同时更新 store - 注意：后端字段是 is_superuser（没有下划线）
+      this.setIsAdmin(updatedUserInfo.is_superuser || false)
+      this.setUserId(updatedUserInfo.id)
+      this.setUserAvatar(updatedUserInfo.avatar_url)
     },
 
     setActiveSection(sectionId) {
@@ -164,7 +180,6 @@ export default {
       return savedSection || "basic"
     },
 
-    // 密码表单相关方法
     async handlePasswordSubmit() {
       if (this.passwordMismatch) {
         return
@@ -208,6 +223,11 @@ export default {
 
         localStorage.removeItem("token")
         sessionStorage.removeItem("profileActiveSection")
+        
+        // 清空 store
+        this.setIsAdmin(false)
+        this.setUserId("")
+        this.setUserAvatar("")
 
         this.$router.push("/login")
       } catch (error) {
@@ -246,7 +266,6 @@ export default {
   padding: 2rem 1rem;
 }
 
-/* 内联的标题样式 */
 .section-title {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
@@ -332,7 +351,6 @@ export default {
   color: #666;
 }
 
-/* 密码表单样式 */
 .password-form {
   width: 100%;
 }
