@@ -22,16 +22,15 @@
       <div class="card-content">
         <!-- 普通用户：只显示我的修改（审批记录） -->
         <div v-if="!isAdmin" class="reviews-section">
-          <div class="subsection-title">我的审批记录</div>
           <div v-if="myReviews.length === 0" class="empty-state">
             <el-icon class="empty-icon"><Document /></el-icon>
-            <p>暂无审批记录</p>
+            <p>暂无修改记录</p>
           </div>
           <div v-else class="reviews-list">
             <div v-for="review in myReviews" :key="review.id" class="review-item">
               <div class="review-header">
                 <span :class="['status-badge', `status-${review.status}`]">
-                  {{ getStatusText(review.status) }}
+                  {{ review.status_display }}
                 </span>
                 <span class="review-date">{{ formatDate(review.submitted_at) }}</span>
               </div>
@@ -289,24 +288,59 @@
 
         <!-- 管理员：历史变更标签页 -->
         <div v-if="isAdmin && activeTab === 'history'" class="reviews-section">
-          <div class="subsection-title">历史变更记录（最近20条）</div>
           <div v-if="historyRecords.length === 0" class="empty-state">
             <el-icon class="empty-icon"><Clock /></el-icon>
             <p>暂无变更历史</p>
           </div>
-          <div v-else class="history-list">
-            <div v-for="history in historyRecords" :key="history.id" class="history-item-compact">
-              <div class="h-line">
-                <span class="op-badge" :class="`op-${history.operation_type}`">{{ history.operation_type_display }}</span>
-                <span class="h-entities">{{ history.source_entity?.name || '-' }} → {{ history.target_entity?.name || '-' }}</span>
-                <span class="h-user">{{ history.modified_by?.username }}</span>
-                <span class="h-time">{{ formatDate(history.modified_at) }}</span>
+          <div v-else class="reviews-list">
+            <div v-for="history in historyRecords" :key="history.id" class="review-item">
+              <div class="review-header">
+                <div class="header-left">
+                  <span :class="['operation-badge', `op-${history.operation_type}`]">
+                    {{ history.operation_type_display }}
+                  </span>
+                  <span v-if="history.submitted_by " class="applicant">
+                    申请人：{{ history.submitted_by.username }}
+                  </span>
+                  <span class="submitter">
+                    审核者：{{ history.submitted_by && history.submitted_by.id === history.modified_by?.id ? '自动通过' : (history.modified_by?.username || '未知') }}
+                  </span>
+                  
+                </div>
+                <span class="review-date">{{ formatDate(history.modified_at) }}</span>
               </div>
-              <div class="h-details">
-                因子:{{ history.factor_name || '-' }} | 类型:{{ history.factor_type || '-' }} | 缩写:{{ history.factor_abbreviation || '-' }} | 效果:{{ history.effect || '-' }} | 文献:{{ history.literature?.name || history.literature?.title || '-' }}
-                <span v-if="history.submitted_by && history.submitted_by.id !== history.modified_by?.id"> | 申请:{{ history.submitted_by.username }}</span>
+              <div class="review-content">
+                <div class="info-line">
+                  <span><b>源</b> {{ history.source_entity?.name || '-' }}</span>
+                  <span><b>目标</b> {{ history.target_entity?.name || '-' }}</span>
+                </div>
+                
+                <div class="compare-table">
+                  <div :class="['table-section', history.operation_type === 'create' ? 'create' : history.operation_type === 'delete' ? 'delete' : 'update']">
+                    <div class="section-title">
+                      {{ history.operation_type === 'create' ? '新增内容' : history.operation_type === 'delete' ? '删除内容' : '修改内容' }}
+                    </div>
+                    <div class="table-row labels">
+                      <span>因子名称</span>
+                      <span>因子类型</span>
+                      <span>因子缩写</span>
+                      <span>效果</span>
+                      <span>文献</span>
+                    </div>
+                    <div class="table-row values">
+                      <span>{{ history.factor_name || '-' }}</span>
+                      <span>{{ history.factor_type || '-' }}</span>
+                      <span>{{ history.factor_abbreviation || '-' }}</span>
+                      <span>{{ history.effect || '-' }}</span>
+                      <span>{{ history.literature?.name || history.literature?.title || '-' }}</span>
+                    </div>
+                    <div v-if="history.description" class="table-desc">
+                      <span class="desc-label">描述</span>
+                      <span class="desc-value">{{ history.description }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div v-if="history.description" class="h-desc">{{ history.description }}</div>
             </div>
           </div>
         </div>
@@ -372,7 +406,6 @@ const emit = defineEmits(['close', 'updated'])
 const store = useStore()
 const isAdmin = computed(() => store.getters.isAdmin)
 
-// 管理员默认显示待审核，普通用户没有tab概念
 const activeTab = ref('pending')
 const myReviews = ref([])
 const historyRecords = ref([])
@@ -399,11 +432,9 @@ const editForm = ref({
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     if (isAdmin.value) {
-      // 管理员加载待审核和历史记录
       loadPendingReviews()
       loadHistoryRecords()
     } else {
-      // 普通用户只加载自己的审批记录
       loadMyReviews()
     }
   }
@@ -457,16 +488,6 @@ const loadPendingReviews = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const getStatusText = (status) => {
-  const statusMap = {
-    pending: '待审核',
-    approved: '已通过',
-    rejected: '已拒绝',
-    withdrawn: '已撤回',
-  }
-  return statusMap[status] || status
 }
 
 const formatDate = (dateString) => {
@@ -687,20 +708,6 @@ const close = () => {
   overflow-y: auto;
   padding: 16px 20px;
 }
-.subsection {
-  margin-bottom: 24px;
-}
-.subsection:last-child {
-  margin-bottom: 0;
-}
-.subsection-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 12px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #e5e7eb;
-}
 .pending-header {
   margin-bottom: 12px;
   display: flex;
@@ -738,7 +745,18 @@ const close = () => {
   background: white;
   border-bottom: 1px solid #e5e7eb;
 }
-.status-badge {
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.submitter, .applicant {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+}
+.status-badge, .operation-badge {
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -760,10 +778,17 @@ const close = () => {
   background: #f3f4f6;
   color: #4b5563;
 }
-.submitter {
-  font-size: 13px;
-  color: #374151;
-  font-weight: 500;
+.op-create {
+  background: #d1fae5;
+  color: #065f46;
+}
+.op-update {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.op-delete {
+  background: #fee2e2;
+  color: #991b1b;
 }
 .review-date {
   font-size: 12px;
@@ -809,6 +834,10 @@ const close = () => {
 .table-section.delete {
   background: #fef2f2;
   border: 1px solid #fecaca;
+}
+.table-section.update {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
 }
 .section-title {
   font-weight: 600;
@@ -874,75 +903,6 @@ const close = () => {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #e5e7eb;
-}
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.history-item-compact {
-  background: #fefce8;
-  border: 1px solid #fde047;
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-.h-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-.op-badge {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.op-create {
-  background: #d1fae5;
-  color: #065f46;
-}
-.op-update {
-  background: #dbeafe;
-  color: #1e40af;
-}
-.op-delete {
-  background: #fee2e2;
-  color: #991b1b;
-}
-.h-entities {
-  font-weight: 500;
-  color: #1f2937;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.h-user {
-  font-size: 11px;
-  color: #6b7280;
-  font-weight: 500;
-}
-.h-time {
-  font-size: 10px;
-  color: #9ca3af;
-  margin-left: auto;
-}
-.h-details {
-  font-size: 11px;
-  color: #4b5563;
-  line-height: 1.5;
-}
-.h-desc {
-  margin-top: 4px;
-  padding: 4px 6px;
-  background: #fffbeb;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #4b5563;
-  line-height: 1.4;
 }
 .card-content::-webkit-scrollbar {
   width: 6px;

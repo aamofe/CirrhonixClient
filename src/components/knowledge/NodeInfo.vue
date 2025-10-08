@@ -183,7 +183,8 @@
 </template>
 
 <script>
-import { ref, watch, reactive } from 'vue'
+import { ref, watch, reactive, computed } from 'vue'
+import { useStore } from 'vuex'
 import { ElMessage, ElSkeleton, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElRadioGroup, ElRadio } from 'element-plus'
 import { Close, Plus } from '@element-plus/icons-vue'
 import CancelButton from '@/components/ui/CancelButton.vue'
@@ -212,6 +213,9 @@ export default {
   },
   emits: ['close', 'relation-updated'],
   setup(props, { emit }) {
+    const store = useStore()
+    const isAdmin = computed(() => store.getters.isAdmin)
+    
     const loading = ref(false)
     const detailData = ref({})
     const apiError = ref('')
@@ -269,21 +273,14 @@ export default {
 
       entityLoading.value = true
       try {
-
-
-
         const response = await KnowledgeGraph.getEntities({
           limit: 500
         })
 
-
-
         if (response.data && response.data.message === 'success' && response.data.data) {
           const currentEntityId = getEntityIdentifier()
 
-
           const entities = response.data.data.entities || []
-
 
           allEntities.value = entities.filter(entity => {
             const entityId = entity.id || entity.name
@@ -301,6 +298,7 @@ export default {
         entityLoading.value = false
       }
     }
+    
     const getRandomEntities = (count = 10) => {
       if (allEntities.value.length === 0) return []
 
@@ -330,23 +328,15 @@ export default {
 
 
     const searchEntities = async (query) => {
-
-
-
       if (!entitiesLoaded.value) {
-
         await loadAllEntities()
       }
 
       if (!query || query.trim() === '') {
-
         availableEntities.value = getRandomEntities(10)
-
       } else {
-
         const filtered = filterEntitiesByQuery(query)
         availableEntities.value = filtered.slice(0, 50)
-
       }
     }
 
@@ -354,13 +344,7 @@ export default {
     const loadNodeDetail = async () => {
       const entityIdentifier = getEntityIdentifier()
 
-
-
-
-
-
       if (!entityIdentifier) {
-
         apiError.value = '节点数据缺少有效的标识符（id 或 name）'
         return
       }
@@ -374,7 +358,6 @@ export default {
         if (response.data && response.data.message === 'success') {
           detailData.value = response.data.data
         } else {
-
           apiError.value = response.data?.message || 'API 返回未知错误'
         }
       } catch (error) {
@@ -413,13 +396,14 @@ export default {
           description: relationForm.description || ''
         }
 
-
-
         const response = await KnowledgeGraph.createRelation(relationData)
 
-
         if (response.data && (response.status === 200 || response.status === 201)) {
-          ElMessage.success('关系创建成功')
+          if (isAdmin.value) {
+            ElMessage.success('关系创建成功')
+          } else {
+            ElMessage.success('创建申请已提交，等待管理员审核')
+          }
           handleCloseAddDialog()
           loadNodeDetail()
           emit('relation-updated')
@@ -427,7 +411,6 @@ export default {
           throw new Error(response.data?.message || '创建关系失败')
         }
       } catch (error) {
-
         const errorMessage = error.response?.data?.message || error.message || '创建关系失败，请重试'
         ElMessage.error(errorMessage)
       } finally {
@@ -456,10 +439,7 @@ export default {
 
     watch(showAddRelationDialog, async (isOpen) => {
       if (isOpen) {
-
-
         await loadAllEntities()
-
         searchEntities('')
       }
     })
