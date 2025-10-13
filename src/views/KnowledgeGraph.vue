@@ -84,7 +84,7 @@ export default {
 
     // 先定义 loadPendingCount 函数
     const loadPendingCount = async () => {
-      console.log('loadPendingCount 被调用, isAdmin:', isAdmin.value)
+      // console.log('loadPendingCount 被调用, isAdmin:', isAdmin.value)
       
       if (!isAdmin.value) {
         pendingCount.value = 0
@@ -94,7 +94,7 @@ export default {
       try {
         const res = await KnowledgeGraph.getPendingReviews()
         pendingCount.value = res.data?.length || 0
-        console.log('待审核数量:', pendingCount.value)
+        // console.log('待审核数量:', pendingCount.value)
       } catch (error) {
         console.error('加载待审核数量失败:', error)
         pendingCount.value = 0
@@ -139,7 +139,7 @@ export default {
 
     // 监听 isAdmin 的变化，用于调试
     watch(isAdmin, (newVal) => {
-      console.log('知识图谱页面 - isAdmin 变化:', newVal)
+      // console.log('知识图谱页面 - isAdmin 变化:', newVal)
       if (newVal) {
         loadPendingCount()
       }
@@ -147,7 +147,7 @@ export default {
 
     // Bus event listeners
     onMounted(() => {
-      console.log('知识图谱页面已挂载, isAdmin:', isAdmin.value)
+      // console.log('知识图谱页面已挂载, isAdmin:', isAdmin.value)
       bus.on('entity-selected', handleEntitySelected)
       bus.on('entity-deselected', handleEntityDeselected)
       bus.on('graph-updated', handleGraphUpdated)

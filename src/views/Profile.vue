@@ -145,10 +145,10 @@ export default {
         this.setUserId(this.userInfo.id)
         this.setUserAvatar(this.userInfo.avatar_url)
         
-        console.log('Profile 页面 - 用户信息已更新到 store:', {
-          isAdmin: this.userInfo.is_superuser,
-          userId: this.userInfo.id
-        })
+        // console.log('Profile 页面 - 用户信息已更新到 store:', {
+        //   isAdmin: this.userInfo.is_superuser,
+        //   userId: this.userInfo.id
+        // })
       } catch (error) {
         this.$message.error("获取用户信息失败")
       } finally {

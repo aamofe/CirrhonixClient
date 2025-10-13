@@ -483,7 +483,7 @@ const loadPendingReviews = async () => {
     const data = res.data.data
     pendingReviews.value = Array.isArray(data) ? data : []
   } catch (error) {
-    console.error('加载待审核记录失败:', error)
+    // console.error('加载待审核记录失败:', error)
     ElMessage.error('加载待审核记录失败')
   } finally {
     loading.value = false

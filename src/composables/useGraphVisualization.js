@@ -440,12 +440,29 @@ export function useGraphVisualization(networkContainer, props) {
           }
         })
       )
-
+      const getEdgeColor = (aggregatedEdge) => {
+        const { 
+          modified_manual_count = 0, 
+          total_count = 0 
+        } = aggregatedEdge.originalData || aggregatedEdge; // 确保安全访问
+        
+//         console.log("颜色计算:", modified_manual_count, total_count) // 可以取消注释用于调试
+        if (modified_manual_count === 0) {
+          return '#999999'
+        } else if (modified_manual_count < total_count) {
+          // 部分修改 - 橙色
+          return '#f59e0b'
+        } else {
+          // 全部修改 - 绿色
+          return '#10b981'
+        }
+      }
       const edges = new DataSet(
         (graphData.edges || []).map((aggregatedEdge, index) => {
           const factorCount = aggregatedEdge.factors?.length || 0
           const firstFactor = aggregatedEdge.factors?.[0]
-
+          const color = getEdgeColor(aggregatedEdge)
+          // console.log(aggregatedEdge)
           const labelText = graphSettings.showLabels
             ? factorCount > 1
               ? `${firstFactor?.factor_name || ''} 等 (${factorCount})`
@@ -458,7 +475,7 @@ export function useGraphVisualization(networkContainer, props) {
             to: aggregatedEdge.to,
             label: labelText,
             width: graphSettings.edgeWidth || 2,
-            color: { color: '#888888', highlight: '#333333', opacity: 0.6 },
+            color: { color: color, highlight: '#333333', opacity: 0.6 },
             smooth: { type: 'curvedCW', roundness: 0.2 },
             arrows: { to: { enabled: true, scaleFactor: 1.2 } },
             font: { size: 10, color: '#555' },

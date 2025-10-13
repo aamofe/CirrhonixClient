@@ -78,10 +78,10 @@ export default {
         this.setUserId(data.id)
         this.setUserAvatar(data.avatar_url)
         
-        console.log('用户信息已更新到 store:', {
-          isAdmin: data.is_superuser,
-          userId: data.id
-        })
+        // console.log('用户信息已更新到 store:', {
+        //   isAdmin: data.is_superuser,
+        //   userId: data.id
+        // })
       } catch (error) {
         if (error.response && error.response.status === 401) {
           this.username = ""
