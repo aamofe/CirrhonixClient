@@ -7,6 +7,7 @@ import KnowledgeGraph from '@/views/KnowledgeGraph.vue'
 import LiteratureDetail from '@/views/LiteratureDetail.vue'
 import LiteratureListPage from '@/views/LiteratureListPage.vue'
 import AboutPage from '@/views/AboutPage.vue'
+import NotFound from '@/views/NotFound.vue'
 // import AuthorsPage from '@/views/AuthorsPage.vue'
 
 const routes = [
@@ -15,6 +16,16 @@ const routes = [
     name: 'home',
     component: HomeView,
   },
+  {
+    path: '/404',
+    name: 'NotFound',
+    component: NotFound,
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/404'
+  },
+
   {
     path: '/about',
     name: 'about',
@@ -45,8 +56,9 @@ const routes = [
   },
   {
     path: '/knowledge-graph',
-    name: 'knowledge-graph',
-    component: KnowledgeGraph,
+    redirect: '/404',
+    // name: 'knowledge-graph',
+    // component: KnowledgeGraph,
   },
   {
     path: '/literature/:id',

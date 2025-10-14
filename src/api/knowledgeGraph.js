@@ -7,7 +7,6 @@ const url = {
     getRelations: '/kgraph/relations/',
     getRelationDetail: (id) => `/kgraph/relations/${id}/`,
     getGraph: '/kgraph/graph/',
-    getSubgraph: (id) => `/kgraph/graph/${id}/`,
     statistics: '/kgraph/stats/',
     createRelation: '/kgraph/relations/create/',
     deleteRelation: '/kgraph/relations/delete/',
@@ -39,9 +38,6 @@ export default class KnowledgeGraph {
     }
     static async getGraph(params = {}) {
         return service.get(url.getGraph, { params })
-    }
-    static async getSubgraph(entityId, params = {}) {
-        return service.get(url.getSubgraph(entityId), { params })
     }
     static async statistics(params = {}) {
         return service.get(url.statistics, { params })

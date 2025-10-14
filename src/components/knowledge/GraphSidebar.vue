@@ -1,4 +1,4 @@
-<!-- src/components/knowledge/GraphSidebar.vue -->
+<!-- 感觉需要改成知识问答 -->
 <template>
   <div class="graph-sidebar">
     <!-- 图谱统计 -->
