@@ -18,6 +18,12 @@ const url = {
     withdrawReview: '/kgraph/reviews/withdraw/',
     updateReview: '/kgraph/reviews/update/',
     getRelationHistory: '/kgraph/history/',
+    
+    // ==================== 新增的4个接口 ====================
+    graphOverview: '/kgraph/overview/',
+    expandEntity: (entityId) => `/kgraph/entity/${entityId}/expand/`,
+    edgeDetails: (sourceId, targetId) => `/kgraph/edge/${sourceId}/${targetId}/`,
+    searchEntities: '/kgraph/search/',
 }
 
 export default class KnowledgeGraph {
@@ -116,5 +122,46 @@ export default class KnowledgeGraph {
     }
     static async getRelationHistory() {
         return service.get(url.getRelationHistory)
+    }
+
+    // ==================== 新增的4个分层加载接口 ====================
+    
+    /**
+     * 初始概览 - 只返回 Level 1-2 的节点和聚合边信息
+     * @param {Object} params - { type?: string, relation_type?: string }
+     * @returns {Promise} { nodes: [], edges: [], statistics: {} }
+     */
+    static async graphOverview(params = {}) {
+        return service.get(url.graphOverview, { params })
+    }
+
+    /**
+     * 展开节点 - 加载指定节点关联的 Level 3 节点和边
+     * @param {number} entityId - 要展开的节点ID
+     * @returns {Promise} { center_entity: {}, new_nodes: [], edges: [] }
+     */
+    static async expandEntity(entityId) {
+        return service.get(url.expandEntity(entityId))
+    }
+
+    /**
+     * 边详情 - 获取指定边的所有 factors
+     * @param {number} sourceId - 源节点ID
+     * @param {number} targetId - 目标节点ID
+     * @returns {Promise} { source_entity: {}, target_entity: {}, factors: [] }
+     */
+    static async edgeDetails(sourceId, targetId) {
+        return service.get(url.edgeDetails(sourceId, targetId))
+    }
+
+    /**
+     * 搜索实体 - 按关键词搜索，返回匹配的子图
+     * @param {string} keyword - 搜索关键词
+     * @returns {Promise} { nodes: [], edges: [], matched_ids: [] }
+     */
+    static async searchEntities(keyword) {
+        return service.get(url.searchEntities, { 
+            params: { q: keyword } 
+        })
     }
 }

@@ -3,15 +3,16 @@ import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Network, DataSet } from 'vis-network/standalone'
 import bus from '@/utils/bus'
 
-export function useGraphVisualization(networkContainer, props) {
+export function useGraphVisualization(networkContainer, props, graphDataComposable) {
   const network = ref(null)
   const physicsEnabled = ref(false)
   const highlightedNodes = ref([])
-  const currentGraphData = ref(ref(null))
+  const currentGraphData = ref(null)
 
   const showEdgeCard = ref(false)
   const selectedEdgeData = ref({})
   const cardPosition = ref({ x: 0, y: 0 })
+  const isLoadingEdgeDetails = ref(false)
 
   const showNodeCard = ref(false)
   const selectedNodeData = ref({})
@@ -54,9 +55,10 @@ export function useGraphVisualization(networkContainer, props) {
     }
   }
 
-  const showEdgeInfo = (edgeData, position) => {
-    selectedEdgeData.value = edgeData
-
+  /**
+   * 显示边信息卡片 - 支持懒加载详情
+   */
+  const showEdgeInfo = async (edgeData, position) => {
     const cardWidth = 480
     const cardHeight = 600
     const screenWidth = window.innerWidth
@@ -68,28 +70,59 @@ export function useGraphVisualization(networkContainer, props) {
     if (x + cardWidth > screenWidth) {
       x = screenWidth - cardWidth - 20
     }
-
     if (x < 20) {
       x = 20
     }
-
     if (y + cardHeight > screenHeight) {
       y = screenHeight - cardHeight - 20
     }
-
     if (y < 20) {
       y = 20
     }
 
     cardPosition.value = { x, y }
+    
+    // 先显示基础信息（聚合数据）
+    selectedEdgeData.value = edgeData
     showEdgeCard.value = true
+    
+    // 如果只有聚合信息，异步加载完整 factors
+    if (edgeData.total_count > 1 || !edgeData.factors || edgeData.factors.length === 1) {
+      isLoadingEdgeDetails.value = true
+      
+      try {
+        const detailedData = await graphDataComposable.loadEdgeDetails(
+          edgeData.source_id, 
+          edgeData.target_id
+        )
+        
+        if (detailedData && showEdgeCard.value) {
+          // 更新为详细数据
+          selectedEdgeData.value = {
+            ...edgeData,
+            ...detailedData,
+            // 保留聚合统计
+            total_count: detailedData.statistics?.total_factors || edgeData.total_count,
+            modified_manual_count: detailedData.statistics?.modified_factors || edgeData.modified_manual_count
+          }
+        }
+      } catch (error) {
+        console.error('加载边详情失败:', error)
+      } finally {
+        isLoadingEdgeDetails.value = false
+      }
+    }
   }
 
   const closeEdgeCard = () => {
     showEdgeCard.value = false
     selectedEdgeData.value = {}
+    isLoadingEdgeDetails.value = false
   }
 
+  /**
+   * 显示节点信息卡片
+   */
   const showNodeInfo = (nodeData, position) => {
     selectedNodeData.value = nodeData
 
@@ -104,15 +137,12 @@ export function useGraphVisualization(networkContainer, props) {
     if (x + cardWidth > screenWidth) {
       x = screenWidth - cardWidth - 20
     }
-
     if (x < 20) {
       x = 20
     }
-
     if (y + cardHeight > screenHeight) {
       y = screenHeight - cardHeight - 20
     }
-
     if (y < 20) {
       y = 20
     }
@@ -142,7 +172,6 @@ export function useGraphVisualization(networkContainer, props) {
 
     if (levelGroups[1]) {
       const nodes = levelGroups[1]
-
       if (nodes.length === 1) {
         layout[nodes[0].id] = { x: 0, y: 0 }
       } else if (nodes.length === 2) {
@@ -172,17 +201,13 @@ export function useGraphVisualization(networkContainer, props) {
       for (let ring = 0; ring < ringCount; ring++) {
         const nodesInRing = Math.min(maxNodesPerRing, nodes.length - nodeIndex)
         const currentRadius = baseRadius + ring * ringSpacing
-
-        const angleOffset =
-          ring * (Math.PI / 6) + Math.random() * (Math.PI / 12)
+        const angleOffset = ring * (Math.PI / 6) + Math.random() * (Math.PI / 12)
 
         for (let i = 0; i < nodesInRing; i++) {
           const entity = nodes[nodeIndex + i]
           const angle = (i * 2 * Math.PI) / nodesInRing + angleOffset
-
           const radiusJitter = (Math.random() - 0.5) * 30
           const angleJitter = (Math.random() - 0.5) * (Math.PI / 16)
-
           const finalRadius = currentRadius + radiusJitter
           const finalAngle = angle + angleJitter
 
@@ -191,7 +216,6 @@ export function useGraphVisualization(networkContainer, props) {
             y: finalRadius * Math.sin(finalAngle),
           }
         }
-
         nodeIndex += nodesInRing
       }
     }
@@ -216,16 +240,13 @@ export function useGraphVisualization(networkContainer, props) {
         const currentRadius = startRadius + ringIndex * ringSpacing
         const maxNodesThisRing = calculateOptimalNodesPerRing(currentRadius)
         const nodesThisRing = Math.min(remainingNodes, maxNodesThisRing)
-
         const baseAngle = Math.random() * Math.PI
 
         for (let i = 0; i < nodesThisRing; i++) {
           const entity = nodes[currentIndex + i]
           const angle = baseAngle + (i * 2 * Math.PI) / nodesThisRing
-
           const radiusJitter = (Math.random() - 0.5) * 40
           const angleJitter = (Math.random() - 0.5) * (Math.PI / 12)
-
           const finalRadius = currentRadius + radiusJitter
           const finalAngle = angle + angleJitter
 
@@ -323,62 +344,30 @@ export function useGraphVisualization(networkContainer, props) {
     }
   }
 
-  const getFilteredGraphData = (keyword) => {
-    const lowerCaseKeyword = keyword.toLowerCase()
-    const allNodes = props.graphData.nodes
-    const allEdges = props.graphData.edges
-
-    const matchingNodes = allNodes.filter(
-      (node) =>
-        node.name &&
-        typeof node.name === 'string' &&
-        node.name.toLowerCase().includes(lowerCaseKeyword)
-    )
-    if (matchingNodes.length === 0) {
-      return { nodes: [], edges: [], matchedNodeIds: [] }
-    }
-
-    const connectedNodeIds = new Set(matchingNodes.map((node) => node.id))
-    const matchedNodeIds = new Set(matchingNodes.map((node) => node.id))
-
-    allEdges.forEach((edge) => {
-      if (connectedNodeIds.has(edge.from) || connectedNodeIds.has(edge.to)) {
-        connectedNodeIds.add(edge.from)
-        connectedNodeIds.add(edge.to)
-      }
-    })
-
-    const filteredNodes = allNodes.filter((node) =>
-      connectedNodeIds.has(node.id)
-    )
-    const filteredEdges = allEdges.filter(
-      (edge) =>
-        // 修复点: 访问转换后的 'from' 和 'to' 属性
-        connectedNodeIds.has(edge.from) && connectedNodeIds.has(edge.to)
-    )
-
-    return {
-      nodes: filteredNodes,
-      edges: filteredEdges,
-      matchedNodeIds: Array.from(matchedNodeIds),
-    }
-  }
-
-  const handleSearch = (keyword) => {
+  /**
+   * 搜索处理 - 调用 graphDataComposable 的搜索方法
+   */
+  const handleSearch = async (keyword) => {
     const newKeyword = keyword.trim()
+    
     if (newKeyword) {
-      const filteredData = getFilteredGraphData(newKeyword)
-      if (filteredData.nodes.length > 0) {
+      const matchedIds = await graphDataComposable.searchGraph(newKeyword)
+      
+      if (matchedIds && matchedIds.length > 0) {
+        // 搜索成功，等待图谱数据更新后重新初始化并高亮
+        await nextTick()
         initializeNetwork(
-          filteredData,
+          props.graphData,
           props.graphSettings,
-          new Set(filteredData.matchedNodeIds)
+          new Set(matchedIds)
         )
       } else {
-        if (network.value) network.value.destroy()
+        // 没有匹配结果
+        console.log('⚠️ 未找到匹配的节点')
       }
     } else {
-      resetGraph()
+      // 关键词为空，重置为概览
+      await graphDataComposable.resetGraph()
     }
   }
 
@@ -393,7 +382,6 @@ export function useGraphVisualization(networkContainer, props) {
 
     try {
       currentGraphData.value = graphData
-
       const layout = calculateFinalLayout(graphData.nodes)
 
       const nodes = new DataSet(
@@ -440,49 +428,43 @@ export function useGraphVisualization(networkContainer, props) {
           }
         })
       )
+
       const getEdgeColor = (aggregatedEdge) => {
-        const { 
-          modified_manual_count = 0, 
-          total_count = 0 
-        } = aggregatedEdge.originalData || aggregatedEdge; // 确保安全访问
-        
-//         console.log("颜色计算:", modified_manual_count, total_count) // 可以取消注释用于调试
-        if (modified_manual_count === 0) {
-          return '#999999'
-        } else if (modified_manual_count < total_count) {
-          // 部分修改 - 橙色
-          return '#f59e0b'
-        } else {
-          // 全部修改 - 绿色
-          return '#10b981'
-        }
-      }
+        const { 
+          modified_manual_count = 0, 
+          total_count = 0 
+        } = aggregatedEdge.originalData || aggregatedEdge
+        
+        if (modified_manual_count === 0) {
+          return '#999999'
+        } else if (modified_manual_count < total_count) {
+          return '#f59e0b'
+        } else {
+          return '#10b981'
+        }
+      }
+
       const edges = new DataSet(
-        (graphData.edges || []).map((aggregatedEdge, index) => {
-          const factorCount = aggregatedEdge.factors?.length || 0
-          const firstFactor = aggregatedEdge.factors?.[0]
+        (graphData.edges || []).map((aggregatedEdge) => {
+          const originalData = aggregatedEdge.originalData || {}
           const color = getEdgeColor(aggregatedEdge)
-          // console.log(aggregatedEdge)
-          const labelText = graphSettings.showLabels
-            ? factorCount > 1
-              ? `${firstFactor?.factor_name || ''} 等 (${factorCount})`
-              : firstFactor?.factor_name || ''
-            : ''
 
           return {
             id: aggregatedEdge.id,
             from: aggregatedEdge.from,
             to: aggregatedEdge.to,
-            label: labelText,
+            label: '', // 移除边标签，保持简洁
             width: graphSettings.edgeWidth || 2,
             color: { color: color, highlight: '#333333', opacity: 0.6 },
             smooth: { type: 'curvedCW', roundness: 0.2 },
             arrows: { to: { enabled: true, scaleFactor: 1.2 } },
-            font: { size: 10, color: '#555' },
-
-            originalData: aggregatedEdge.originalData,
+            font: { size: 0 }, // 隐藏字体
+            originalData: originalData,
           }
-        })
+        }).filter((edge, index, self) => 
+          // 额外的去重检查：确保 id 唯一
+          index === self.findIndex(e => e.id === edge.id)
+        )
       )
 
       const optimizedNetworkOptions = {
@@ -529,9 +511,12 @@ export function useGraphVisualization(networkContainer, props) {
         { nodes, edges },
         optimizedNetworkOptions
       )
+      
       setupEventListeners()
       setTimeout(resetZoom, 100)
-    } catch (error) {}
+    } catch (error) {
+      console.error('初始化网络失败:', error)
+    }
   }
 
   const resetGraph = () => {
@@ -541,17 +526,16 @@ export function useGraphVisualization(networkContainer, props) {
   const setupEventListeners = () => {
     if (!network.value) return
 
-    network.value.on('click', (params) => {
+    network.value.on('click', async (params) => {
       if (params.nodes.length > 0) {
         const entityId = params.nodes[0]
         const entityData = currentGraphData.value.nodes.find(
           (n) => n.id === entityId
         )
+        
         if (entityData) {
           bus.emit('entity-selected', entityData)
-          const canvasPosition = network.value.canvasToDOM(
-            params.pointer.canvas
-          )
+          const canvasPosition = network.value.canvasToDOM(params.pointer.canvas)
           closeEdgeCard()
           showNodeInfo(entityData, { x: canvasPosition.x, y: canvasPosition.y })
         }
@@ -561,12 +545,9 @@ export function useGraphVisualization(networkContainer, props) {
         const edgeData = edges.get(edgeId)
 
         if (edgeData && edgeData.originalData) {
-          const canvasPosition = network.value.canvasToDOM(
-            params.pointer.canvas
-          )
+          const canvasPosition = network.value.canvasToDOM(params.pointer.canvas)
           closeNodeCard()
-
-          showEdgeInfo(edgeData.originalData, {
+          await showEdgeInfo(edgeData.originalData, {
             x: canvasPosition.x,
             y: canvasPosition.y,
           })
@@ -580,12 +561,6 @@ export function useGraphVisualization(networkContainer, props) {
 
     network.value.on('deselectNode', () => {
       bus.emit('entity-deselected')
-    })
-
-    network.value.on('doubleClick', (params) => {
-      if (params.nodes.length > 0) {
-        focusOnEntity(params.nodes[0])
-      }
     })
   }
 
@@ -657,7 +632,6 @@ export function useGraphVisualization(networkContainer, props) {
     }
   }
 
-  // Watch for changes in props to re-initialize the network
   watch(
     () => props.graphData,
     (newGraphData) => {
@@ -681,7 +655,7 @@ export function useGraphVisualization(networkContainer, props) {
           },
           edges: {
             width: newGraphSettings.edgeWidth,
-            font: { size: newGraphSettings.showLabels ? 10 : 0 },
+            font: { size: 0 }, // 边标签始终隐藏
           },
           interaction: {
             tooltipDelay: newGraphSettings.showLabels ? 200 : 0,
@@ -699,12 +673,10 @@ export function useGraphVisualization(networkContainer, props) {
         network.value.destroy()
       } catch (error) {}
     }
-    // Remove bus listeners
     bus.off('search-keyword', debouncedSearch)
     bus.off('focus-node', focusOnEntity)
   })
 
-  // Listen for external search and focus events
   bus.on('search-keyword', debouncedSearch)
   bus.on('focus-node', focusOnEntity)
 
@@ -716,6 +688,7 @@ export function useGraphVisualization(networkContainer, props) {
     cardPosition,
     showNodeCard,
     selectedNodeData,
+    isLoadingEdgeDetails,
     zoomIn,
     zoomOut,
     resetZoom,

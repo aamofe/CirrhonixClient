@@ -56,19 +56,35 @@
       </div>
     </div>
 
-    <EdgeInfo :visible="showEdgeCard" :edge-data="selectedEdgeData" :position="cardPosition" @close="closeEdgeCard" />
+    <!-- 提示：点击节点查看详情和展开选项 -->
+    <div class="graph-tip" v-if="!isLoading">
+      <span>💡 提示：点击疾病/细胞节点，在弹出的卡片中可展开关联病原体</span>
+    </div>
 
-    <NodeInfo :visible="showNodeCard" :node-data="selectedNodeData" :position="cardPosition" @close="closeNodeCard"
-      @relation-updated="handleRelationUpdated" />
+    <EdgeInfo 
+      :visible="showEdgeCard" 
+      :edge-data="selectedEdgeData" 
+      :position="cardPosition" 
+      :is-loading="isLoadingEdgeDetails"
+      @close="closeEdgeCard" 
+    />
 
+    <NodeInfo 
+      :visible="showNodeCard" 
+      :node-data="selectedNodeData" 
+      :position="cardPosition" 
+      @close="closeNodeCard"
+      @relation-updated="handleRelationUpdated" 
+    />
   </div>
 </template>
+
 <script>
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { ZoomIn, ZoomOut, FullScreen, Aim, MagicStick } from '@element-plus/icons-vue'
 import EdgeInfo from './EdgeInfo.vue'
 import NodeInfo from './NodeInfo.vue'
-import { useGraphVisualization } from '@/composables/useGraphVisualization' // New composable
+import { useGraphVisualization } from '@/composables/useGraphVisualization'
 
 export default {
   name: 'GraphVisualization',
@@ -80,15 +96,19 @@ export default {
   },
   setup(props) {
     const networkContainer = ref(null)
+    
+    // 注入 graphDataComposable（从父组件传递）
+    const graphDataComposable = inject('graphDataComposable')
 
     const {
-      network, // Exposed if you need direct vis.js network instance
+      network,
       physicsEnabled,
       showEdgeCard,
       selectedEdgeData,
       cardPosition,
       showNodeCard,
       selectedNodeData,
+      isLoadingEdgeDetails,
       zoomIn,
       zoomOut,
       resetZoom,
@@ -98,9 +118,7 @@ export default {
       closeEdgeCard,
       closeNodeCard,
       handleRelationUpdated,
-      handleSearch // Exposed from composable
-    } = useGraphVisualization(networkContainer, props)
-
+    } = useGraphVisualization(networkContainer, props, graphDataComposable)
 
     return {
       networkContainer,
@@ -110,6 +128,7 @@ export default {
       cardPosition,
       showNodeCard,
       selectedNodeData,
+      isLoadingEdgeDetails,
       zoomIn,
       zoomOut,
       resetZoom,
@@ -123,6 +142,7 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 .graph-visualization {
   position: relative;
@@ -184,7 +204,6 @@ export default {
   0% {
     transform: rotate(0deg);
   }
-
   100% {
     transform: rotate(360deg);
   }
@@ -217,11 +236,6 @@ export default {
   border: 1px solid #ddd;
 }
 
-.layout-controls {
-  display: flex;
-  gap: 5px;
-}
-
 .toolbar-btn {
   display: flex;
   align-items: center;
@@ -247,38 +261,30 @@ export default {
   color: white;
 }
 
-.graph-info-panel {
+.graph-tip {
   position: absolute;
   bottom: 20px;
-  left: 20px;
-  background: white;
-  padding: 16px 20px;
-  border-radius: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 20px;
+  border-radius: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ddd;
-  z-index: 100;
-}
-
-.info-row {
-  display: flex;
-  gap: 24px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.info-value {
-  font-weight: 600;
-  font-size: 16px;
-  color: #333;
-}
-
-.info-label {
+  font-size: 13px;
   color: #666;
-  font-size: 14px;
+  z-index: 100;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 @media (max-width: 768px) {
@@ -287,14 +293,10 @@ export default {
     right: 10px;
   }
 
-  .graph-info-panel {
+  .graph-tip {
     bottom: 10px;
-    left: 10px;
-    padding: 12px 16px;
-  }
-
-  .info-row {
-    gap: 16px;
+    font-size: 12px;
+    padding: 8px 16px;
   }
 }
 </style>

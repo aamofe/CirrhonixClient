@@ -6,7 +6,7 @@
    @wheel.stop="handleWheel" @touchmove.stop="handleTouchMove">
    <div class="card-header">
     <h3 class="card-title">
-     {{ mode === 'view' ? `关系详情 (${edgeData.factors?.length || 0} 条)` : mode === 'edit' ? '编辑关系' : '创建关系' }}
+     {{ mode === 'view' ? `关系详情 (${displayFactorCount})` : mode === 'edit' ? '编辑关系' : '创建关系' }}
     </h3>
     <div class="header-actions">
      <button v-if="mode === 'view'" @click="mode = 'create'" class="action-btn create-btn">
@@ -23,17 +23,18 @@
    </div>
 
    <div class="card-content">
-        <div v-if="mode === 'view'">
+    <div v-if="mode === 'view'">
+     <!-- 实体信息 -->
      <div class="section">
       <div class="section-title">实体信息</div>
       <div class="relation-flow">
        <div class="entity-box source">
-        <div class="entity-name">{{ edgeData.source_entity.name }}</div>
+        <div class="entity-name">{{ edgeData.source_entity?.name || '未知' }}</div>
         <div class="entity-meta">
-         <span class="level-badge" :class="`level-${edgeData.source_entity.level}`">
-          Level {{ edgeData.source_entity.level }}
+         <span class="level-badge" :class="`level-${edgeData.source_entity?.level}`">
+          Level {{ edgeData.source_entity?.level || '?' }}
          </span>
-         <span v-if="edgeData.source_entity.entity_type" class="entity-type">
+         <span v-if="edgeData.source_entity?.entity_type" class="entity-type">
           {{ edgeData.source_entity.entity_type }}
          </span>
         </div>
@@ -42,12 +43,12 @@
         <div class="arrow">→</div>
        </div>
        <div class="entity-box target">
-        <div class="entity-name">{{ edgeData.target_entity.name }}</div>
+        <div class="entity-name">{{ edgeData.target_entity?.name || '未知' }}</div>
         <div class="entity-meta">
-         <span class="level-badge" :class="`level-${edgeData.target_entity.level}`">
-          Level {{ edgeData.target_entity.level }}
+         <span class="level-badge" :class="`level-${edgeData.target_entity?.level}`">
+          Level {{ edgeData.target_entity?.level || '?' }}
          </span>
-         <span v-if="edgeData.target_entity.entity_type" class="entity-type">
+         <span v-if="edgeData.target_entity?.entity_type" class="entity-type">
           {{ edgeData.target_entity.entity_type }}
          </span>
         </div>
@@ -55,19 +56,29 @@
       </div>
      </div>
 
-          <div v-if="edgeData.factors && edgeData.factors.length > 0" class="section">
+     <!-- 加载状态 -->
+     <div v-if="isLoading" class="section">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p class="loading-text">正在加载详细信息...</p>
+      </div>
+     </div>
+
+     <!-- 关系列表 -->
+     <div v-else-if="edgeData.factors && edgeData.factors.length > 0" class="section">
       <div class="section-title factor-list-header">
        <span>详细关系列表</span>
        <span class="stats-score">
-        {{ edgeData.modified_manual_count || 0 }}/{{ edgeData.total_count || 0 }}
+        {{ edgeData.modified_manual_count || 0 }}/{{ edgeData.total_count || edgeData.factors.length }}
        </span>
       </div>
       <div class="factors-list">
-       <div v-for="(factor, index) in edgeData.factors" :key="factor.id" class="factor-item">
+       <div v-for="(factor, index) in edgeData.factors" :key="factor.id || index" class="factor-item">
         <div class="factor-header">
          <div class="factor-index">{{ index + 1 }}.</div>
          <span class="modification-badge" :class="factor.is_modified ? 'modified' : 'original'">
-          {{ factor.is_modified ? '人工' : '算法' }}          </span>
+          {{ factor.is_modified ? '人工' : '算法' }}
+         </span>
         </div>
         <div class="factor-details">
          <div class="detail-row">
@@ -120,15 +131,16 @@
      </div>
     </div>
 
-        <div v-else class="edit-form">
+    <!-- 编辑/创建表单 -->
+    <div v-else class="edit-form">
      <div class="section">
       <div class="section-title">实体信息</div>
       <div class="relation-flow">
        <div class="entity-box source">
-        <div class="entity-name">{{ edgeData.source_entity.name }}</div>
+        <div class="entity-name">{{ edgeData.source_entity?.name || '未知' }}</div>
         <div class="entity-meta">
-         <span class="level-badge" :class="`level-${edgeData.source_entity.level}`">
-          Level {{ edgeData.source_entity.level }}
+         <span class="level-badge" :class="`level-${edgeData.source_entity?.level}`">
+          Level {{ edgeData.source_entity?.level || '?' }}
          </span>
         </div>
        </div>
@@ -136,10 +148,10 @@
         <div class="arrow">→</div>
        </div>
        <div class="entity-box target">
-        <div class="entity-name">{{ edgeData.target_entity.name }}</div>
+        <div class="entity-name">{{ edgeData.target_entity?.name || '未知' }}</div>
         <div class="entity-meta">
-         <span class="level-badge" :class="`level-${edgeData.target_entity.level}`">
-          Level {{ edgeData.target_entity.level }}
+         <span class="level-badge" :class="`level-${edgeData.target_entity?.level}`">
+          Level {{ edgeData.target_entity?.level || '?' }}
          </span>
         </div>
        </div>
@@ -149,7 +161,8 @@
      <div class="section">
       <div class="section-title">关系信息</div>
       <el-form :model="formData" label-width="90px" label-position="left">
-       <el-form-item label="因子名称">         <el-input v-model="formData.factor_name" placeholder="请输入因子名称" />
+       <el-form-item label="因子名称">
+        <el-input v-model="formData.factor_name" placeholder="请输入因子名称" />
        </el-form-item>
        <el-form-item label="因子类型">
         <el-input v-model="formData.factor_type" placeholder="请输入因子类型" />
@@ -171,8 +184,8 @@
 
      <div class="form-actions">
       <el-button @click="cancelEdit">取消</el-button>
-      <el-button type="primary" @click="submitForm" :loading="submitting"
-       :disabled="!formData.effect">        {{ mode === 'edit' ? '保存' : '创建' }}
+      <el-button type="primary" @click="submitForm" :loading="submitting" :disabled="!formData.effect">
+       {{ mode === 'edit' ? '保存' : '创建' }}
       </el-button>
      </div>
     </div>
@@ -203,6 +216,11 @@ const props = defineProps({
   type: Object,
   default: () => ({}),
  },
+ // 新增：从 useGraphVisualization 传递的 loading 状态
+ isLoading: {
+  type: Boolean,
+  default: false,
+ },
 })
 
 const emit = defineEmits(['close', 'deleted'])
@@ -210,8 +228,6 @@ const emit = defineEmits(['close', 'deleted'])
 const router = useRouter()
 const store = useStore()
 const isAdmin = computed(() => store.getters.isAdmin)
-
-// ⚠️ 移除 modificationPercentage, modificationStatusClass, modificationStatusText 计算属性
 
 const mode = ref('view') // 'view' | 'edit' | 'create'
 const submitting = ref(false)
@@ -225,6 +241,14 @@ const formData = ref({
  effect: '',
  description: '',
  literature_name: '',
+})
+
+// 计算显示的 factor 数量
+const displayFactorCount = computed(() => {
+  if (props.isLoading) {
+    return '加载中...'
+  }
+  return props.edgeData.total_count || props.edgeData.factors?.length || 0
 })
 
 watch(() => props.visible, (newVal) => {
@@ -295,8 +319,8 @@ const close = () => {
 const startEdit = (factor) => {
  formData.value = {
   relation_id: factor.id,
-  source_id: props.edgeData.source_entity.id,
-  target_id: props.edgeData.target_entity.id,
+  source_id: props.edgeData.source_entity?.id,
+  target_id: props.edgeData.target_entity?.id,
   factor_name: factor.factor_name || '',
   factor_type: factor.factor_type || '',
   factor_abbreviation: factor.factor_abbreviation || '',
@@ -327,7 +351,7 @@ const resetForm = () => {
 }
 
 const submitForm = async () => {
- if (!formData.value.effect) { // ⚠️ 仅检查 effect
+ if (!formData.value.effect) {
   ElMessage.warning('请填写必填项（效果）')
   return
  }
@@ -336,8 +360,8 @@ const submitForm = async () => {
  try {
   if (mode.value === 'create') {
    const createData = {
-    source_id: props.edgeData.source_entity.id,
-    target_id: props.edgeData.target_entity.id,
+    source_id: props.edgeData.source_entity?.id,
+    target_id: props.edgeData.target_entity?.id,
     factor_name: formData.value.factor_name,
     factor_type: formData.value.factor_type,
     factor_abbreviation: formData.value.factor_abbreviation,
@@ -345,7 +369,7 @@ const submitForm = async () => {
     description: formData.value.description,
     literature_name: formData.value.literature_name,
    }
-   const res = await KnowledgeGraph.createRelation(createData)
+   await KnowledgeGraph.createRelation(createData)
    
    if (isAdmin.value) {
     ElMessage.success('关系创建成功')
@@ -364,12 +388,12 @@ const submitForm = async () => {
     description: formData.value.description,
     literature_name: formData.value.literature_name,
    }
-   const res = await KnowledgeGraph.updateRelation(updateData)
+   await KnowledgeGraph.updateRelation(updateData)
    
    if (isAdmin.value) {
     ElMessage.success('关系更新成功')
    } else {
-    ElMessage.success('修改申请已提交，等待管理员审核')
+    ElMessage.success('修改申请已提交,等待管理员审核')
    }
   }
 
@@ -391,7 +415,7 @@ const handleDelete = async (factorId) => {
  }
 
  try {
-  const res = await KnowledgeGraph.deleteRelation(factorId)
+  await KnowledgeGraph.deleteRelation(factorId)
   
   if (isAdmin.value) {
    ElMessage.success('关系删除成功')
@@ -529,7 +553,35 @@ const viewArticleDetail = (article) => {
  font-size: 14px;
 }
 
-/* ⚠️ 移除 modification-stats 相关样式 */
+/* 加载状态样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #1a91c1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+}
 
 .factor-list-header {
  display: flex;
@@ -645,10 +697,9 @@ const viewArticleDetail = (article) => {
 }
 
 .modification-badge.modified {
- background: #ecfdf5; /* ⚠️ 新的浅色系背景 */
+ background: #ecfdf5;
  color: #059669;
- border: 1px solid #a7f3d0; /* ⚠️ 新的边框 */
- box-shadow: none; /* 移除阴影 */
+ border: 1px solid #a7f3d0;
 }
 
 .modification-badge.original {

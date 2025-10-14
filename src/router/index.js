@@ -56,9 +56,9 @@ const routes = [
   },
   {
     path: '/knowledge-graph',
-    redirect: '/404',
-    // name: 'knowledge-graph',
-    // component: KnowledgeGraph,
+    // redirect: '/404',
+    name: 'knowledge-graph',
+    component: KnowledgeGraph,
   },
   {
     path: '/literature/:id',

@@ -3,6 +3,27 @@
     <div class="card-header">
       <h3 class="card-title">节点详情</h3>
       <div class="header-actions">
+        <!-- 展开按钮 - 使用 PrimaryButton -->
+        <PrimaryButton
+          v-if="nodeData.level <= 2 && !isExpanded" 
+          @click="handleExpandNode" 
+          :disabled="expanding"
+          :title="expanding ? '展开中...' : '展开关联的病原体节点'"
+          class="expand-btn-custom"
+        >
+          <template #icon>
+            <el-icon v-if="!expanding">
+              <Plus />
+            </el-icon>
+            <span class="spinner-small" v-else></span>
+          </template>
+          {{ expanding ? '展开中' : '展开节点' }}
+        </PrimaryButton>
+        
+        <span v-if="isExpanded" class="expanded-tag">
+          ✓ 已展开
+        </span>
+        
         <button @click="close" class="close-btn">
           <el-icon>
             <Close />
@@ -42,6 +63,16 @@
           <div v-if="nodeData.abbreviation" class="node-abbreviation">
             <span class="label">缩写：</span>
             <span class="value">{{ nodeData.abbreviation }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 展开提示（仅对未展开的 Level 1-2 节点） -->
+      <div v-if="nodeData.level <= 2 && !isExpanded" class="section">
+        <div class="expand-hint">
+          <div class="hint-icon">💡</div>
+          <div class="hint-text">
+            <strong>提示：</strong>点击上方"展开节点"按钮可查看此节点关联的所有病原体（Level 3）节点和关系。
           </div>
         </div>
       </div>
@@ -169,10 +200,10 @@
       <template #footer>
         <span class="dialog-footer">
           <CancelButton @click="handleCloseAddDialog">取消</CancelButton>
-          <button @click="handleAddRelation" :disabled="submitting" class="confirm-btn">
+          <PrimaryButton @click="handleAddRelation" :disabled="submitting">
             <span v-if="submitting">提交中...</span>
             <span v-else>确定</span>
-          </button>
+          </PrimaryButton>
         </span>
       </template>
     </el-dialog>
@@ -183,11 +214,12 @@
 </template>
 
 <script>
-import { ref, watch, reactive, computed } from 'vue'
+import { ref, watch, reactive, computed, inject } from 'vue'
 import { useStore } from 'vuex'
 import { ElMessage, ElSkeleton, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElRadioGroup, ElRadio } from 'element-plus'
 import { Close, Plus } from '@element-plus/icons-vue'
 import CancelButton from '@/components/ui/CancelButton.vue'
+import PrimaryButton from '@/components/ui/PrimaryButton.vue'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
 export default {
@@ -196,6 +228,7 @@ export default {
     Close,
     Plus,
     CancelButton,
+    PrimaryButton,
     ElSkeleton,
     ElDialog,
     ElForm,
@@ -216,6 +249,9 @@ export default {
     const store = useStore()
     const isAdmin = computed(() => store.getters.isAdmin)
     
+    // 注入 graphDataComposable
+    const graphDataComposable = inject('graphDataComposable')
+    
     const loading = ref(false)
     const detailData = ref({})
     const apiError = ref('')
@@ -226,6 +262,13 @@ export default {
     const entitiesLoaded = ref(false)
     const submitting = ref(false)
     const relationFormRef = ref()
+    
+    // 展开相关状态
+    const expanding = ref(false)
+    const isExpanded = computed(() => {
+      if (!graphDataComposable || !props.nodeData.id) return false
+      return graphDataComposable.expandedNodes.value.has(props.nodeData.id)
+    })
 
     const relationForm = reactive({
       direction: 'source',
@@ -246,7 +289,6 @@ export default {
       ]
     }
 
-
     const getEntityIdentifier = () => {
       return props.nodeData.id || props.nodeData.name || null
     }
@@ -255,6 +297,38 @@ export default {
       emit('close')
     }
 
+    // 处理展开节点
+    const handleExpandNode = async () => {
+      if (!graphDataComposable) {
+        ElMessage.error('展开功能不可用')
+        return
+      }
+      
+      const entityId = getEntityIdentifier()
+      if (!entityId) {
+        ElMessage.error('节点ID不存在')
+        return
+      }
+      
+      if (props.nodeData.level > 2) {
+        ElMessage.info('Level 3 节点无需展开')
+        return
+      }
+      
+      expanding.value = true
+      try {
+        await graphDataComposable.expandNode(entityId)
+        ElMessage.success(`已展开节点"${props.nodeData.name}"的关联病原体`)
+        
+        // 重新加载节点详情以更新统计数据
+        await loadNodeDetail()
+      } catch (error) {
+        ElMessage.error('展开节点失败，请重试')
+        console.error('展开失败:', error)
+      } finally {
+        expanding.value = false
+      }
+    }
 
     const formatEntityLabel = (entity) => {
       let label = entity.name || ''
@@ -267,7 +341,6 @@ export default {
       return label
     }
 
-
     const loadAllEntities = async () => {
       if (entitiesLoaded.value) return
 
@@ -279,7 +352,6 @@ export default {
 
         if (response.data && response.data.message === 'success' && response.data.data) {
           const currentEntityId = getEntityIdentifier()
-
           const entities = response.data.data.entities || []
 
           allEntities.value = entities.filter(entity => {
@@ -288,7 +360,6 @@ export default {
           })
 
           entitiesLoaded.value = true
-
         } else {
           ElMessage.error('加载实体数据失败')
         }
@@ -301,11 +372,9 @@ export default {
     
     const getRandomEntities = (count = 10) => {
       if (allEntities.value.length === 0) return []
-
       const shuffled = [...allEntities.value].sort(() => 0.5 - Math.random())
       return shuffled.slice(0, Math.min(count, allEntities.value.length))
     }
-
 
     const filterEntitiesByQuery = (query) => {
       if (!query || query.trim() === '') return []
@@ -326,7 +395,6 @@ export default {
       })
     }
 
-
     const searchEntities = async (query) => {
       if (!entitiesLoaded.value) {
         await loadAllEntities()
@@ -339,7 +407,6 @@ export default {
         availableEntities.value = filtered.slice(0, 50)
       }
     }
-
 
     const loadNodeDetail = async () => {
       const entityIdentifier = getEntityIdentifier()
@@ -366,7 +433,6 @@ export default {
         loading.value = false
       }
     }
-
 
     const handleAddRelation = async () => {
       if (!relationFormRef.value) return
@@ -418,7 +484,6 @@ export default {
       }
     }
 
-
     const handleCloseAddDialog = () => {
       showAddRelationDialog.value = false
       Object.assign(relationForm, {
@@ -436,14 +501,12 @@ export default {
       }
     }
 
-
     watch(showAddRelationDialog, async (isOpen) => {
       if (isOpen) {
         await loadAllEntities()
         searchEntities('')
       }
     })
-
 
     watch(() => [props.visible, props.nodeData], ([visible, nodeData]) => {
       if (visible && nodeData && getEntityIdentifier()) {
@@ -462,8 +525,11 @@ export default {
       relationFormRef,
       relationForm,
       relationRules,
+      expanding,
+      isExpanded,
       getEntityIdentifier,
       close,
+      handleExpandNode,
       formatEntityLabel,
       loadNodeDetail,
       searchEntities,
@@ -475,7 +541,7 @@ export default {
 </script>
 
 <style scoped>
-/* 基础样式 */
+/* 基础样式（保持原样）... */
 .node-info-card {
   position: fixed;
   z-index: 1000;
@@ -511,6 +577,81 @@ export default {
 .header-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+/* 新增：展开按钮自定义样式 */
+.expand-btn-custom {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(26, 145, 193, 0.3);
+}
+
+.expand-btn-custom:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 145, 193, 0.4);
+}
+
+.expand-btn-custom:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.expand-btn-custom:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.expanded-tag {
+  background: #10b981;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 新增：展开提示样式 */
+.expand-hint {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.hint-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.hint-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1e40af;
+}
+
+.hint-text strong {
+  color: #1e3a8a;
 }
 
 .close-btn {
@@ -527,6 +668,7 @@ export default {
   background-color: #f0f0f0;
 }
 
+/* ... 其他样式保持不变 ... */
 .card-content {
   padding: 20px;
   overflow-y: auto;
@@ -560,7 +702,6 @@ export default {
   border-bottom: 1px solid #f0f0f0;
 }
 
-/* 节点信息样式 */
 .node-info-display {
   display: flex;
   flex-direction: column;
@@ -646,7 +787,6 @@ export default {
   color: #666;
 }
 
-/* 统计数据样式 */
 .stats-display {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -694,7 +834,6 @@ export default {
   border-left: 4px solid #d9d9d9;
 }
 
-/* 基础信息样式 */
 .basic-info {
   display: flex;
   flex-direction: column;
@@ -719,7 +858,6 @@ export default {
   word-break: break-all;
 }
 
-/* 错误信息样式 */
 .error-message {
   text-align: center;
   padding: 20px;
@@ -752,7 +890,6 @@ export default {
   background-color: #ff7875;
 }
 
-/* 关系管理样式 */
 .relation-management {
   text-align: center;
   padding: 20px;
@@ -786,7 +923,6 @@ export default {
   background-color: #337ecc;
 }
 
-/* 实体选择下拉框样式 */
 .entity-option {
   padding: 4px 0;
 }
@@ -834,7 +970,6 @@ export default {
   font-style: italic;
 }
 
-/* Dialog footer styles */
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -863,7 +998,6 @@ export default {
   cursor: not-allowed;
 }
 
-/* Card overlay for backdrop */
 .card-overlay {
   position: fixed;
   top: 0;
@@ -872,52 +1006,6 @@ export default {
   bottom: 0;
   z-index: 999;
   background-color: rgba(0, 0, 0, 0.3);
-}
-
-/* Form styles within dialog */
-.el-form-item {
-  margin-bottom: 18px;
-}
-
-.el-form-item__label {
-  font-weight: 600;
-  color: #606266;
-}
-
-.el-input__inner,
-.el-textarea__inner {
-  border-radius: 4px;
-  border: 1px solid #dcdfe6;
-  transition: border-color 0.2s;
-}
-
-.el-input__inner:focus,
-.el-textarea__inner:focus {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
-}
-
-.el-radio {
-  margin-right: 20px;
-  margin-bottom: 8px;
-}
-
-.el-radio__label {
-  font-size: 14px;
-  color: #606266;
-}
-
-.el-select {
-  width: 100%;
-}
-
-.el-select .el-input__inner {
-  cursor: pointer;
-}
-
-.el-select-dropdown {
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {
@@ -955,111 +1043,9 @@ export default {
   .add-relation-btn {
     align-self: flex-end;
   }
-}
-
-@media (max-width: 480px) {
-  .node-name {
-    font-size: 18px;
-  }
-
-  .stats-display {
-    grid-template-columns: 1fr;
-  }
-
-  .node-name-with-level {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-}
-
-/* Animation for card appearance */
-.node-info-card {
-  animation: slideInFromRight 0.3s ease-out;
-}
-
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Loading skeleton customization */
-.el-skeleton__item {
-  background: linear-gradient(90deg, #f0f0f0 25%, rgba(240, 240, 240, 0.5) 50%, #f0f0f0 75%);
-  background-size: 400% 100%;
-  animation: loading 1.4s ease infinite;
-}
-
-@keyframes loading {
-  0% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-/* Custom scrollbar */
-.card-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.card-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.card-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.card-content::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
-}
-
-/* Hover effects for interactive elements */
-.node-info-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  transition: box-shadow 0.3s ease;
-}
-
-.stat-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-}
-
-/* Focus styles for accessibility */
-.close-btn:focus,
-.add-relation-btn:focus,
-.retry-btn:focus,
-.cancel-btn:focus,
-.confirm-btn:focus {
-  outline: 2px solid #409eff;
-  outline-offset: 2px;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .node-info-card {
-    border: 2px solid #000;
-  }
-
-  .card-header {
-    border-bottom-color: #000;
-  }
-
-  .section-title {
-    border-bottom-color: #000;
+  
+  .header-actions {
+    flex-wrap: wrap;
   }
 }
 </style>

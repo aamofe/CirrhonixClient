@@ -8,7 +8,7 @@
           <p>展现最新的病原体、细胞、分子之间的关系</p>
         </div>
         
-        <!-- 修改记录按钮 - 使用SVG图标 -->
+        <!-- 修改记录按钮 -->
         <button @click="showReviewCard = true" class="review-btn">
           <svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
             <path d="M832 64H192c-17.7 0-32 14.3-32 32v832c0 17.7 14.3 32 32 32h640c17.7 0 32-14.3 32-32V96c0-17.7-14.3-32-32-32zM668 345.9L621.5 312 572 347.4V124h96v221.9z m104 448.7c0 4.4-3.6 8-8 8H260c-4.4 0-8-3.6-8-8V779.5c0-4.4 3.6-8 8-8h504c4.4 0 8 3.6 8 8v15.1z m0-136.5c0 4.4-3.6 8-8 8H260c-4.4 0-8-3.6-8-8v-15.1c0-4.4 3.6-8 8-8h504c4.4 0 8 3.6 8 8v15.1z m0-136.5c0 4.4-3.6 8-8 8H260c-4.4 0-8-3.6-8-8v-15.1c0-4.4 3.6-8 8-8h504c4.4 0 8 3.6 8 8v15.1z" fill="currentColor"/>
@@ -18,21 +18,32 @@
         </button>
       </div>
 
-      <!-- 搜索框移到头部 -->
+      <!-- 搜索框 -->
       <div class="graph-search-container">
-        <input type="text" v-model="globalState.searchKeyword" @input="handleSearchKeywordChange($event.target.value)"
-          placeholder="搜索节点..." class="graph-search-input" />
+        <input 
+          type="text" 
+          v-model="globalState.searchKeyword" 
+          @input="handleSearchKeywordChange($event.target.value)"
+          placeholder="搜索节点..." 
+          class="graph-search-input" 
+        />
       </div>
     </section>
 
     <div class="container">
       <div class="graph-container">
-        <GraphSidebar :graph-settings="globalState.graphSettings" @settings-change="handleSettingsChange"
-          @reset-settings="handleResetSettings" />
+        <GraphSidebar 
+          :graph-settings="globalState.graphSettings" 
+          @settings-change="handleSettingsChange"
+          @reset-settings="handleResetSettings" 
+        />
 
         <div class="graph-main">
-          <GraphVisualization :graph-data="graphData" :graph-settings="globalState.graphSettings"
-            :is-loading="isLoading" />
+          <GraphVisualization 
+            :graph-data="graphData" 
+            :graph-settings="globalState.graphSettings"
+            :is-loading="isLoading" 
+          />
         </div>
       </div>
     </div>
@@ -40,12 +51,16 @@
     <SiteFooter />
 
     <!-- 修改记录卡片 -->
-    <ReviewCard :visible="showReviewCard" @close="showReviewCard = false" @updated="handleReviewUpdated" />
+    <ReviewCard 
+      :visible="showReviewCard" 
+      @close="showReviewCard = false" 
+      @updated="handleReviewUpdated" 
+    />
   </div>
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, provide } from 'vue'
 import { useStore } from 'vuex'
 import { useGraphData } from '@/composables/useGraphData'
 import KnowledgeGraph from '@/api/knowledgeGraph'
@@ -78,14 +93,17 @@ export default {
       }
     })
 
-    const { graphData, isLoading, loadGraphData } = useGraphData()
+    // 使用新的 useGraphData composable
+    const graphDataComposable = useGraphData()
+    const { graphData, isLoading, loadGraphData } = graphDataComposable
+    
+    // 提供给子组件使用
+    provide('graphDataComposable', graphDataComposable)
+
     const showReviewCard = ref(false)
     const pendingCount = ref(0)
 
-    // 先定义 loadPendingCount 函数
     const loadPendingCount = async () => {
-      // console.log('loadPendingCount 被调用, isAdmin:', isAdmin.value)
-      
       if (!isAdmin.value) {
         pendingCount.value = 0
         return
@@ -94,7 +112,6 @@ export default {
       try {
         const res = await KnowledgeGraph.getPendingReviews()
         pendingCount.value = res.data?.length || 0
-        // console.log('待审核数量:', pendingCount.value)
       } catch (error) {
         console.error('加载待审核数量失败:', error)
         pendingCount.value = 0
@@ -124,6 +141,8 @@ export default {
       bus.emit('search-keyword', keyword)
     }
 
+    // 注意：图谱设置功能已移到智能问答，以下方法保留以防后续需要
+    // 如果确定不需要，可以删除
     const handleSettingsChange = (settings) => {
       Object.assign(globalState.graphSettings, settings)
     }
@@ -137,22 +156,17 @@ export default {
       }
     }
 
-    // 监听 isAdmin 的变化，用于调试
     watch(isAdmin, (newVal) => {
-      // console.log('知识图谱页面 - isAdmin 变化:', newVal)
       if (newVal) {
         loadPendingCount()
       }
     }, { immediate: true })
 
-    // Bus event listeners
     onMounted(() => {
-      // console.log('知识图谱页面已挂载, isAdmin:', isAdmin.value)
       bus.on('entity-selected', handleEntitySelected)
       bus.on('entity-deselected', handleEntityDeselected)
       bus.on('graph-updated', handleGraphUpdated)
       
-      // 延迟加载，确保 store 已更新
       setTimeout(() => {
         loadPendingCount()
       }, 100)
@@ -172,9 +186,10 @@ export default {
       pendingCount,
       isAdmin,
       handleSearchKeywordChange,
+      handleReviewUpdated,
+      // 保留设置方法以防后续需要，但目前未使用
       handleSettingsChange,
       handleResetSettings,
-      handleReviewUpdated,
     }
   },
 }
@@ -187,7 +202,7 @@ export default {
   position: relative;
 }
 
-/* 统一的头部样式 - 参考 LiteratureListPage */
+/* 统一的头部样式 */
 .graph-header {
   background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
   padding: 40px 5%;
