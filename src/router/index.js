@@ -8,6 +8,7 @@ import LiteratureDetail from '@/views/LiteratureDetail.vue'
 import LiteratureListPage from '@/views/LiteratureListPage.vue'
 import AboutPage from '@/views/AboutPage.vue'
 import NotFound from '@/views/NotFound.vue'
+import Label from '@/views/Label.vue'
 // import AuthorsPage from '@/views/AuthorsPage.vue'
 
 const routes = [
@@ -25,7 +26,11 @@ const routes = [
     path: '/:pathMatch(.*)*',
     redirect: '/404'
   },
-
+  {
+    path: '/label',
+    name: 'label',
+    component: Label,
+  },
   {
     path: '/about',
     name: 'about',

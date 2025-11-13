@@ -15,6 +15,12 @@ const url = {
   analyzeDetail: (atask_id) => `/literature/analyze/${atask_id}`,
   analyzeList: '/literature/analyze/list',
   analyzeRecent: '/literature/analyze/recent',
+  
+  annotationList: '/literature/annotation/list',
+  annotationDetail: (id) => `/literature/annotation/${id}`,
+  annotationSave: (id) => `/literature/annotation/${id}/save`,
+  annotationDownload: '/literature/annotation/download',
+  annotationBatchCreate: '/literature/annotation/batch-create',
 }
 export default class Literature {
   static async getAnalyzeRecent() {
@@ -108,6 +114,56 @@ export default class Literature {
   static async uploadBatchPaper(formData) {
     return service.post(url.uploadBatchPaper, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  }
+
+  /**
+   * 获取所有可标注的文献列表
+   * @returns {Promise} 返回所有文献的标注状态
+   */
+  static async getAnnotationList() {
+    return service.get(url.annotationList)
+  }
+
+  /**
+   * 获取指定文献的详情和标注数据
+   * @param {number} literatureId - 文献ID
+   * @returns {Promise} 返回文献内容和标注数据
+   */
+  static async getAnnotationDetail(literatureId) {
+    return service.get(url.annotationDetail(literatureId))
+  }
+
+  /**
+   * 保存标注数据
+   * @param {number} literatureId - 文献ID
+   * @param {object} annotationData - 标注数据
+   * @returns {Promise} 返回保存结果
+   */
+  static async saveAnnotation(literatureId, annotationData) {
+    return service.post(url.annotationSave(literatureId), {
+      annotation_data: annotationData
+    })
+  }
+
+  /**
+   * 下载所有已标注的文献
+   * @returns {Promise} 返回文件下载
+   */
+  static async downloadAnnotations() {
+    return service.get(url.annotationDownload, {
+      responseType: 'blob'
+    })
+  }
+
+  /**
+   * 批量创建标注记录
+   * @param {Array<number>} literatureIds - 文献ID列表
+   * @returns {Promise} 返回创建结果
+   */
+  static async batchCreateAnnotations(literatureIds) {
+    return service.post(url.annotationBatchCreate, {
+      literature_ids: literatureIds
     })
   }
 }
