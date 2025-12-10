@@ -21,6 +21,7 @@ const url = {
   annotationSave: (id) => `/literature/annotation/${id}/save`,
   annotationDownload: '/literature/annotation/download',
   annotationBatchCreate: '/literature/annotation/batch-create',
+  annotationUpdateNeeds: (id) => `/literature/annotation/${id}/update-needs`,
 }
 export default class Literature {
   static async getAnalyzeRecent() {
@@ -164,6 +165,18 @@ export default class Literature {
   static async batchCreateAnnotations(literatureIds) {
     return service.post(url.annotationBatchCreate, {
       literature_ids: literatureIds
+    })
+  }
+
+  /**
+   * 更新文献是否需要标注的状态
+   * @param {number} literatureId - 文献ID
+   * @param {boolean} needsAnnotation - 是否需要标注
+   * @returns {Promise} 返回更新结果
+   */
+  static async updateNeedsAnnotation(literatureId, needsAnnotation) {
+    return service.post(url.annotationUpdateNeeds(literatureId), {
+      needs_annotation: needsAnnotation
     })
   }
 }

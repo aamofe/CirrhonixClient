@@ -68,6 +68,32 @@
               <span v-if="isSaving">保存中...</span>
               <span v-else>保存标注</span>
             </button>
+
+            <button 
+              v-if="currentLiteratureId && currentNeedsAnnotation"
+              @click="updateNeedsAnnotation(false)" 
+              class="skip-btn"
+              title="标记此文献为不需要标注"
+            >
+              <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+              <span>不需要标注</span>
+            </button>
+
+            <button 
+              v-if="currentLiteratureId && !currentNeedsAnnotation"
+              @click="updateNeedsAnnotation(true)" 
+              class="restore-btn"
+              title="恢复此文献为需要标注"
+            >
+              <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              <span>恢复标注</span>
+            </button>
             
             <button 
               @click="downloadAnnotations" 
@@ -104,6 +130,11 @@
               :class="['status-badge', currentIsAnnotated ? 'annotated' : 'unannotated']"
             >
               {{ currentIsAnnotated ? '已标注' : '未标注' }}
+            </span>
+            <span 
+              :class="['status-badge', currentNeedsAnnotation ? 'needs-annotation' : 'no-need']"
+            >
+              {{ currentNeedsAnnotation ? '需要标注' : '无需标注' }}
             </span>
           </div>
           <div v-if="currentLiteratureId" class="stat-item">
@@ -239,12 +270,13 @@
             <!-- Relation Type -->
             <div class="form-group">
               <label class="form-label">Relation Type *</label>
-              <input
-                v-model="currentRelation.relation_type"
-                type="text"
-                class="form-input"
-                placeholder="例如: ASSOCIATION, INHIBITION, ACTIVATION"
-              />
+              <select v-model="currentRelation.relation_type" class="form-select">
+                <option value="">请选择关系类型</option>
+                <option value="POSITIVE_CORRELATION">POSITIVE_CORRELATION</option>
+                <option value="NEGATIVE_CORRELATION">NEGATIVE_CORRELATION</option>
+                <option value="ASSOCIATION">ASSOCIATION</option>
+                <option value="INTERACTION">INTERACTION</option>
+              </select>
             </div>
 
             <!-- Evidence Sentence IDs -->
@@ -435,6 +467,7 @@ const selectedLiteratureId = ref('')
 const searchLiteratureId = ref('')
 const currentLiteratureId = ref(null)
 const currentIsAnnotated = ref(false)
+const currentNeedsAnnotation = ref(true)
 
 const fullText = ref('')
 const sentences = ref([])
@@ -566,6 +599,7 @@ const loadLiteratureDetail = async (literatureId) => {
       
       currentLiteratureId.value = data.literature_id
       currentIsAnnotated.value = data.is_annotated
+      currentNeedsAnnotation.value = data.needs_annotation !== undefined ? data.needs_annotation : true
       fullText.value = data.full_text || ''
       sentences.value = data.sentences || []
       
@@ -795,6 +829,32 @@ const cancelEdit = () => {
   }
   editingRelationIndex.value = null
 }
+
+const updateNeedsAnnotation = async (needsAnnotation) => {
+  if (!currentLiteratureId.value) {
+    ElMessage.warning('请先选择文献')
+    return
+  }
+
+  try {
+    const res = await Literature.updateNeedsAnnotation(currentLiteratureId.value, needsAnnotation)
+    
+    if (res.data && res.data.data) {
+      currentNeedsAnnotation.value = res.data.data.needs_annotation
+      await loadAnnotationList()
+      
+      if (needsAnnotation) {
+        ElMessage.success('已标记为需要标注')
+      } else {
+        ElMessage.success('已标记为不需要标注')
+      }
+    }
+  } catch (error) {
+    console.error('更新标注状态失败:', error)
+    ElMessage.error('更新失败: ' + (error.response?.data?.message || error.message))
+  }
+}
+
 const saveAnnotation = async () => {
   if (!currentLiteratureId.value) {
     ElMessage.warning('请先选择文献')
@@ -1067,6 +1127,28 @@ onMounted(() => {
   opacity: 0.6;
 }
 
+.skip-btn {
+  background: #f59e0b;
+  color: white;
+}
+
+.skip-btn:hover {
+  background: #d97706;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transform: translateY(-2px);
+}
+
+.restore-btn {
+  background: #8b5cf6;
+  color: white;
+}
+
+.restore-btn:hover {
+  background: #7c3aed;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  transform: translateY(-2px);
+}
+
 .icon {
   flex-shrink: 0;
 }
@@ -1130,6 +1212,16 @@ onMounted(() => {
 .status-badge.unannotated {
   background: #fef3c7;
   color: #92400e;
+}
+
+.status-badge.needs-annotation {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.no-need {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .main-content {

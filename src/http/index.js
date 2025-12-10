@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const service = axios.create({
   baseURL: '/api',
-  timeout: 15000, // 重要：改掉 timeout: 0
+  timeout: 60000, // 重要：改掉 timeout: 0
   withCredentials: true,
 })
 

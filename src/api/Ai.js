@@ -6,6 +6,7 @@ const url = {
   translate: '/ai/translate',
   recommend: (id) => `/ai/recommendations/${id}`,
   feedback: (id) => `/ai/feedback/${id}`,
+  ask:'/rag/ask/'
 }
 
 export default class AI {
@@ -98,4 +99,18 @@ export default class AI {
   static async semanticSearch(data) {
     return service.post(url.semanticSearch, data)
   }
+
+
+  /*
+  question:"xxx?"
+  options:{
+    "max_entities": 10,
+    "max_edges": 50,
+    "top_k": 5
+  }
+  */
+  static async ask(data){
+      return service.post(url.ask, data)
+  }
 }
+
