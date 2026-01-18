@@ -49,16 +49,22 @@ export default class KnowledgeGraph {
         return service.get(url.statistics, { params })
     }
     static async createRelation(relationData) {
-        return service.post(url.createRelation, {
+        const payload = {
             source_id: relationData.source_id,
             target_id: relationData.target_id,
-            factor_name: relationData.factor_name,
-            factor_type: relationData.factor_type,
-            factor_abbreviation: relationData.factor_abbreviation,
-            effect: relationData.effect,
-            literature_name: relationData.literature_name || relationData.literature,
-            description: relationData.description,
-        })
+            relation_type: relationData.relation_type ,
+            description: relationData.description || '',
+            source_mentions: relationData.source_mentions || [],
+            target_mentions: relationData.target_mentions || [],
+        }
+        
+        if (relationData.literature_id) {
+            payload.literature_id = relationData.literature_id
+        } else if (relationData.literature && typeof relationData.literature === 'object' && relationData.literature.id) {
+            payload.literature_id = relationData.literature.id
+        }
+        
+        return service.post(url.createRelation, payload)
     }
     static async deleteRelation(relationId) {
         return service.delete(url.deleteRelation, {
@@ -68,19 +74,29 @@ export default class KnowledgeGraph {
         })
     }
     static async updateRelation(updateData) {
-        return service.put(url.updateRelation, {
+        const payload = {
             relation_id: updateData.relation_id,
-            source_id: updateData.source_id,
-            target_id: updateData.target_id,
-            factor_name: updateData.factor_name,
-            factor_type: updateData.factor_type,
-            factor_abbreviation: updateData.factor_abbreviation,
-            effect: updateData.effect,
-            literature_name: updateData.literature_name || updateData.literature,
-            description: updateData.description,
+            relation_type: updateData.relation_type ,
+            description: updateData.description || undefined,
+            source_mentions: updateData.source_mentions || undefined,
+            target_mentions: updateData.target_mentions || undefined,
+        }
+        
+        if (updateData.literature_id) {
+            payload.literature_id = updateData.literature_id
+        } else if (updateData.literature && typeof updateData.literature === 'object' && updateData.literature.id) {
+            payload.literature_id = updateData.literature.id
+        }
+        
+        // 移除 undefined 字段
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined) {
+                delete payload[key]
+            }
         })
+        
+        return service.put(url.updateRelation, payload)
     }
-    // 管理员获取待审核列表
     static async getPendingReviews() {
         return service.get(url.getPendingReviews)
     }
@@ -106,19 +122,31 @@ export default class KnowledgeGraph {
             review_id: reviewId,
         })
     }
-    // 用户修改审核记录 { review_id, ...updateData }
     static async updateReview(updateData) {
-        return service.put(url.updateReview, {
+        // 新后端字段：review_id, relation_type, source_mentions, target_mentions, description, literature_id
+        const payload = {
             review_id: updateData.review_id,
-            source_id: updateData.source_id,
-            target_id: updateData.target_id,
-            factor_name: updateData.factor_name,
-            factor_type: updateData.factor_type,
-            factor_abbreviation: updateData.factor_abbreviation,
-            effect: updateData.effect,
-            literature_name: updateData.literature_name || updateData.literature,
-            description: updateData.description,
+            relation_type: updateData.relation_type || updateData.effect || undefined,
+            description: updateData.description || undefined,
+            source_mentions: updateData.source_mentions || undefined,
+            target_mentions: updateData.target_mentions || undefined,
+        }
+        
+        // 如果有 literature_id，使用它；否则尝试从 literature_name 或 literature 对象获取
+        if (updateData.literature_id) {
+            payload.literature_id = updateData.literature_id
+        } else if (updateData.literature && typeof updateData.literature === 'object' && updateData.literature.id) {
+            payload.literature_id = updateData.literature.id
+        }
+        
+        // 移除 undefined 字段
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined) {
+                delete payload[key]
+            }
         })
+        
+        return service.put(url.updateReview, payload)
     }
     static async getRelationHistory() {
         return service.get(url.getRelationHistory)
@@ -145,7 +173,7 @@ export default class KnowledgeGraph {
     }
 
     /**
-     * 边详情 - 获取指定边的所有 factors
+     * 边详情 - 获取指定边的所有关系
      * @param {number} sourceId - 源节点ID
      * @param {number} targetId - 目标节点ID
      * @returns {Promise} { source_entity: {}, target_entity: {}, factors: [] }

@@ -53,7 +53,7 @@
                 <el-tag v-for="entity in taskData.entities.slice(0, 20)" :key="entity.id" class="entity-tag"
                   :type="getEntityTagType(entity.entity_type)" size="small">
 
-                  {{ entity.name }}
+                  {{ entity.canonical_name || entity.name }}
                   <span class="entity-type">{{ entity.entity_type_display }}</span>
                 </el-tag>
                 <el-tag v-if="taskData.entities.length > 20" type="info" size="small">
@@ -248,13 +248,14 @@ export default {
 
     const getEntityNameFromRelation = (relation, type) => {
       const entity = type === 'source' ? relation.source_entity : relation.target_entity
+      if (entity?.canonical_name) return entity.canonical_name
       if (entity?.name) return entity.name
 
 
       if (taskData.value?.entities) {
         const entityId = type === 'source' ? relation.source_entity_id : relation.target_entity_id
         const foundEntity = taskData.value.entities.find(e => e.id === entityId)
-        if (foundEntity) return foundEntity.name
+        if (foundEntity) return foundEntity.canonical_name || foundEntity.name
       }
 
       return type === 'source' ? '源实体' : '目标实体'
