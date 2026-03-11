@@ -1,822 +1,703 @@
 <template>
-  <div class="ai-assistant-container" :class="{ 'is-expanded': isExpanded }">
-    <!-- 收起状态的浮动按钮 -->
-    <div v-if="!isExpanded" class="ai-assistant-button" @click="toggleAssistant">
-      <div class="assistant-avatar">
-        <img src="@/assets/assistant-avatar.png" alt="AI助手" />
+  <!--
+    AiAssistant.vue
+
+    两种使用模式：
+    1. 浮层模式（默认）:  <AiAssistant />
+       右下角固定定位浮动按钮，点击展开聊天面板。
+
+    2. 嵌入模式:          <AiAssistant :embedded="true" />
+       直接渲染聊天面板，填满父容器，不显示浮动按钮，不占用 fixed 定位。
+       父容器需提供明确的高度（如 flex:1 + min-height:0）。
+
+    外部控制：
+       通过 ref 调用 fill(question) 可向输入框填入文字。
+  -->
+  <div :class="embedded ? 'aia-embedded' : 'aia-float'">
+
+    <!-- ══ 浮层模式：收起态胶囊 ══ -->
+    <transition name="fab-pop">
+      <div
+        v-if="!embedded && !panelOpen"
+        class="aia-fab"
+        @click="panelOpen = true"
+      >
+        <svg class="aia-fab-icon" viewBox="0 0 24 24" fill="none">
+          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="currentColor"/>
+        </svg>
+        <span>AI 问答</span>
+        <span v-if="badge > 0" class="aia-badge">{{ badge }}</span>
       </div>
-      <span class="assistant-hint">有问题? 点击咨询</span>
-    </div>
+    </transition>
 
-    <!-- 展开的聊天界面 -->
-    <div v-else class="ai-assistant-panel">
-      <!-- 聊天头部 -->
-      <div class="assistant-header">
-        <div class="assistant-info">
-          <img src="@/assets/assistant-avatar.png" alt="AI助手" class="assistant-avatar-sm" />
-          <div class="assistant-title">
-            <h3>智能助手</h3>
-            <span class="assistant-status">在线</span>
-          </div>
-        </div>
-        <button class="close-button" @click="toggleAssistant">
-          <span>&times;</span>
-        </button>
-      </div>
+    <!-- ══ 聊天面板 ══ -->
+    <!--
+      浮层模式：transition 动画 + 条件渲染
+      嵌入模式：始终渲染，撑满父容器
+    -->
+    <transition :name="embedded ? '' : 'panel-rise'">
+      <div
+        v-if="embedded || panelOpen"
+        :class="['aia-panel', embedded ? 'aia-panel-embedded' : 'aia-panel-float']"
+      >
 
-      <!-- 聊天消息区域 -->
-      <div class="assistant-messages" ref="messagesContainer">
-        <!-- 欢迎消息 -->
-        <div v-if="messages.length === 0" class="message-welcome">
-          <h4>您好！我是LiverScholar的AI助手</h4>
-          <p>我可以帮您:</p>
-          <ul class="welcome-message">
-            <li>解答有关肝硬化的问题</li>
-            <li>总结和分析文献内容</li>
-            <li>提供相关文献推荐</li>
-            <li>翻译医学文本</li>
-          </ul>
-          <p>请输入您的问题，我会尽力协助您！</p>
-        </div>
-
-        <!-- 聊天消息 -->
-        <div v-for="(message, index) in messages" :key="index" class="message-item" :class="{
-          'message-user': message.isUser,
-          'message-ai': !message.isUser,
-        }">
-          <div class="message-content">
-            <!-- 使用MarkdownDisplayer组件显示AI的消息 -->
-            <MarkdownDisplayer v-if="!message.isUser" :content="message.content" />
-            <!-- 用户的消息仍然使用普通格式 -->
-            <p v-else>{{ message.content }}</p>
-          </div>
-          <div class="message-time">
-            <span class="date">{{ message.created_at }}</span>
-          </div>
-        </div>
-
-        <!-- 加载中指示器 -->
-        <div v-if="isLoading" class="message-item message-ai">
-          <div class="message-loading">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 功能上拉框 -->
-      <div class="assistant-features" v-if="literatureId">
-        <div class="feature-panel" :class="{ 'is-expanded': isFeaturePanelOpen }">
-          <div class="feature-items">
-            <div class="feature-item" @click="handleTranslate">
-              <span class="feature-icon">🔠</span>
-              <span class="feature-name">翻译</span>
-            </div>
-            <div class="feature-item" @click="handleSummarize">
-              <span class="feature-icon">📝</span>
-              <span class="feature-name">总结</span>
-            </div>
-            <div class="feature-item" @click="handleRecommend">
-              <span class="feature-icon">📚</span>
-              <span class="feature-name">推荐</span>
+        <!-- 头部 -->
+        <div class="aia-header">
+          <div class="aia-header-left">
+            <span class="aia-dot" :class="svcStatus" />
+            <div>
+              <div class="aia-title">知识图谱助手</div>
+              <div class="aia-sub">{{ svcLabel }}</div>
             </div>
           </div>
+          <div class="aia-header-right">
+            <button class="aia-icon-btn" title="清除记录" @click="doClear">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+            </button>
+            <!-- 浮层模式才显示收起按钮 -->
+            <button v-if="!embedded" class="aia-icon-btn" title="收起" @click="panelOpen = false">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="feature-toggle" @click="toggleFeaturePanel" :class="{ 'is-expanded': isFeaturePanelOpen }">
-          <span class="toggle-icon">{{ isFeaturePanelOpen ? "▼" : "▲" }}</span>
-          <span>文献工具</span>
-        </div>
-      </div>
 
-      <!-- 输入区域 -->
-      <div class="assistant-input">
-        <textarea v-model="userInput" placeholder="输入您的问题..." @keydown.enter.prevent="sendMessage" rows="1"
-          ref="inputArea"></textarea>
-        <button :disabled="!userInput.trim() || isLoading" @click="sendMessage" class="send-button">
-          发送
-        </button>
+        <!-- 消息列表 -->
+        <div class="aia-messages" ref="msgBox">
+
+          <!-- 欢迎屏 -->
+          <div v-if="msgs.length === 0" class="aia-welcome">
+            <div class="aia-welcome-icon">🔬</div>
+            <h4>肝硬化知识助手</h4>
+            <p>基于知识图谱与医学文献，解答肝硬化相关问题</p>
+            <div class="aia-chips">
+              <span
+                v-for="(q, i) in presets"
+                :key="i"
+                class="aia-chip"
+                @click="fill(q)"
+              >{{ q }}</span>
+            </div>
+          </div>
+
+          <!-- 消息 -->
+          <template v-for="(m, idx) in msgs" :key="idx">
+
+            <!-- 用户气泡 -->
+            <div v-if="m.isUser" class="aia-row aia-row-user">
+              <div class="aia-bubble aia-bubble-user">{{ m.text }}</div>
+              <span class="aia-time">{{ m.time }}</span>
+            </div>
+
+            <!-- AI 气泡 -->
+            <div v-else class="aia-row aia-row-ai">
+              <div class="aia-avatar">AI</div>
+              <div class="aia-ai-body">
+                <div class="aia-bubble aia-bubble-ai">
+                  <span v-html="renderMd(m.text)" />
+                  <span v-if="streaming && idx === msgs.length - 1" class="aia-cursor">▋</span>
+                </div>
+
+                <!-- 元信息：只显示识别到的实体标签，不显示置信度 -->
+                <div v-if="m.meta && (m.meta.entities_found || []).length > 0" class="aia-meta">
+                  <span
+                    v-for="(e, ei) in (m.meta.entities_found || []).slice(0, 4)"
+                    :key="ei"
+                    class="aia-tag aia-tag-ent"
+                  >{{ e }}</span>
+                </div>
+
+                <!-- 引用文献 -->
+                <div v-if="m.citations && m.citations.length" class="aia-cits">
+                  <div class="aia-cits-hd">📚 参考文献</div>
+                  <div v-for="(c, ci) in m.citations" :key="ci" class="aia-cit-row">
+                    <span class="aia-cit-num">{{ ci + 1 }}</span>
+                    <span class="aia-cit-text">{{ c.claim || c.content_snippet || '' }}</span>
+                  </div>
+                </div>
+
+                <span class="aia-time">{{ m.time }}</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- 非流式 loading -->
+          <div v-if="loading && !streaming" class="aia-row aia-row-ai">
+            <div class="aia-avatar">AI</div>
+            <div class="aia-bubble aia-bubble-ai aia-dots">
+              <span /><span /><span />
+            </div>
+          </div>
+
+          <!-- 流式检索阶段提示 -->
+          <div v-if="statusHint" class="aia-hint">
+            <span class="aia-spinner" />{{ statusHint }}
+          </div>
+        </div>
+
+        <!-- 模式切换 -->
+        <div class="aia-mode-bar">
+          <button :class="['aia-mode-btn', { active: useStream }]" @click="useStream = true">⚡ 流式</button>
+          <button :class="['aia-mode-btn', { active: !useStream }]" @click="useStream = false">📄 普通</button>
+        </div>
+
+        <!-- 输入区 -->
+        <div class="aia-input-bar">
+          <textarea
+            v-model="input"
+            ref="ta"
+            rows="2"
+            placeholder="输入问题，Enter 发送，Shift+Enter 换行"
+            :disabled="loading"
+            @keydown="onKey"
+          />
+          <button
+            class="aia-send-btn"
+            :disabled="!input.trim() && !loading"
+            :title="loading ? '点击中止' : '发送'"
+            @click="loading ? abort() : send()"
+          >
+            <svg v-if="!loading" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 6h12v12H6z"/>
+            </svg>
+          </button>
+        </div>
+
       </div>
-    </div>
+    </transition>
+
   </div>
 </template>
 
 <script>
-import AI from "@/api/Ai"
-import MarkdownDisplayer from "@/components/ai/MarkdownDisplayer.vue"
+import AI from '@/api/Ai'
 
-const STORAGE_KEY = "aiAssistantMessages"
-const CONTEXT_KEY = "aiAssistantContext"
+const HIST_KEY = 'aia_msgs_v2'
+
+/* ── 极简 Markdown 渲染 ── */
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+/**
+ * 从原始文本中提取显示内容。
+ *
+ * 流式模式下 LLM 输出的是 JSON 字符串，例如：
+ *   {"answer":"你好！我是...","citations":[],"confidence":0.8,"needs_more_context":false}
+ * 需要解析出 answer 字段，避免把整个 JSON 显示给用户。
+ *
+ * 处理策略：
+ *  1. 尝试解析完整 JSON → 取 answer 字段
+ *  2. 检测到以 { 开头（流式未完成，JSON 还没闭合）→ 提取 "answer" 后面的内容
+ *  3. 纯文本 → 直接渲染 Markdown
+ */
+function extractDisplayText(raw) {
+  if (!raw) return ''
+
+  const trimmed = raw.trim()
+
+  // ── 策略1：尝试解析完整 JSON ──
+  if (trimmed.startsWith('{')) {
+    try {
+      const obj = JSON.parse(trimmed)
+      if (obj && typeof obj.answer === 'string') {
+        return obj.answer
+      }
+    } catch (_) {
+      // JSON 还没完整（流式中途），走策略2
+    }
+
+    // ── 策略2：流式中途，JSON 不完整，提取 "answer": "..." 的内容 ──
+    // 匹配 "answer" 后面双引号内的内容（允许不完整）
+    const m = trimmed.match(/"answer"\s*:\s*"((?:[^"\\]|\\.)*)/)
+    if (m) {
+      // 反转义 JSON 字符串中的转义序列
+      try {
+        return JSON.parse(`"${m[1]}"`)
+      } catch (_) {
+        return m[1]
+      }
+    }
+
+    // 如果连 answer 字段都没出现，说明还在输出 JSON 开头的 key，暂时显示空
+    return ''
+  }
+
+  // ── 策略3：纯文本，直接返回 ──
+  return trimmed
+}
+
+function renderMd(raw) {
+  if (!raw) return ''
+  let s = extractDisplayText(raw)
+  if (!s) return ''
+  s = s.replace(/```[\s\S]*?```/g, m => {
+    const code = esc(m.slice(3, -3).replace(/^[a-z]*\n/, ''))
+    return `<pre><code>${code}</code></pre>`
+  })
+  s = s.replace(/`([^`]+)`/g, (_, c) => `<code>${esc(c)}</code>`)
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  s = s.replace(/\*([^*]+)\*/g,     '<em>$1</em>')
+  s = s.replace(/\[Lit\s*(\d+)\]/g, '<span class="aia-litref">[Lit $1]</span>')
+  s = s.replace(/\n/g, '<br>')
+  return s
+}
+
+function nowHM() {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+}
 
 export default {
-  name: "AiAssistant",
-  components: {
-    MarkdownDisplayer,
-  },
+  name: 'AiAssistant',
+
   props: {
-    literatureId: {
-      type: [Number, String],
-      default: null,
+    /**
+     * embedded=true  → 面板填满父容器，无浮动按钮，无收起功能
+     * embedded=false → 右下角浮动胶囊，点击展开/收起
+     */
+    embedded: {
+      type: Boolean,
+      default: false,
     },
   },
+
   data() {
     return {
-      isExpanded: false,
-      messages: [],
-      userInput: "",
-      isLoading: false,
-      currentContext: [],
-      isFeaturePanelOpen: false,
+      panelOpen:  false,   // 浮层模式专用，嵌入模式忽略
+      msgs:       [],
+      input:      '',
+      loading:    false,
+      streaming:  false,
+      statusHint: '',
+      useStream:  true,
+      badge:      0,
+      svcStatus:  'ok',
+      abortCtrl:  null,
+
+      presets: [
+        'HBV 是如何导致肝硬化的？',
+        '肝纤维化的分子机制是什么？',
+        '肝硬化与哪些病原体相关？',
+        '门静脉高压的并发症有哪些？',
+      ],
+
+      renderMd,
     }
   },
-  created() {
-    this.loadChatHistory()
+
+  computed: {
+    svcLabel() {
+      return { ok: '服务正常', degraded: '服务降级', error: '服务异常' }[this.svcStatus]
+    },
   },
+
+  created()  { this._loadHist() },
+  mounted()  { this._checkHealth() },
+
   methods: {
-    toggleAssistant() {
-      this.isExpanded = !this.isExpanded
-      if (this.isExpanded) {
-        this.$nextTick(() => {
-          this.$refs.inputArea.focus()
-          this.scrollToBottom()
-        })
-      }
+
+    /**
+     * 对外暴露：填入问题文字（GraphSidebar 通过 ref 调用）
+     * @param {string} question
+     */
+    fill(question) {
+      this.input = question
+      this.$nextTick(() => this.$refs.ta?.focus())
     },
 
-    toggleFeaturePanel() {
-      this.isFeaturePanelOpen = !this.isFeaturePanelOpen
+    onKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.send() }
     },
 
-    async sendMessage(e) {
-      if (e.shiftKey && e.key === "Enter") return
+    async send() {
+      const q = this.input.trim()
+      if (!q || this.loading) return
+      this._pushUser(q)
+      this.input   = ''
+      this.loading = true
+      this.useStream ? await this._sendStream(q) : await this._sendNormal(q)
+    },
 
-      const message = this.userInput.trim()
-      if (!message || this.isLoading) return
+    abort() {
+      this.abortCtrl?.abort()
+      this.streaming  = false
+      this.loading    = false
+      this.statusHint = ''
+    },
 
-
-      this.addMessage(message, true)
-      this.userInput = ""
-      this.isLoading = true
-
+    async _sendNormal(q) {
       try {
-        const response = await AI.query({
-          query: message,
-          context_literature_ids: this.currentContext,
-          system_message: `您是LiverScholar肝硬化文献智能检索系统的AI助手，请基于专业医学知识解答用户的问题。`,
-          temperature: 0.7,
-        })
-
-        if (response.data && response.data.data.response) {
-          this.addMessage(response.data.data.response, false)
-          if (response.data.related_literature_ids) {
-            this.currentContext = response.data.related_literature_ids
-
-            this.saveChatContext()
-          }
-        }
-      } catch (error) {
-        this.$message.error(error?.response?.data?.message)
-        this.addMessage("抱歉，我暂时无法回答您的问题。请稍后再试。", false)
-      } finally {
-        this.isLoading = false
-
-        this.$nextTick(() => {
-          this.scrollToBottom()
-        })
-      }
-    },
-
-    async handleTranslate() {
-      if (this.isLoading) return
-      this.isLoading = true
-
-      try {
-        this.addMessage("请帮我翻译当前文献", true)
-
-
-        const response = await AI.translate({
-          literature_id: this.literatureId,
-          source_language: "en",
-          target_language: "zh-cn",
-        })
-
-
-        const translationData = response.data
-        let translatedText = null
-
-
-        if (translationData.data && translationData.data.translated_text) {
-          translatedText = translationData.data.translated_text
-        } else if (translationData.translated_text) {
-          translatedText = translationData.translated_text
-        } else if (translationData.translation) {
-          translatedText = translationData.translation
-        } else if (typeof translationData === "string") {
-          translatedText = translationData
-        }
-
-        if (translatedText) {
-          this.addMessage(translatedText, false)
-        } else {
-          ;
-          this.addMessage(
-            "抱歉，翻译数据解析失败。收到的响应格式可能有问题。",
-            false
-          )
-        }
-      } catch (error) {
-        ;
-        this.$message.error(error?.response?.data?.message || "翻译失败")
-        this.addMessage("抱歉，翻译请求失败。请稍后再试。", false)
-      } finally {
-        this.isLoading = false
-        this.$nextTick(() => {
-          this.scrollToBottom()
-        })
-      }
-
-
-      this.isFeaturePanelOpen = false
-    },
-
-    async handleSummarize() {
-      if (this.isLoading) return
-      this.isLoading = true
-
-      try {
-        this.addMessage("请帮我总结当前文献", true)
-
-
-        const response = await AI.summarize(this.literatureId, {
-          language: "zh-cn",
-          max_length: 300,
-        })
-
-
-        const summaryData = response.data
-        let summary = null
-
-
-        if (summaryData.data && summaryData.data.summary_text) {
-          summary = summaryData.data.summary_text
-        } else if (summaryData.data && summaryData.data.summary) {
-          summary = summaryData.data.summary
-        } else if (summaryData.summary_text) {
-          summary = summaryData.summary_text
-        } else if (summaryData.summary) {
-          summary = summaryData.summary
-        }
-
-        if (summary) {
-          this.addMessage(summary, false)
-        } else {
-          ;
-          this.addMessage(
-            "抱歉，摘要数据解析失败。收到的响应格式可能有问题。",
-            false
-          )
-        }
-      } catch (error) {
-        ;
-        this.$message.error(error?.response?.data?.message || "总结失败")
-        this.addMessage("抱歉，总结请求失败。请稍后再试。", false)
-      } finally {
-        this.isLoading = false
-        this.$nextTick(() => {
-          this.scrollToBottom()
-        })
-      }
-
-
-      this.isFeaturePanelOpen = false
-    },
-
-    async handleRecommend() {
-      if (this.isLoading) return
-      this.isLoading = true
-
-      try {
-        this.addMessage("请为我推荐与当前文献相关的论文", true)
-
-
-        const response = await AI.recommend(this.literatureId, {
-          count: 5,
-        })
-
-
-        const recommendData = response.data
-        let recommendations = null
-
-
-        if (recommendData.data && recommendData.data.recommendations) {
-          recommendations = recommendData.data.recommendations
-        } else if (recommendData.recommendations) {
-          recommendations = recommendData.recommendations
-        } else if (recommendData.data && Array.isArray(recommendData.data)) {
-          recommendations = recommendData.data
-        } else if (Array.isArray(recommendData)) {
-          recommendations = recommendData
-        }
-
-        if (recommendations && recommendations.length > 0) {
-
-          let message = "### 推荐文献\n\n"
-
-          recommendations.forEach((item, index) => {
-            message += `${index + 1}. **${item.title || "无标题"}**\n`
-
-            if (item.authors) {
-              message += `   作者: ${item.authors}\n`
-            }
-
-            if (item.journal || item.year) {
-              message += `   期刊: ${item.journal || "未知"}, ${item.year || "未知年份"
-                }\n`
-            }
-
-            if (item.relevance_score !== undefined) {
-              message += `   相关度: ${Number(item.relevance_score).toFixed(
-                2
-              )}\n`
-            }
-
-            message += "\n"
-          })
-
-          this.addMessage(message, false)
-        } else {
-          ;
-          this.addMessage("抱歉，未找到相关文献推荐或数据格式有问题。", false)
-        }
-      } catch (error) {
-        ;
-        this.$message.error(error?.response?.data?.message || "推荐失败")
-        this.addMessage("抱歉，文献推荐请求失败。请稍后再试。", false)
-      } finally {
-        this.isLoading = false
-        this.$nextTick(() => {
-          this.scrollToBottom()
-        })
-      }
-
-
-      this.isFeaturePanelOpen = false
-    },
-
-    addMessage(content, isUser) {
-      const now = new Date()
-      // 格式化为与后端一致的时间格式 "YYYY-MM-DD HH:MM:SS"
-      const created_at = now.getFullYear() + '-' +
-        String(now.getMonth() + 1).padStart(2, '0') + '-' +
-        String(now.getDate()).padStart(2, '0') + ' ' +
-        String(now.getHours()).padStart(2, '0') + ':' +
-        String(now.getMinutes()).padStart(2, '0') + ':' +
-        String(now.getSeconds()).padStart(2, '0')
-
-      this.messages.push({
-        content,
-        isUser,
-        created_at, // 与后端格式一致
-        // 可以保留 timestamp 用于其他用途，但模板只使用 created_at
-      })
-
-      this.saveChatHistory()
-
-      if (isUser) {
-        this.$nextTick(() => {
-          this.scrollToBottom()
-        })
-      }
-    },
-
-    scrollToBottom() {
-      const container = this.$refs.messagesContainer
-      if (container) {
-        container.scrollTop = container.scrollHeight
-      }
-    },
-
-
-
-    saveChatHistory() {
-      try {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.messages))
-      } catch (error) {
-        ;
-      }
-    },
-
-
-    saveChatContext() {
-      try {
-        sessionStorage.setItem(
-          CONTEXT_KEY,
-          JSON.stringify(this.currentContext)
+        const res = await AI.ask({ question: q, options: {} })
+        const d   = res?.data?.data ?? {}
+        this._pushAi(
+          d.answer || '暂无回答',
+          d.citations ?? [],
+          { confidence: d.confidence, entities_found: d.entities_found,
+            intent: d.intent, question_type: d.question_type },
         )
-      } catch (error) {
-        ;
+      } catch {
+        this._pushAi('请求失败，请稍后重试。', [], null)
+      } finally {
+        this.loading = false
+        this._scrollBottom()
       }
     },
 
+    async _sendStream(q) {
+      const idx = this._pushAi('', [], null)
+      this.streaming  = true
+      this.statusHint = ''
 
-    loadChatHistory() {
+      this.abortCtrl = AI.askStream(
+        { question: q, options: {} },
+        {
+          onStatus: msg => { this.statusHint = msg },
+
+          onToken: tok => {
+            this.statusHint      = ''
+            this.msgs[idx].text += tok
+            this._scrollBottom()
+          },
+
+          onDone: meta => {
+            this.statusHint          = ''
+            this.streaming           = false
+            this.loading             = false
+            this.msgs[idx].citations = meta.citations ?? []
+            this.msgs[idx].meta      = {
+              confidence:     meta.confidence,
+              entities_found: meta.entities_found,
+              intent:         meta.intent,
+              question_type:  meta.question_type,
+            }
+            this._saveHist()
+            this._scrollBottom()
+            if (!this.embedded && !this.panelOpen) this.badge++
+          },
+
+          onError: err => {
+            this.statusHint = ''
+            this.streaming  = false
+            this.loading    = false
+            if (!this.msgs[idx].text) this.msgs[idx].text = `⚠️ ${err}`
+            this._scrollBottom()
+          },
+        },
+      )
+    },
+
+    async doClear() {
+      if (!confirm('确认清除所有对话记录？')) return
+      try { await AI.clearHistory() } catch (_) {}
+      this.msgs = []
+      sessionStorage.removeItem(HIST_KEY)
+    },
+
+    async _checkHealth() {
       try {
-        const savedMessages = sessionStorage.getItem(STORAGE_KEY)
-        if (savedMessages) {
-          this.messages = JSON.parse(savedMessages)
-        }
+        const r = await AI.health()
+        this.svcStatus = r?.data?.data?.graph_ready ? 'ok' : 'degraded'
+      } catch { this.svcStatus = 'error' }
+    },
 
-        const savedContext = sessionStorage.getItem(CONTEXT_KEY)
-        if (savedContext) {
-          this.currentContext = JSON.parse(savedContext)
-        }
-      } catch (error) {
-        ;
-      }
+    _pushUser(text) {
+      this.msgs.push({ isUser: true, text, time: nowHM() })
+      this._saveHist()
+      this._scrollBottom()
+    },
+
+    _pushAi(text, citations, meta) {
+      const i = this.msgs.length
+      this.msgs.push({ isUser: false, text, citations, meta, time: nowHM() })
+      this._saveHist()
+      return i
+    },
+
+    _scrollBottom() {
+      this.$nextTick(() => {
+        const el = this.$refs.msgBox
+        if (el) el.scrollTop = el.scrollHeight
+      })
+    },
+
+    _saveHist() {
+      try { sessionStorage.setItem(HIST_KEY, JSON.stringify(this.msgs.slice(-40))) }
+      catch (_) {}
+    },
+
+    _loadHist() {
+      try {
+        const raw = sessionStorage.getItem(HIST_KEY)
+        if (raw) this.msgs = JSON.parse(raw)
+      } catch (_) {}
     },
   },
 }
 </script>
 
 <style scoped>
-.ai-assistant-container {
+/* ══ 浮层模式容器 ══ */
+.aia-float {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  z-index: 1000;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Arial, sans-serif;
+  bottom: 28px;
+  right: 28px;
+  z-index: 1200;
+  font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
-/* 收起状态的按钮样式 */
-.ai-assistant-button {
+/* ══ 嵌入模式容器：撑满父容器 ══ */
+.aia-embedded {
   display: flex;
-  align-items: center;
-  background-color: #1a91c1;
-  color: white;
-  border-radius: 24px;
-  padding: 12px 20px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-}
-
-.ai-assistant-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-}
-
-.assistant-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  margin-right: 10px;
-  overflow: hidden;
-}
-
-.assistant-avatar img {
-  width: 100%;
+  flex-direction: column;
   height: 100%;
-  object-fit: cover;
+  font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
-.assistant-avatar-sm {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+/* ── FAB ── */
+.fab-pop-enter-active, .fab-pop-leave-active { transition: all .2s ease; }
+.fab-pop-enter-from, .fab-pop-leave-to       { opacity: 0; transform: scale(.85); }
+
+.aia-fab {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 20px 11px 14px;
+  background: #1a91c1; color: #fff;
+  border-radius: 50px; cursor: pointer;
+  box-shadow: 0 4px 18px rgba(26,145,193,.38);
+  transition: transform .2s, box-shadow .2s;
+  user-select: none; font-weight: 600; font-size: 14px;
+}
+.aia-fab:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(26,145,193,.48); }
+.aia-fab-icon  { width: 20px; height: 20px; flex-shrink: 0; }
+.aia-badge {
+  position: absolute; top: -4px; right: -4px;
+  background: #e53e3e; color: #fff;
+  border-radius: 999px; font-size: 11px; font-weight: 700;
+  padding: 2px 5px; min-width: 18px; text-align: center;
 }
 
-.assistant-hint {
-  font-size: 14px;
-  font-weight: 500;
+/* ── 面板动画（浮层模式）── */
+.panel-rise-enter-active, .panel-rise-leave-active { transition: all .26s cubic-bezier(.4,0,.2,1); }
+.panel-rise-enter-from, .panel-rise-leave-to       { opacity: 0; transform: translateY(14px) scale(.97); }
+
+/* ── 面板基础 ── */
+.aia-panel {
+  display: flex; flex-direction: column;
+  background: #fff; overflow: hidden;
+  border: 1px solid #e2e8f0;
 }
 
-/* 展开后的面板样式 */
-.ai-assistant-panel {
-  display: flex;
-  flex-direction: column;
-  width: 360px;
-  height: 500px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
+/* 浮层面板：固定尺寸 */
+.aia-panel-float {
+  width: 380px; height: 570px;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.17);
 }
 
-.assistant-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background-color: #1a91c1;
-  color: white;
+/* 嵌入面板：填满父容器 */
+.aia-panel-embedded {
+  width: 100%; height: 100%;
+  border-radius: 10px;
+  box-shadow: none;
 }
 
-.assistant-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* ── 头部 ── */
+.aia-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px;
+  background: #1a91c1; color: #fff; flex-shrink: 0;
 }
+.aia-header-left  { display: flex; align-items: center; gap: 10px; }
+.aia-header-right { display: flex; gap: 4px; }
 
-.assistant-title {
-  display: flex;
-  flex-direction: column;
+.aia-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.aia-dot.ok       { background: #68d391; box-shadow: 0 0 0 3px rgba(104,211,145,.3); }
+.aia-dot.degraded { background: #f6ad55; box-shadow: 0 0 0 3px rgba(246,173,85,.3);  }
+.aia-dot.error    { background: #fc8181; box-shadow: 0 0 0 3px rgba(252,129,129,.3); }
+
+.aia-title { font-size: 14px; font-weight: 700; line-height: 1.2; }
+.aia-sub   { font-size: 11px; opacity: .75; margin-top: 1px; }
+
+.aia-icon-btn {
+  width: 27px; height: 27px;
+  background: rgba(255,255,255,.18);
+  border: none; border-radius: 6px; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .15s;
 }
+.aia-icon-btn svg { width: 14px; height: 14px; }
+.aia-icon-btn:hover { background: rgba(255,255,255,.3); }
 
-.assistant-title h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.assistant-status {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.close-button {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  transition: background-color 0.3s;
-}
-
-.close-button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* 功能上拉框 */
-.assistant-features {
-  border-top: 1px solid #dee2e6;
-  background-color: #f8f9fa;
-}
-
-.feature-toggle {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #495057;
-  background-color: #e9ecef;
-  transition: background-color 0.2s;
-}
-
-.feature-toggle:hover {
-  background-color: #dee2e6;
-}
-
-.feature-toggle .toggle-icon {
-  margin-right: 8px;
-  transition: transform 0.3s;
-}
-
-.feature-toggle.is-expanded .toggle-icon {
-  transform: rotate(180deg);
-}
-
-.feature-panel {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.feature-panel.is-expanded {
-  max-height: 120px;
-}
-
-.feature-items {
-  display: flex;
-  padding: 12px;
-  justify-content: space-around;
-}
-
-.feature-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-}
-
-.feature-item:hover {
-  background-color: #dee2e6;
-}
-
-.feature-icon {
-  font-size: 20px;
-  margin-bottom: 4px;
-}
-
-.feature-name {
-  font-size: 12px;
-  color: #495057;
-}
-
-/* 消息区域 */
-.assistant-messages {
-  flex: 1;
-  padding: 16px;
+/* ── 消息区 ── */
+.aia-messages {
+  flex: 1; min-height: 0;
   overflow-y: auto;
-  background-color: #f8f9fa;
+  padding: 12px 11px;
+  background: #f7f9fb;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.aia-messages::-webkit-scrollbar { width: 4px; }
+.aia-messages::-webkit-scrollbar-thumb { background: #c9d5e0; border-radius: 4px; }
+
+/* 欢迎屏 */
+.aia-welcome {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 20px 12px; gap: 7px; color: #4a5568;
+}
+.aia-welcome-icon { font-size: 34px; }
+.aia-welcome h4   { margin: 0; font-size: 14px; font-weight: 700; color: #1a2332; }
+.aia-welcome p    { margin: 0; font-size: 12px; }
+.aia-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
+.aia-chip  {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 999px; padding: 4px 11px;
+  font-size: 11.5px; color: #1a91c1; cursor: pointer;
+  transition: all .15s; user-select: none;
+}
+.aia-chip:hover { background: #1a91c1; color: #fff; border-color: #1a91c1; }
+
+/* 消息行 */
+.aia-row      { display: flex; align-items: flex-start; gap: 7px; }
+.aia-row-user { flex-direction: row-reverse; }
+
+/* 气泡 */
+.aia-bubble {
+  padding: 8px 12px; border-radius: 14px;
+  line-height: 1.65; max-width: 86%; word-break: break-word;
+  font-size: 13px;
+}
+.aia-bubble-user {
+  background: #1a91c1; color: #fff; border-top-right-radius: 4px;
+}
+.aia-bubble-ai {
+  background: #fff; color: #1a2332;
+  border-top-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 
-.message-welcome {
-  background-color: #e6f7ff;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+/* loading 点 */
+.aia-dots { display: flex; gap: 5px; align-items: center; padding: 10px 14px; }
+.aia-dots span {
+  width: 6px; height: 6px; background: #a0aec0; border-radius: 50%;
+  animation: aia-dot 1.2s infinite ease-in-out both;
+}
+.aia-dots span:nth-child(1) { animation-delay: -.3s; }
+.aia-dots span:nth-child(2) { animation-delay: -.15s; }
+@keyframes aia-dot {
+  0%,80%,100% { transform:scale(.55); opacity:.5; }
+  40%         { transform:scale(1);   opacity:1;  }
 }
 
-.message-welcome h4 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  color: #1a91c1;
+/* 流式光标 */
+.aia-cursor { display:inline-block; color:#1a91c1; animation:aia-blink .8s step-end infinite; }
+@keyframes aia-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* AI 头像 */
+.aia-avatar {
+  flex-shrink: 0; width: 26px; height: 26px;
+  background: #1a91c1; color: #fff;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; margin-top: 2px;
 }
 
-.message-welcome ul {
-  padding-left: 20px;
-  margin: 8px 0;
+.aia-ai-body { display: flex; flex-direction: column; gap: 4px; max-width: 87%; }
+
+/* 元信息 */
+.aia-meta { display: flex; flex-wrap: wrap; gap: 4px; }
+.aia-tag  { font-size: 11px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+.aia-tag-conf { background: #ebf8f0; color: #22863a; }
+.aia-tag-ent  { background: #e8f4fd; color: #1a91c1; }
+
+/* 引用 */
+.aia-cits    { margin-top: 5px; }
+.aia-cits-hd { font-size: 11px; font-weight: 700; color: #8898aa; margin-bottom: 3px; }
+.aia-cit-row {
+  display: flex; align-items: flex-start; gap: 5px;
+  font-size: 11px; color: #4a5568;
+  padding: 3px 0; border-top: 1px dashed #e2e8f0;
+}
+.aia-cit-num {
+  flex-shrink: 0; width: 16px; height: 16px;
+  background: #1a91c1; color: #fff;
+  border-radius: 50%; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.aia-cit-text { line-height: 1.4; }
+
+/* 时间 */
+.aia-time { font-size: 11px; color: #a0aec0; padding: 0 2px; }
+
+/* 状态提示 */
+.aia-hint {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: #a0aec0; padding: 2px 0;
+}
+.aia-spinner {
+  display: inline-block; width: 11px; height: 11px;
+  border: 2px solid #e2e8f0; border-top-color: #1a91c1;
+  border-radius: 50%; animation: aia-spin .7s linear infinite;
+}
+@keyframes aia-spin { to { transform: rotate(360deg); } }
+
+/* Markdown 内联 */
+.aia-bubble-ai :deep(strong) { font-weight: 700; }
+.aia-bubble-ai :deep(em)     { font-style: italic; color: #4a5568; }
+.aia-bubble-ai :deep(code)   {
+  background: #f0f4f8; border-radius: 4px; padding: 1px 5px;
+  font-size: 11.5px; font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+.aia-bubble-ai :deep(pre) {
+  background: #1a2332; color: #e2e8f0; border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; font-size: 11.5px; margin: 6px 0;
+}
+.aia-bubble-ai :deep(.aia-litref) {
+  background: linear-gradient(135deg,#667eea,#764ba2);
+  color:#fff; padding: 1px 6px; border-radius: 8px;
+  font-size: 11px; font-weight: 600; display: inline-block; margin: 0 2px;
 }
 
-.message-welcome li {
-  margin-bottom: 4px;
+/* ── 模式切换 ── */
+.aia-mode-bar {
+  display: flex; gap: 4px; padding: 5px 10px;
+  background: #f7f9fb; border-top: 1px solid #e2e8f0; flex-shrink: 0;
 }
-
-.message-item {
-  margin-bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  max-width: 80%;
+.aia-mode-btn {
+  flex: 1; padding: 4px 0; border-radius: 6px;
+  border: 1px solid #e2e8f0; background: #fff; color: #8898aa;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
 }
+.aia-mode-btn.active { background: #1a91c1; color: #fff; border-color: #1a91c1; }
 
-.message-user {
-  align-self: flex-end;
-  margin-left: auto;
+/* ── 输入区 ── */
+.aia-input-bar {
+  display: flex; align-items: flex-end; gap: 7px;
+  padding: 9px 10px;
+  border-top: 1px solid #e2e8f0; background: #fff; flex-shrink: 0;
 }
-
-.message-ai {
-  align-self: flex-start;
-  margin-right: auto;
+.aia-input-bar textarea {
+  flex: 1; padding: 7px 10px;
+  border: 1px solid #e2e8f0; border-radius: 9px;
+  font-size: 13px; resize: none; outline: none;
+  line-height: 1.5; max-height: 90px; overflow-y: auto;
+  font-family: inherit; transition: border-color .15s;
 }
+.aia-input-bar textarea:focus { border-color: #1a91c1; box-shadow: 0 0 0 2px rgba(26,145,193,.12); }
+.aia-input-bar textarea:disabled { background: #f7f9fb; }
 
-.message-content {
-  padding: 10px 14px;
-  border-radius: 18px;
-  font-size: 14px;
-  line-height: 1.5;
+.aia-send-btn {
+  flex-shrink: 0; width: 36px; height: 36px;
+  border: none; border-radius: 9px;
+  background: #1a91c1; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .15s, transform .1s;
 }
-
-.message-user .message-content {
-  background-color: #1a91c1;
-  color: white;
-  border-top-right-radius: 4px;
-}
-
-.message-ai .message-content {
-  background-color: #e9ecef;
-  color: #212529;
-  border-top-left-radius: 4px;
-}
-
-.message-ai .message-content :deep(.mavon-editor) {
-  min-height: 0;
-  width: 100%;
-  border: none;
-  background: transparent;
-  margin: 0;
-  padding: 0;
-}
-
-.message-ai .message-content :deep(.v-note-wrapper) {
-  min-height: 0;
-  border: none;
-  box-shadow: none !important;
-}
-
-.message-ai .message-content :deep(.v-note-panel) {
-  border: none;
-}
-
-.message-ai .message-content :deep(.v-note-navigation-wrapper) {
-  display: none;
-}
-
-.message-ai .message-content :deep(.v-note-show) {
-  padding: 0;
-  background: transparent;
-}
-
-
-.message-time {
-  color: #888;
-  font-size: 12px;
-  white-space: nowrap;
-  line-height: 1.4;
-}
-
-.message-time .date,
-.message-time .time {
-  display: inline-block;
-}
-
-.message-loading {
-  display: flex;
-  padding: 10px;
-  gap: 4px;
-}
-
-.message-loading span {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background-color: #6c757d;
-  border-radius: 50%;
-  animation: bounce 1.4s infinite ease-in-out both;
-}
-
-.message-loading span:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.message-loading span:nth-child(2) {
-  animation-delay: -0.16s;
-}
-
-@keyframes bounce {
-
-  0%,
-  80%,
-  100% {
-    transform: scale(0);
-  }
-
-  40% {
-    transform: scale(1);
-  }
-}
-
-/* 输入区域 */
-.assistant-input {
-  display: flex;
-  padding: 12px;
-  border-top: 1px solid #dee2e6;
-  background-color: white;
-}
-
-.assistant-input textarea {
-  flex: 1;
-  padding: 10px 14px;
-  border: 1px solid #dee2e6;
-  border-radius: 20px;
-  font-size: 14px;
-  resize: none;
-  outline: none;
-  max-height: 100px;
-  overflow-y: auto;
-}
-
-.assistant-input textarea:focus {
-  border-color: #1a91c1;
-}
-
-.send-button {
-  background-color: #1a91c1;
-  color: white;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
-  margin-left: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.send-button:hover:not(:disabled) {
-  background-color: #0e7cab;
-}
-
-.send-button:disabled {
-  background-color: #e9ecef;
-  color: #6c757d;
-  cursor: not-allowed;
-}
-
-.welcome-message {
-  list-style: none;
-  padding-left: 0;
-  /* 可选，让内容更贴边 */
-  margin: 0;
-}
+.aia-send-btn svg { width: 16px; height: 16px; }
+.aia-send-btn:hover:not(:disabled) { background: #0e7cab; transform: scale(1.05); }
+.aia-send-btn:disabled { background: #c9d5e0; cursor: not-allowed; transform: none; }
 </style>

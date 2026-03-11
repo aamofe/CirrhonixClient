@@ -1,116 +1,165 @@
 import service from '@/http'
 
-const url = {
-  aiQuery: '/ai/query',
-  summarize: (id) => `/ai/summarize/${id}`,
-  translate: '/ai/translate',
-  recommend: (id) => `/ai/recommendations/${id}`,
-  feedback: (id) => `/ai/feedback/${id}`,
-  ask:'/rag/ask/'
+/**
+ * api/Ai.js  —  RAG v2 接口封装
+ *
+ * 对应后端 rag_v2/urls.py 的 4 个端点：
+ *   POST /rag/ask/            非流式问答
+ *   POST /rag/ask/stream/     流式问答（SSE，原生 fetch）
+ *   POST /rag/history/clear/  清除对话历史
+ *   GET  /rag/health/         健康检查
+ *
+ * 注意：流式接口不走 axios，因为 axios 不支持逐帧读取 text/event-stream。
+ *       改用原生 fetch + ReadableStream，认证 token 从 localStorage 读取，
+ *       与 axios 拦截器保持一致。
+ */
+
+const BASE = {
+  ask:          '/rag/ask/',
+  askStream:    '/rag/ask/stream/',
+  clearHistory: '/rag/history/clear/',
+  health:       '/rag/health/',
 }
 
 export default class AI {
-  /**
-   * 向AI发送查询请求
-   * @param {Object} data - 查询相关数据
-   * @param {string} data.query - 发送给AI的文本查询
-   * @param {Array<number>} [data.context_literature_ids] - 可选的文献ID列表作为上下文
-   * @param {string} [data.system_message] - 可选的系统消息，用于指导AI响应
-   * @param {number} [data.temperature] - 可选的温度参数 (0.0-1.0)
-   * @returns {Promise} API响应
-   */
-  static async query(data) {
-    return service.post(url.aiQuery, data)
-  }
+
+  // ─────────────────────────────────────────────
+  // 1. 非流式问答
+  // ─────────────────────────────────────────────
 
   /**
-   * 获取或生成文献摘要
-   * @param {number} literatureId - 要摘要的文献ID
-   * @param {Object} params - 查询参数
-   * @param {boolean} [params.regenerate=false] - 是否重新生成摘要
-   * @param {string} [params.language='zh-cn'] - 摘要的目标语言
-   * @param {number} [params.max_length=300] - 摘要的最大长度
-   * @returns {Promise} API响应
+   * @param {Object} data
+   * @param {string} data.question          用户问题
+   * @param {Object} [data.options]
+   * @param {number} [data.options.recursion_limit=10]
+   * @param {boolean}[data.options.debug=false]
+   *
+   * @returns {Promise<{
+   *   message: string,
+   *   data: {
+   *     answer:         string,
+   *     method_used:    string,
+   *     intent:         string,
+   *     question_type:  string,
+   *     entities_found: string[],
+   *     confidence:     number,
+   *     citations:      Array<{pmid:string, claim:string}>
+   *   }
+   * }>}
    */
-  static async summarize(literatureId, params = {}) {
-    return service.get(url.summarize(literatureId), {
-      params: {
-        ...params,
-        regenerate: true,
-      },
-    })
+  static ask(data) {
+    return service.post(BASE.ask, data)
   }
+
+  // ─────────────────────────────────────────────
+  // 2. 流式问答（SSE）
+  // ─────────────────────────────────────────────
 
   /**
-   * 翻译文本
-   * @param {Object} data - 翻译相关数据
-   * @param {string} data.text - 要翻译的文本
-   * @param {string} [data.source_language='en'] - 源语言代码
-   * @param {string} [data.target_language='zh-cn'] - 目标语言代码
-   * @param {number} [data.literature_id] - 可选的关联文献ID
-   * @returns {Promise} API响应
+   * 用原生 fetch 接 text/event-stream，通过回调把每帧数据传给调用方。
+   *
+   * 后端 SSE 帧类型（rag_v2/views.py _sse_generator）：
+   *   status 帧  { type:'status', message:'正在检索知识库...' }
+   *   token  帧  { type:'token',  token:'HBV' }
+   *   done   帧  { type:'done',   citations:[...], confidence:0.88,
+   *                entities_found:[...], method_used:'hybrid',
+   *                intent:'knowledge_query', question_type:'mechanism',
+   *                elapsed_seconds:3.2 }
+   *   error  帧  { type:'error',  message:'...' }
+   *
+   * @param {Object}   data
+   * @param {string}   data.question
+   * @param {Object}   [data.options]
+   *
+   * @param {Object}   callbacks
+   * @param {Function} [callbacks.onStatus]  (message: string) => void
+   * @param {Function} [callbacks.onToken]   (token: string)   => void
+   * @param {Function} [callbacks.onDone]    (meta: Object)    => void
+   * @param {Function} [callbacks.onError]   (err: string)     => void
+   *
+   * @returns {AbortController}  调用 .abort() 可中止流
    */
-  static async translate(data) {
-    return service.post(url.translate, data)
+  static askStream(data, callbacks = {}) {
+    const { onStatus, onToken, onDone, onError } = callbacks
+    const controller = new AbortController()
+
+    const baseURL = service.defaults?.baseURL ?? ''
+    const token   = localStorage.getItem('token') ?? ''
+
+    ;(async () => {
+      try {
+        const res = await fetch(baseURL + BASE.askStream, {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body:   JSON.stringify(data),
+          signal: controller.signal,
+        })
+
+        if (!res.ok) {
+          onError?.(`HTTP ${res.status}: ${res.statusText}`)
+          return
+        }
+
+        const reader  = res.body.getReader()
+        const decoder = new TextDecoder('utf-8')
+        let   buffer  = ''
+
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+
+          // SSE 帧之间以 "\n\n" 分隔
+          const parts = buffer.split('\n\n')
+          buffer = parts.pop()           // 最后一段可能不完整，留着
+
+          for (const part of parts) {
+            const line = part.trim()
+            if (!line.startsWith('data: ')) continue
+            const jsonStr = line.slice(6).trim()
+            if (!jsonStr) continue
+
+            try {
+              const frame = JSON.parse(jsonStr)
+              if      (frame.type === 'status') onStatus?.(frame.message)
+              else if (frame.type === 'token')  onToken?.(frame.token)
+              else if (frame.type === 'done')   onDone?.(frame)
+              else if (frame.type === 'error')  onError?.(frame.message)
+            } catch (_) { /* 单帧解析失败，跳过 */ }
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          onError?.(err.message ?? '流式请求失败')
+        }
+      }
+    })()
+
+    return controller
   }
+
+  // ─────────────────────────────────────────────
+  // 3. 清除对话历史
+  // ─────────────────────────────────────────────
+
+  /** @returns {Promise} */
+  static clearHistory() {
+    return service.post(BASE.clearHistory)
+  }
+
+  // ─────────────────────────────────────────────
+  // 4. 健康检查
+  // ─────────────────────────────────────────────
 
   /**
-   * 获取文献推荐
-   * @param {number} literatureId - 基础文献ID
-   * @param {Object} params - 查询参数
-   * @param {number} [params.count=5] - 返回的推荐数量
-   * @returns {Promise} API响应
+   * 页面初始化时用于检测后端服务是否就绪。
+   * @returns {Promise<{data:{status:string, graph_ready:boolean, version:string}}>}
    */
-  static async recommend(literatureId, params = {}) {
-    return service.get(url.recommend(literatureId), { params })
-  }
-
-  /**
-   * 提供AI查询反馈
-   * @param {number} queryId - AI查询的ID
-   * @param {Object} data - 反馈数据
-   * @param {number} data.rating - 评分 (1-5)
-   * @param {string} [data.feedback_text] - 可选的反馈文本
-   * @returns {Promise} API响应
-   */
-  static async feedback(queryId, data) {
-    return service.post(url.feedback(queryId), data)
-  }
-
-  /**
-   * 批量生成文献摘要
-   * @param {Object} data - 批量摘要相关数据
-   * @param {Array<number>} data.literature_ids - 要摘要的文献ID列表
-   * @param {string} [data.language='zh-cn'] - 摘要的目标语言
-   * @returns {Promise} API响应
-   */
-  static async batchSummarize(data) {
-    return service.post(url.batchSummarize, data)
-  }
-
-  /**
-   * 执行语义搜索
-   * @param {Object} data - 搜索相关数据
-   * @param {string} data.query - 搜索查询文本
-   * @param {Object} [data.filter_params={}] - 搜索的可选过滤器（标签、日期范围等）
-   * @param {number} [data.limit=10] - 返回的最大结果数
-   * @returns {Promise} API响应
-   */
-  static async semanticSearch(data) {
-    return service.post(url.semanticSearch, data)
-  }
-
-
-  /*
-  question:"xxx?"
-  options:{
-    "max_entities": 10,
-    "max_edges": 50,
-    "top_k": 5
-  }
-  */
-  static async ask(data){
-      return service.post(url.ask, data)
+  static health() {
+    return service.get(BASE.health)
   }
 }
-
