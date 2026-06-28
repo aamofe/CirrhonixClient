@@ -40,7 +40,8 @@ export default {
         { name: "首页", path: "/" },
         { name: "文献库", path: "/literature" },
         { name: "知识图谱", path: "/knowledge-graph" },
-        { name: "数据源", path: "/crawler" }
+        { name: "数据源", path: "/crawler" },
+        //{ name: "小游戏", path: "/game" }
       ],
       avatar: null,
     }

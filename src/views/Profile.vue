@@ -7,26 +7,19 @@
         </div>
       </div>
       <div class="profile-content">
-        <div class="profile-sidebar">
-          <nav>
-            <div v-for="(item, index) in navItems" :key="index" @click="setActiveSection(item.id)"
-              :class="['nav-item', activeSection === item.id ? 'active' : '']">
-              <span class="nav-icon">
-                <el-icon>
-                  <component :is="item.icon" />
-                </el-icon>
-              </span>
-              <span>{{ item.label }}</span>
-            </div>
-          </nav>
-        </div>
+        <SideNav
+          :items="navItems"
+          :active-section="activeSection"
+          variant="embedded"
+          @change="setActiveSection"
+        />
 
         <div class="profile-main">
           <div v-if="activeSection === 'basic'" class="profile-section">
             <h3>基本信息</h3>
             <ProfileForm v-if="!loading" :user="userInfo" @profileUpdated="updateLocalUserInfo"
               @showPasswordModal="showChangePasswordModal = true" @logout="logout" />
-            <div v-else class="loading">加载中...</div>
+            <LoadingSpinner v-else />
           </div>
 
           <div v-if="activeSection === 'collections'" class="profile-section">
@@ -64,9 +57,9 @@
 
         <div class="form-actions">
           <CancelButton @click="closePasswordModal"> 取消 </CancelButton>
-          <button type="submit" class="submit-btn" :disabled="isPasswordSubmitting || passwordMismatch">
-            {{ isPasswordSubmitting ? "提交中..." : "确认修改" }}
-          </button>
+          <PrimaryButton type="submit" :loading="isPasswordSubmitting" :disabled="passwordMismatch">
+            确认修改
+          </PrimaryButton>
         </div>
       </form>
     </ModalComponent>
@@ -77,6 +70,9 @@
 import { mapMutations } from 'vuex'
 import ModalComponent from "@/components/ui/BaseModal.vue"
 import CancelButton from "@/components/ui/CancelButton.vue"
+import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import SideNav from "@/components/ui/SideNav.vue"
+import LoadingSpinner from "@/components/ui/LoadingSpinner.vue"
 import User from "@/api/User"
 
 import ProfileForm from "@/components/profile/ProfileForm.vue"
@@ -98,6 +94,9 @@ export default {
     ReadingHistoryComponent,
     ModalComponent,
     CancelButton,
+    PrimaryButton,
+    SideNav,
+    LoadingSpinner,
     UserIcon,
     BookmarkIcon,
     HistoryIcon,
@@ -257,85 +256,28 @@ export default {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background-color: #f5fbff;
+  background-color: var(--color-bg);
 }
 
 .container {
-  max-width: 1200px;
+  max-width: var(--max-width-content);
   margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.section-title {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #f0f0f0;
-}
-
-.title-content h2 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 0.25rem 0;
-  line-height: 1.2;
-}
-
-.subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.4;
+  padding: var(--spacing-page);
 }
 
 .profile-content {
   display: flex;
   gap: 2rem;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
-}
-
-.profile-sidebar {
-  width: 250px;
-  background: white;
-  border-right: 1px solid #eee;
-  padding: 1.5rem 0;
 }
 
 .profile-main {
   flex: 1;
   padding: 1.5rem;
   min-height: 600px;
-}
-
-.nav-item {
-  padding: 1rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  color: #555;
-  transition: all 0.2s;
-}
-
-.nav-item:hover {
-  background-color: rgba(168, 230, 207, 0.1);
-  color: #1a91c1;
-}
-
-.nav-item.active {
-  background-color: rgba(168, 230, 207, 0.2);
-  color: #1a91c1;
-  border-left: 3px solid #1a91c1;
-}
-
-.nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
 }
 
 .profile-section h3 {
@@ -345,98 +287,13 @@ export default {
   font-weight: 600;
 }
 
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-}
-
 .password-form {
   width: 100%;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #444;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #a8e6cf;
-  box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.2);
-}
-
-.form-hint {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 12px;
-  color: #777;
-}
-
-.form-error {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 12px;
-  color: #e74c3c;
-}
-
-.form-actions {
-  margin-top: 2rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.submit-btn {
-  padding: 0.75rem 1.5rem;
-  background-color: #1a91c1;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background-color: #157aa3;
-}
-
-.submit-btn:disabled {
-  background-color: #a0c4d4;
-  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
   .profile-content {
     flex-direction: column;
-  }
-
-  .profile-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #eee;
-    padding: 0;
-  }
-
-  .nav-item {
-    padding: 0.75rem 1.25rem;
   }
 }
 </style>

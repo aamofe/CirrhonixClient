@@ -115,7 +115,7 @@ export default {
 }
 
 .content-box a {
-  color: #42b983;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 600;
 }

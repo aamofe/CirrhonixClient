@@ -7,6 +7,7 @@ import KnowledgeGraph from '@/views/KnowledgeGraph.vue'
 import LiteratureDetail from '@/views/LiteratureDetail.vue'
 import LiteratureListPage from '@/views/LiteratureListPage.vue'
 import AboutPage from '@/views/AboutPage.vue'
+// import GameView from '@/views/Game.vue'
 import NotFound from '@/views/NotFound.vue'
 // import Label from '@/views/Label.vue'
 // import AuthorsPage from '@/views/AuthorsPage.vue'
@@ -22,10 +23,6 @@ const routes = [
     name: 'NotFound',
     component: NotFound,
   },
-  {
-    path: '/:pathMatch(.*)*',
-    redirect: '/404'
-  },
   // {
   //   path: '/label',
   //   name: 'label',
@@ -36,6 +33,11 @@ const routes = [
     name: 'about',
     component: AboutPage,
   },
+  // {
+  //   path: '/game',
+  //   name: 'game',
+  //   component: GameView,
+  // },
   {
     path: '/guide',
     redirect: '/about#user-guide',
@@ -75,6 +77,10 @@ const routes = [
     path: '/literature',
     name: 'literature-list',
     component: LiteratureListPage,
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/404',
   },
 ]
 

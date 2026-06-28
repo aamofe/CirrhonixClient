@@ -15,8 +15,10 @@
         <CollectionCard v-for="collection in filteredCollections" :key="collection.id" :collection="collection"
           @edit="editCollection" @delete="deleteCollection" @view="viewCollectionDetail" />
       </div>
-      <div v-else-if="loading" class="loading">加载中...</div>
-      <div v-else class="empty-state">您还没有创建任何收藏夹</div>
+      <div v-else-if="loading">
+        <LoadingSpinner />
+      </div>
+      <EmptyState v-else message="您还没有创建任何收藏夹" />
     </div>
 
     <CollectionDetail v-if="showCollectionDetail" :collectionId="selectedCollectionId"
@@ -36,9 +38,7 @@
 
         <div class="form-actions">
           <CancelButton @click="closeNewCollectionModal">取消</CancelButton>
-          <button type="submit" class="submit-button" :disabled="isSubmitting">
-            保存
-          </button>
+          <PrimaryButton type="submit" :loading="isSubmitting">保存</PrimaryButton>
         </div>
       </form>
     </ModalComponent>
@@ -57,9 +57,7 @@
 
         <div class="form-actions">
           <CancelButton @click="closeEditCollectionModal">取消</CancelButton>
-          <button type="submit" class="submit-button" :disabled="isSubmitting">
-            保存
-          </button>
+          <PrimaryButton type="submit" :loading="isSubmitting">保存</PrimaryButton>
         </div>
       </form>
     </ModalComponent>
@@ -68,6 +66,8 @@
 
 <script>
 import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import LoadingSpinner from "@/components/ui/LoadingSpinner.vue"
+import EmptyState from "@/components/ui/EmptyState.vue"
 import ModalComponent from "@/components/ui/BaseModal.vue"
 import CollectionCard from "@/components/profile/CollectionCard.vue"
 import CollectionDetail from "@/components/profile/CollectionDetail.vue"
@@ -78,6 +78,8 @@ export default {
   name: "CollectionsComponent",
   components: {
     PrimaryButton,
+    LoadingSpinner,
+    EmptyState,
     ModalComponent,
     CollectionCard,
     CollectionDetail,
@@ -291,79 +293,8 @@ export default {
   gap: 1.5rem;
 }
 
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: #777;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-}
-
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-}
-
-/* 表单样式 */
 .collection-form {
   width: 100%;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #333;
-}
-
-.required {
-  color: #ff6b6b;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #1a91c1;
-  box-shadow: 0 0 0 2px rgba(26, 145, 193, 0.2);
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.submit-button {
-  padding: 0.75rem 1.5rem;
-  background-color: #1a91c1;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.submit-button:hover:not(:disabled) {
-  background-color: #157aa3;
-}
-
-.submit-button:disabled {
-  background-color: #a0c4d4;
-  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

@@ -1,10 +1,9 @@
 <!-- src/views/Home.vue -->
 <template>
-  <div class="home-page">
-    <section class="search-container">
-      <h1>肝硬化文献智能检索系统</h1>
+  <div class="home-page page-bg">
+    <PageHero title="肝硬化文献智能检索系统">
       <search-box @search="onSearch" />
-    </section>
+    </PageHero>
 
     <div class="main-content">
       <section class="workflow-section">
@@ -29,16 +28,14 @@
               <span class="task-count">{{ analysisTasksCount }}</span>
             </div>
             <div class="task-content">
-              <div v-if="analysisTasksLoading" class="loading-state">
-                <div class="spinner"></div>
-                <span>加载中...</span>
-              </div>
-              <div v-else-if="recentAnalysisTasks.length === 0" class="empty-state">
-                <p>暂无解析任务</p>
-                <primary-button @click="$router.push('/literature')" size="small">
-                  开始解析
-                </primary-button>
-              </div>
+              <LoadingSpinner v-if="analysisTasksLoading" size="sm" inline />
+              <EmptyState v-else-if="recentAnalysisTasks.length === 0" message="暂无解析任务">
+                <template #action>
+                  <primary-button @click="$router.push('/literature')" size="small">
+                    开始解析
+                  </primary-button>
+                </template>
+              </EmptyState>
               <div v-else class="tasks-list">
                 <div v-for="task in recentAnalysisTasks.slice(0, 3)" :key="task.id" class="task-item"
                   @click="viewAnalysisTask(task.id, task)">
@@ -66,16 +63,14 @@
               <span class="task-count">{{ crawlTasksCount }}</span>
             </div>
             <div class="task-content">
-              <div v-if="crawlTasksLoading" class="loading-state">
-                <div class="spinner"></div>
-                <span>加载中...</span>
-              </div>
-              <div v-else-if="crawlTasks.length === 0" class="empty-state">
-                <p>暂无采集任务</p>
-                <primary-button @click="$router.push('/crawler')" size="small">
-                  创建任务
-                </primary-button>
-              </div>
+              <LoadingSpinner v-if="crawlTasksLoading" size="sm" inline />
+              <EmptyState v-else-if="crawlTasks.length === 0" message="暂无采集任务">
+                <template #action>
+                  <primary-button @click="$router.push('/crawler')" size="small">
+                    创建任务
+                  </primary-button>
+                </template>
+              </EmptyState>
               <div v-else class="tasks-list">
                 <div v-for="task in crawlTasks.slice(0, 3)" :key="task.id" class="task-item"
                   @click="viewCrawlTask(task.id)">
@@ -146,9 +141,7 @@
               <span class="capability-count">{{ dataSources.length }}个数据源</span>
             </div>
             <div class="capability-content">
-              <div v-if="dataSourcesLoading" class="loading-state">
-                <div class="spinner"></div>
-              </div>
+              <LoadingSpinner v-if="dataSourcesLoading" size="sm" inline text="" />
               <div v-else class="data-sources-list">
                 <div v-for="source in dataSources.filter(s => s.name !== 'Local')" :key="source.id"
                   class="data-source-item">
@@ -191,15 +184,22 @@
 <script>
 import SearchBox from "@/components/navigation/SearchBox.vue"
 import PrimaryButton from "@/components/ui/PrimaryButton.vue"
+import PageHero from "@/components/ui/PageHero.vue"
+import LoadingSpinner from "@/components/ui/LoadingSpinner.vue"
+import EmptyState from "@/components/ui/EmptyState.vue"
 import SiteFooter from "@/components/navigation/SiteFooter.vue"
 import Literature from "@/api/Literature"
 import Crawling from "@/api/Crawler"
+import { getStatusText } from "@/utils/format"
 
 export default {
   name: "HomeView",
   components: {
     SearchBox,
     PrimaryButton,
+    PageHero,
+    LoadingSpinner,
+    EmptyState,
     SiteFooter,
   },
   data() {
@@ -287,17 +287,7 @@ export default {
       return progress
     },
 
-    getStatusText(status) {
-      const statusMap = {
-        'pending': '待处理',
-        'running': '执行中',
-        'queued': '队列中',
-        'completed': '已完成',
-        'failed': '执行失败',
-        'paused': '已暂停'
-      }
-      return statusMap[status] || '状态未知'
-    },
+    getStatusText,
 
     getAnalysisTaskTitle(task) {
       if (task.literature && task.literature.title) {
@@ -448,46 +438,10 @@ export default {
 </script>
 
 <style scoped>
-.home-page {
-  background-color: #f8fcff;
-  min-height: 100vh;
-}
-
-.search-container {
-  background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
-  padding: 50px 5%;
-  text-align: center;
-}
-
-.search-container h1 {
-  color: white;
-  font-size: 28px;
-  margin-bottom: 12px;
-  font-weight: 600;
-}
-
 .main-content {
-  max-width: 1400px;
+  max-width: var(--max-width-wide);
   margin: 0 auto;
   padding: 30px 5%;
-}
-
-.section-header {
-  color: #1a91c1;
-  font-size: 20px;
-  margin-bottom: 20px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-}
-
-.section-header::before {
-  content: "";
-  width: 4px;
-  height: 20px;
-  background-color: #1a91c1;
-  margin-right: 12px;
-  border-radius: 2px;
 }
 
 /* 通用卡片样式 */
@@ -496,8 +450,8 @@ export default {
 .workspace-card,
 .capability-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 /* 工作流程区域 */
@@ -523,8 +477,6 @@ export default {
 }
 
 .workflow-step:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(26, 145, 193, 0.15);
   border-color: rgba(26, 145, 193, 0.2);
 }
 
@@ -594,46 +546,6 @@ export default {
 
 .task-content {
   padding: 15px 20px 20px;
-}
-
-/* 加载和空状态 */
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 30px;
-  color: #666;
-}
-
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e3e3e3;
-  border-top: 2px solid #1a91c1;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 10px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 30px 20px;
-  color: #999;
-}
-
-.empty-state p {
-  margin: 0 0 20px;
-  font-size: 14px;
 }
 
 /* 任务列表 */
@@ -979,17 +891,9 @@ export default {
   .capabilities-grid {
     grid-template-columns: 1fr;
   }
-
-  .search-container h1 {
-    font-size: 24px;
-  }
 }
 
 @media (max-width: 480px) {
-  .search-container {
-    padding: 30px 3%;
-  }
-
   .workflow-step {
     padding: 15px;
   }

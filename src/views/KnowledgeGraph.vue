@@ -1,26 +1,18 @@
 <template>
-  <div class="knowledge-graph-page">
-    <!-- 头部 -->
-    <section class="graph-header">
-      <div class="header-content">
-        <div class="header-text">
-          <h1>知识图谱</h1>
-          <p>展现疾病、细胞、病原体之间的关系</p>
-        </div>
-        
-        <!-- 审核按钮 -->
-        <button 
-          v-if="isAdmin || true" 
-          @click="showReviewCard = true" 
+  <div class="knowledge-graph-page page-bg">
+    <PageHero title="知识图谱" subtitle="展现疾病、细胞、病原体之间的关系">
+      <template #actions>
+        <button
+          v-if="isAdmin || true"
+          @click="showReviewCard = true"
           class="review-btn"
         >
           <el-icon><Document /></el-icon>
           <span>审核记录</span>
           <span v-if="pendingCount > 0" class="badge">{{ pendingCount }}</span>
         </button>
-      </div>
+      </template>
 
-      <!-- 搜索框 -->
       <div class="graph-search-container">
         <el-input
           v-model="searchKeyword"
@@ -33,8 +25,8 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        <el-button 
-          type="primary" 
+        <el-button
+          type="primary"
           @click="handleSearch"
           :loading="isSearching"
           class="search-btn"
@@ -42,7 +34,7 @@
           搜索
         </el-button>
       </div>
-    </section>
+    </PageHero>
 
     <!-- 主内容区 -->
     <div class="container">
@@ -107,6 +99,7 @@ import NodeInfo from '@/components/knowledge/NodeInfo.vue'
 import EdgeInfo from '@/components/knowledge/EdgeInfo.vue'
 import ReviewCard from '@/components/knowledge/ReviewCard.vue'
 import SiteFooter from '@/components/navigation/SiteFooter.vue'
+import PageHero from '@/components/ui/PageHero.vue'
 
 export default {
   name: 'KnowledgeGraph',
@@ -117,6 +110,7 @@ export default {
     EdgeInfo,
     ReviewCard,
     SiteFooter,
+    PageHero,
     Search,
     Document,
   },
@@ -452,62 +446,29 @@ export default {
 </script>
 
 <style scoped>
-.knowledge-graph-page {
-  min-height: 100vh;
-  background-color: #f5fbff;
-}
-
-/* 头部样式 */
-.graph-header {
-  background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
-  padding: 40px 5%;
-  position: relative;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.header-text {
-  flex: 1;
-  text-align: center;
-}
-
-.graph-header h1 {
-  color: white;
-  font-size: 28px;
-  margin-bottom: 10px;
-}
-
-.graph-header p {
-  color: rgba(255, 255, 255, 0.9);
-  max-width: 700px;
-  margin: 0 auto;
+.container {
+  max-width: var(--max-width-wide);
+  margin: 30px auto;
+  padding: 0 5%;
 }
 
 .review-btn {
   background: rgba(255, 255, 255, 0.95);
   border: none;
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: #1a91c1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .review-btn:hover {
   background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
 }
 
 .review-btn .badge {
@@ -536,12 +497,6 @@ export default {
   flex-shrink: 0;
 }
 
-.container {
-  max-width: 1400px;
-  margin: 30px auto;
-  padding: 0 5%;
-}
-
 .graph-content {
   display: flex;
   gap: 30px;
@@ -552,49 +507,14 @@ export default {
   position: relative;
   height: 600px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
-}
-
-/* 响应式设计 */
-@media (max-width: 1200px) {
-  .container {
-    padding: 0 3%;
-  }
-
-  .graph-content {
-    gap: 20px;
-  }
-
-  .review-btn {
-    right: 3%;
-  }
 }
 
 @media (max-width: 768px) {
   .graph-content {
     flex-direction: column;
-  }
-
-  .graph-header {
-    padding: 30px 20px;
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .review-btn {
-    position: relative;
-    top: 0;
-    right: 0;
-    margin-top: 16px;
-  }
-
-  .container {
-    padding: 0 20px;
   }
 
   .graph-search-container {

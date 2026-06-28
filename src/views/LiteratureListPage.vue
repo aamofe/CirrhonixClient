@@ -1,10 +1,7 @@
 <!-- src/views/LiteratureListPage.vue -->
 <template>
-  <div class="literature-list-page">
-    <section class="list-header">
-      <h1>文献列表</h1>
-      <p>浏览全球范围内与肝硬化相关的最新研究、临床实践与专家共识</p>
-
+  <div class="literature-list-page page-bg">
+    <PageHero title="文献列表" subtitle="浏览全球范围内与肝硬化相关的最新研究、临床实践与专家共识">
       <search-box :initialQuery="searchQuery" @search="onSearch" />
 
       <div class="search-results-info" v-if="!isLoading">
@@ -22,19 +19,13 @@
           </span>
         </div>
       </div>
-    </section>
+    </PageHero>
 
     <div class="literature-content">
       <div class="literature-results">
-        <div class="loading" v-if="isLoading">
-          <div class="spinner"></div>
-          <p>正在加载文献...</p>
-        </div>
+        <LoadingSpinner v-if="isLoading" text="正在加载文献..." size="lg" />
 
-        <div v-else-if="results.length === 0" class="no-results">
-          <p>抱歉，未找到符合条件的文献。</p>
-          <p>请尝试修改检索词。</p>
-        </div>
+        <EmptyState v-else-if="results.length === 0" message="抱歉，未找到符合条件的文献。请尝试修改检索词。" />
 
         <template v-else>
           <literature-card v-for="article in results" :key="article.id" :article="article"
@@ -54,6 +45,9 @@
 <script>
 import SearchBox from "@/components/navigation/SearchBox.vue"
 import SiteFooter from "@/components/navigation/SiteFooter.vue"
+import PageHero from "@/components/ui/PageHero.vue"
+import LoadingSpinner from "@/components/ui/LoadingSpinner.vue"
+import EmptyState from "@/components/ui/EmptyState.vue"
 import Literature from "@/api/Literature"
 import LiteratureCard from "@/components/literature/LiteratureCard.vue"
 import Pagination from "@/components/navigation/Pagination.vue"
@@ -62,6 +56,9 @@ export default {
   components: {
     SearchBox,
     SiteFooter,
+    PageHero,
+    LoadingSpinner,
+    EmptyState,
     LiteratureCard,
     Pagination,
   },
@@ -227,30 +224,14 @@ export default {
 </script>
 
 <style scoped>
-.literature-list-page {
-  background-color: #f5fbff;
-  min-height: 100vh;
+.literature-content {
+  max-width: var(--max-width-content);
+  margin: 30px auto;
+  padding: 0 5%;
 }
 
-.list-header {
-  background: linear-gradient(135deg, #1a91c1 0%, #a8e6cf 100%);
-  padding: 40px 5%;
-  text-align: center;
-  position: relative;
-}
-
-.list-header h1 {
-  color: white;
-  font-size: 28px;
-  margin-bottom: 10px;
-}
-
-.list-header p {
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 20px;
-  max-width: 700px;
-  margin-left: auto;
-  margin-right: auto;
+.literature-results {
+  width: 100%;
 }
 
 .search-results-info {
@@ -278,51 +259,6 @@ export default {
 .sort-options span.active {
   font-weight: 500;
   text-decoration: underline;
-}
-
-.literature-content {
-  max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 5%;
-}
-
-.literature-results {
-  width: 100%;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px 0;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(26, 145, 193, 0.3);
-  border-radius: 50%;
-  border-top-color: #1a91c1;
-  margin: 0 auto 15px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.no-results {
-  text-align: center;
-  padding: 40px 0;
-  color: #666;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 2rem 0;
 }
 
 @media (max-width: 768px) {
