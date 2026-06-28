@@ -1,7 +1,7 @@
 <template>
   <button
-    class="btn-primary"
-    :class="{ 'full-width': fullWidth, [`size-${size}`]: true }"
+    class="btn"
+    :class="[`btn-${variant}`, { 'full-width': fullWidth, [`size-${size}`]: true }]"
     :disabled="disabled || loading"
     v-bind="$attrs"
   >
@@ -26,33 +26,64 @@ export default {
       default: 'default',
       validator: (v) => ['default', 'small'].includes(v),
     },
+    variant: {
+      type: String,
+      default: 'primary',
+      validator: (v) => ['primary', 'secondary', 'danger'].includes(v),
+    },
   },
 }
 </script>
 
 <style scoped>
-.btn-primary {
-  background: var(--gradient-button);
-  color: white;
-  border: none;
+.btn {
   padding: 12px 20px;
   border-radius: var(--radius-md);
   font-size: 16px;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, background-color 0.2s, border-color 0.2s;
   font-weight: 500;
   display: inline-flex;
   justify-content: center;
   align-items: center;
   gap: 10px;
+  border: 1px solid transparent;
 }
 
-.btn-primary.size-small {
+.btn-primary {
+  background: var(--gradient-button);
+  color: white;
+  border: none;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border-color: #ddd;
+  color: #555;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.btn-danger {
+  background-color: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  border-color: rgba(231, 76, 60, 0.3);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: rgba(231, 76, 60, 0.2);
+  border-color: rgba(231, 76, 60, 0.5);
+}
+
+.btn.size-small {
   padding: 8px 16px;
   font-size: 14px;
 }
 
-.btn-primary.full-width {
+.btn.full-width {
   width: 100%;
 }
 
@@ -60,7 +91,7 @@ export default {
   opacity: 0.9;
 }
 
-.btn-primary:disabled {
+.btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -72,11 +103,5 @@ export default {
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

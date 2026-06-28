@@ -9,7 +9,7 @@
     <!-- ══ 最近搜索 ══ -->
     <div class="sidebar-card recent-card">
       <h3>最近搜索</h3>
-      <div v-if="recentSearches.length === 0" class="empty-state">暂无搜索记录</div>
+      <EmptyState v-if="recentSearches.length === 0" message="暂无搜索记录" />
       <div v-else class="recent-list">
         <div
           v-for="(s, i) in recentSearches"
@@ -29,12 +29,13 @@
 <script>
 import { ref, onMounted } from 'vue'
 import AiAssistant from '@/components/ai/AiAssistant.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 
 const RECENT_KEY = 'ragRecentSearches'
 
 export default {
   name: 'GraphSidebar',
-  components: { AiAssistant },
+  components: { AiAssistant, EmptyState },
   emits: ['focus-node'],
 
   setup() {
@@ -131,11 +132,4 @@ export default {
   margin-right: 8px;
 }
 .recent-time { font-size: 11px; color: #aaa; white-space: nowrap; }
-
-.empty-state {
-  text-align: center;
-  color: #aaa;
-  font-size: 13px;
-  padding: 10px 0;
-}
 </style>

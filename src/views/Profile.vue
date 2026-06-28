@@ -37,20 +37,20 @@
       <form @submit.prevent="handlePasswordSubmit" class="password-form">
         <div class="form-group">
           <label for="oldPassword">旧密码</label>
-          <input type="password" id="oldPassword" v-model="passwordForm.oldPassword" class="form-input" required
+          <el-input id="oldPassword" v-model="passwordForm.oldPassword" type="password" show-password
             placeholder="输入当前密码" />
         </div>
 
         <div class="form-group">
           <label for="newPassword">新密码</label>
-          <input type="password" id="newPassword" v-model="passwordForm.newPassword" class="form-input" required
-            placeholder="输入新密码" minlength="8" />
+          <el-input id="newPassword" v-model="passwordForm.newPassword" type="password" show-password
+            placeholder="输入新密码" />
           <small class="form-hint">密码长度至少8位，建议包含字母、数字和特殊字符</small>
         </div>
 
         <div class="form-group">
           <label for="confirmPassword">确认新密码</label>
-          <input type="password" id="confirmPassword" v-model="passwordForm.confirmPassword" class="form-input" required
+          <el-input id="confirmPassword" v-model="passwordForm.confirmPassword" type="password" show-password
             placeholder="再次输入新密码" />
           <small v-if="passwordMismatch" class="form-error">两次输入的密码不一致</small>
         </div>
@@ -74,6 +74,7 @@ import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import SideNav from "@/components/ui/SideNav.vue"
 import LoadingSpinner from "@/components/ui/LoadingSpinner.vue"
 import User from "@/api/User"
+import notify from "@/utils/notify"
 
 import ProfileForm from "@/components/profile/ProfileForm.vue"
 import CollectionsComponent from "@/components/profile/Collections.vue"
@@ -149,7 +150,9 @@ export default {
         //   userId: this.userInfo.id
         // })
       } catch (error) {
-        this.$message.error("获取用户信息失败")
+        if (error.response?.status !== 401) {
+          notify.apiError(error, "获取用户信息失败")
+        }
       } finally {
         this.loading = false
       }
@@ -192,11 +195,11 @@ export default {
           newPassword: this.passwordForm.newPassword,
         })
 
-        this.$message.success("密码修改成功")
+        notify.success("密码修改成功")
         this.resetPasswordForm()
         this.closePasswordModal()
       } catch (error) {
-        this.$message.error("密码修改失败，请检查旧密码是否正确")
+        notify.error("密码修改失败，请检查旧密码是否正确")
       } finally {
         this.isPasswordSubmitting = false
       }
@@ -218,7 +221,7 @@ export default {
     async logout() {
       try {
         await User.logout()
-        this.$message.success("退出登录成功")
+        notify.success("退出登录成功")
 
         localStorage.removeItem("token")
         sessionStorage.removeItem("profileActiveSection")
@@ -230,7 +233,7 @@ export default {
 
         this.$router.push("/login")
       } catch (error) {
-        this.$message.error("退出失败，请重试")
+        notify.error("退出失败，请重试")
       }
     },
   },

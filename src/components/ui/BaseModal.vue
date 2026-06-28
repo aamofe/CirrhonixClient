@@ -1,7 +1,7 @@
 <!-- src/components/BaseModal.vue -->
 <template>
   <div class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal-container">
+    <div class="modal-container" :style="{ maxWidth }">
       <div class="modal-header">
         <h3>{{ title }}</h3>
         <button class="close-button" @click="$emit('close')">
@@ -25,6 +25,10 @@ export default {
     title: {
       type: String,
       default: "提示",
+    },
+    maxWidth: {
+      type: String,
+      default: "500px",
     },
   },
   mounted() {
@@ -56,7 +60,6 @@ export default {
   background-color: white;
   border-radius: 10px;
   width: 90%;
-  max-width: 500px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;

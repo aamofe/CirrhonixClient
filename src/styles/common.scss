@@ -111,8 +111,96 @@
   color: var(--color-error);
 }
 
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-secondary);
+    box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.2);
+  }
+}
+
+.select-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-secondary);
+    box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.2);
+  }
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  margin-right: 0.5rem;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.checkbox-label {
+  font-size: 14px;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
 @media (max-width: 768px) {
   .content-layout {
     flex-direction: column;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .checkbox-group {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }

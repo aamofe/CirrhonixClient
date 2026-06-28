@@ -87,6 +87,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Document } from '@element-plus/icons-vue'
+import { formatDateTimeOrDash } from '@/utils/format'
 
 export default {
   name: 'EdgeInfo',
@@ -177,15 +178,7 @@ export default {
       return 'info'
     }
 
-    const formatDate = (dateString) => {
-      if (!dateString) return '-'
-      try {
-        const date = new Date(dateString)
-        return date.toLocaleString('zh-CN')
-      } catch (e) {
-        return dateString
-      }
-    }
+    const formatDate = formatDateTimeOrDash
 
     const viewLiterature = (id) => {
       if (id) {

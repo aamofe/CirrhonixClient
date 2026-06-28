@@ -27,9 +27,7 @@
         </div>
 
         <!-- 待审核列表 -->
-        <div v-if="pendingReviews.length === 0 && !isLoading" class="empty-state">
-          <el-empty description="暂无待审核记录" />
-        </div>
+        <EmptyState v-if="pendingReviews.length === 0 && !isLoading" message="暂无待审核记录" />
 
         <div v-else class="reviews-list">
           <div
@@ -43,7 +41,7 @@
                   {{ getOperationTypeDisplay(review.operation_type) }}
                 </el-tag>
                 <span class="review-submitter">提交人: {{ review.submitted_by?.username || '-' }}</span>
-                <span class="review-time">{{ formatDate(review.submitted_at) }}</span>
+                <span class="review-time">{{ formatDateTime(review.submitted_at) }}</span>
               </div>
             </div>
 
@@ -94,9 +92,7 @@
 
       <!-- 普通用户视图 -->
       <div v-else class="user-view">
-        <div v-if="myReviews.length === 0 && !isLoading" class="empty-state">
-          <el-empty description="暂无审核记录" />
-        </div>
+        <EmptyState v-if="myReviews.length === 0 && !isLoading" message="暂无审核记录" />
 
         <div v-else class="reviews-list">
           <div
@@ -113,7 +109,7 @@
                 <el-tag :type="getOperationTypeTagType(review.operation_type)" size="small">
                   {{ getOperationTypeDisplay(review.operation_type) }}
                 </el-tag>
-                <span class="review-time">{{ formatDate(review.submitted_at) }}</span>
+                <span class="review-time">{{ formatDateTime(review.submitted_at) }}</span>
               </div>
             </div>
 
@@ -134,7 +130,7 @@
               </div>
 
               <div v-if="review.reviewed_at" class="review-meta-info">
-                <span>审核时间: {{ formatDate(review.reviewed_at) }}</span>
+                <span>审核时间: {{ formatDateTime(review.reviewed_at) }}</span>
                 <span v-if="review.reviewed_by">审核人: {{ review.reviewed_by?.username }}</span>
               </div>
             </div>
@@ -153,33 +149,33 @@
           </div>
         </div>
       </div>
-
-      <!-- 拒绝审核对话框 -->
-      <el-dialog
-        v-model="showRejectDialog"
-        title="拒绝审核"
-        width="400px"
-      >
-        <el-input
-          v-model="rejectMessage"
-          type="textarea"
-          :rows="4"
-          placeholder="请填写拒绝原因（必填）"
-        />
-        <template #footer>
-          <el-button @click="showRejectDialog = false">取消</el-button>
-          <el-button type="danger" @click="confirmReject" :loading="isReviewing">
-            确认拒绝
-          </el-button>
-        </template>
-      </el-dialog>
     </div>
+
+    <BaseModal v-if="showRejectDialog" title="拒绝审核" max-width="440px" @close="showRejectDialog = false">
+      <el-input
+        v-model="rejectMessage"
+        type="textarea"
+        :rows="4"
+        placeholder="请填写拒绝原因（必填）"
+      />
+      <template #footer>
+        <CancelButton @click="showRejectDialog = false">取消</CancelButton>
+        <PrimaryButton variant="danger" :fullWidth="false" :loading="isReviewing" @click="confirmReject">
+          确认拒绝
+        </PrimaryButton>
+      </template>
+    </BaseModal>
   </el-drawer>
 </template>
 
 <script>
 import { ref, computed, watch, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import notify from '@/utils/notify'
+import { formatDateTime, formatDateTimeOrDash } from '@/utils/format'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import PrimaryButton from '@/components/ui/PrimaryButton.vue'
+import CancelButton from '@/components/ui/CancelButton.vue'
 import { Check, Refresh } from '@element-plus/icons-vue'
 import KnowledgeGraph from '@/api/knowledgeGraph'
 
@@ -188,6 +184,10 @@ export default {
   components: {
     Check,
     Refresh,
+    BaseModal,
+    EmptyState,
+    PrimaryButton,
+    CancelButton,
   },
   props: {
     visible: {
@@ -233,7 +233,7 @@ export default {
         }
       } catch (error) {
         console.error('加载待审核列表失败:', error)
-        ElMessage.error('加载待审核列表失败')
+        notify.error('加载待审核列表失败')
       } finally {
         isLoading.value = false
       }
@@ -251,7 +251,7 @@ export default {
         }
       } catch (error) {
         console.error('加载我的审核记录失败:', error)
-        ElMessage.error('加载审核记录失败')
+        notify.error('加载审核记录失败')
       } finally {
         isLoading.value = false
       }
@@ -273,12 +273,12 @@ export default {
           action: 'approve',
           review_message: '',
         })
-        ElMessage.success('审核通过')
+        notify.success('审核通过')
         loadPendingReviews()
         emit('updated')
       } catch (error) {
         console.error('审核失败:', error)
-        ElMessage.error(error.response?.data?.message || '审核失败')
+        notify.apiError(error, '审核失败')
       } finally {
         reviewingId.value = null
       }
@@ -287,7 +287,7 @@ export default {
     // 确认拒绝
     const confirmReject = async () => {
       if (!rejectMessage.value.trim()) {
-        ElMessage.warning('请填写拒绝原因')
+        notify.warning('请填写拒绝原因')
         return
       }
 
@@ -298,7 +298,7 @@ export default {
           action: 'reject',
           review_message: rejectMessage.value,
         })
-        ElMessage.success('已拒绝')
+        notify.success('已拒绝')
         showRejectDialog.value = false
         rejectMessage.value = ''
         currentRejectId.value = null
@@ -306,7 +306,7 @@ export default {
         emit('updated')
       } catch (error) {
         console.error('拒绝失败:', error)
-        ElMessage.error(error.response?.data?.message || '拒绝失败')
+        notify.apiError(error, '拒绝失败')
       } finally {
         isReviewing.value = false
       }
@@ -315,19 +315,17 @@ export default {
     // 一键批准全部
     const handleApproveAll = async () => {
       try {
-        await ElMessageBox.confirm('确定要批准所有待审核记录吗？', '确认操作', {
-          type: 'warning',
-        })
+        await notify.confirm('确定要批准所有待审核记录吗？', '确认操作')
 
         isApprovingAll.value = true
         await KnowledgeGraph.approveAllReviews()
-        ElMessage.success('批量批准成功')
+        notify.success('批量批准成功')
         loadPendingReviews()
         emit('updated')
       } catch (error) {
         if (error !== 'cancel') {
           console.error('批量批准失败:', error)
-          ElMessage.error(error.response?.data?.message || '批量批准失败')
+          notify.apiError(error, '批量批准失败')
         }
       } finally {
         isApprovingAll.value = false
@@ -337,19 +335,17 @@ export default {
     // 撤回审核
     const handleWithdraw = async (reviewId) => {
       try {
-        await ElMessageBox.confirm('确定要撤回这条审核记录吗？', '确认操作', {
-          type: 'warning',
-        })
+        await notify.confirm('确定要撤回这条审核记录吗？', '确认操作')
 
         withdrawingId.value = reviewId
         await KnowledgeGraph.withdrawReview(reviewId)
-        ElMessage.success('撤回成功')
+        notify.success('撤回成功')
         loadMyReviews()
         emit('updated')
       } catch (error) {
         if (error !== 'cancel') {
           console.error('撤回失败:', error)
-          ElMessage.error(error.response?.data?.message || '撤回失败')
+          notify.apiError(error, '撤回失败')
         }
       } finally {
         withdrawingId.value = null
@@ -358,17 +354,6 @@ export default {
 
     const handleClose = () => {
       emit('close')
-    }
-
-    // 格式化日期
-    const formatDate = (dateString) => {
-      if (!dateString) return '-'
-      try {
-        const date = new Date(dateString)
-        return date.toLocaleString('zh-CN')
-      } catch (e) {
-        return dateString
-      }
     }
 
     // 操作类型显示
@@ -470,7 +455,8 @@ export default {
       confirmReject,
       handleApproveAll,
       handleWithdraw,
-      formatDate,
+      formatDateTime,
+      formatDateTimeOrDash,
       getOperationTypeDisplay,
       getOperationTypeTagType,
       getStatusDisplay,
@@ -493,10 +479,6 @@ export default {
   margin-bottom: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid #f0f0f0;
-}
-
-.empty-state {
-  padding: 40px 0;
 }
 
 .reviews-list {

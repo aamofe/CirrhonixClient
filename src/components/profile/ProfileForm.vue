@@ -6,7 +6,7 @@
       <div class="profile-layout">
         <div class="avatar-section">
           <div class="avatar-container" @click="triggerFileInput">
-            <img :src="avatarUrl" alt="用户头像" class="avatar-image" />
+            <img :src="displayAvatar" alt="用户头像" class="avatar-image" @error="onAvatarError" />
             <div class="avatar-overlay">
               <span>更换头像</span>
             </div>
@@ -44,11 +44,15 @@
       </div>
 
       <div class="action-buttons">
-        <button @click="startEditing" class="edit-button">编辑资料</button>
-        <button @click="$emit('showPasswordModal')" class="password-button">
+        <PrimaryButton variant="secondary" :fullWidth="false" @click="startEditing">
+          编辑资料
+        </PrimaryButton>
+        <PrimaryButton variant="secondary" :fullWidth="false" @click="$emit('showPasswordModal')">
           修改密码
-        </button>
-        <button @click="$emit('logout')" class="logout-button">退出登录</button>
+        </PrimaryButton>
+        <PrimaryButton variant="danger" :fullWidth="false" @click="$emit('logout')">
+          退出登录
+        </PrimaryButton>
       </div>
     </div>
 
@@ -56,7 +60,7 @@
       <div class="profile-layout">
         <div class="avatar-section">
           <div class="avatar-container" @click="triggerFileInput">
-            <img :src="avatarUrl" alt="用户头像" class="avatar-image" />
+            <img :src="displayAvatar" alt="用户头像" class="avatar-image" @error="onAvatarError" />
             <div class="avatar-overlay">
               <span>更换头像</span>
             </div>
@@ -102,9 +106,11 @@
 
 <script>
 import PrimaryButton from "@/components/ui/PrimaryButton.vue"
-import CancelButton from "@/components/ui/CancelButton.vue" // Import CancelButton
+import CancelButton from "@/components/ui/CancelButton.vue"
 import User from "@/api/User"
-import bus from "@/utils/bus"
+import notify from "@/utils/notify"
+import { DEFAULT_AVATAR } from "@/constants/media"
+import { mapMutations } from "vuex"
 
 export default {
   name: "ProfileForm",
@@ -116,19 +122,29 @@ export default {
       form: { introduction: "", interest: "" },
       avatarUrl: null,
       avatarFile: null,
+      avatarLoadFailed: false,
       loading: false,
     }
+  },
+  computed: {
+    displayAvatar() {
+      if (this.avatarLoadFailed || !this.avatarUrl) return DEFAULT_AVATAR
+      return this.avatarUrl
+    },
   },
   created() {
     this.initForm()
   },
   methods: {
+    ...mapMutations(["setUserAvatar"]),
+
     initForm() {
       this.form = {
         introduction: this.user.introduction || "",
         interest: this.user.interest || "",
       }
       this.avatarUrl = this.user.avatar_url || null
+      this.avatarLoadFailed = false
     },
     startEditing() {
       this.isEditing = true
@@ -158,12 +174,13 @@ export default {
       User.preference(formData)
         .then((res) => {
           const newAvatar = res.data.data.avatar_url
-          this.$message.success("头像更新成功")
-          this.$emit("avatarUpdated", newAvatar)
-          bus.emit("avatar-updated", newAvatar)
+          this.avatarUrl = newAvatar
+          this.avatarLoadFailed = false
+          notify.success("头像更新成功")
+          this.setUserAvatar(newAvatar)
         })
         .catch(() => {
-          this.$message.error("头像上传失败")
+          notify.error("头像上传失败")
         })
     },
     async handleSubmit() {
@@ -173,19 +190,23 @@ export default {
         formData.append("introduction", this.form.introduction)
         formData.append("interest", this.form.interest)
         await User.preference(formData)
+        const serverAvatar = this.user.avatar_url
         this.$emit("profileUpdated", {
           ...this.user,
           introduction: this.form.introduction,
           interest: this.form.interest,
-          avatar_url: this.avatarUrl,
+          avatar_url: serverAvatar,
         })
-        this.$message.success("个人信息更新成功")
+        notify.success("个人信息更新成功")
         this.isEditing = false
       } catch {
-        this.$message.error("个人信息更新失败")
+        notify.error("个人信息更新失败")
       } finally {
         this.loading = false
       }
+    },
+    onAvatarError() {
+      this.avatarLoadFailed = true
     },
   },
 }
@@ -271,60 +292,7 @@ export default {
   display: flex;
   gap: 1rem;
   margin-top: 1.5rem;
-}
-
-.edit-button,
-.password-button,
-.logout-button {
-  padding: 0.6rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.button-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.edit-button {
-  background-color: transparent;
-  border-color: #ddd;
-  color: #555;
-}
-
-.edit-button:hover {
-  background-color: #f5f5f5;
-  border-color: #ccc;
-}
-
-.password-button {
-  background-color: rgba(168, 230, 207, 0.2);
-  color: #27ae60;
-  border-color: rgba(39, 174, 96, 0.3);
-}
-
-.password-button:hover {
-  background-color: rgba(168, 230, 207, 0.3);
-  border-color: rgba(39, 174, 96, 0.5);
-}
-
-.logout-button {
-  background-color: rgba(231, 76, 60, 0.1);
-  color: #e74c3c;
-  border-color: rgba(231, 76, 60, 0.3);
-}
-
-.logout-button:hover {
-  background-color: rgba(231, 76, 60, 0.2);
-  border-color: rgba(231, 76, 60, 0.5);
+  flex-wrap: wrap;
 }
 
 .form-actions {
@@ -345,14 +313,5 @@ export default {
   margin-bottom: 0.5rem;
   font-weight: 500;
   text-align: left;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  resize: vertical;
 }
 </style>

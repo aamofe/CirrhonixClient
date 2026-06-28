@@ -55,4 +55,9 @@ export default {
   background: #e2e3e5;
   color: #383d41;
 }
+
+.status-badge.queued {
+  background: #e9ecef;
+  color: #495057;
+}
 </style>

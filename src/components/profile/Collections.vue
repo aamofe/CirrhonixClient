@@ -73,6 +73,7 @@ import CollectionCard from "@/components/profile/CollectionCard.vue"
 import CollectionDetail from "@/components/profile/CollectionDetail.vue"
 import CancelButton from "@/components/ui/CancelButton.vue" // Import CancelButton
 import Literature from "@/api/Literature"
+import notify from "@/utils/notify"
 
 export default {
   name: "CollectionsComponent",
@@ -123,7 +124,7 @@ export default {
         const response = await Literature.getCollections()
         this.collections = response.data.data || []
       } catch (error) {
-        this.$message.error("获取收藏夹失败")
+        notify.error("获取收藏夹失败")
       } finally {
         this.loading = false
       }
@@ -155,9 +156,9 @@ export default {
         this.collections.unshift(response.data.data)
         this.closeNewCollectionModal()
 
-        this.$message.success("收藏夹创建成功")
+        notify.success("收藏夹创建成功")
       } catch (error) {
-        this.$message.error("创建收藏夹失败")
+        notify.error("创建收藏夹失败")
       }
     },
 
@@ -181,9 +182,9 @@ export default {
 
         this.closeEditCollectionModal()
 
-        this.$message.success("收藏夹更新成功")
+        notify.success("收藏夹更新成功")
       } catch (error) {
-        this.$message.error("更新收藏夹失败")
+        notify.error("更新收藏夹失败")
       }
     },
 
@@ -203,10 +204,10 @@ export default {
           (c) => c.id !== collection.id
         )
 
-        this.$message.success(`"${collection.name}" 删除成功`)
+        notify.success(`"${collection.name}" 删除成功`)
       } catch (error) {
         const msg = error.response?.data?.message || "删除操作失败，请稍后重试"
-        this.$message.error(msg)
+        notify.error(msg)
       }
     },
 

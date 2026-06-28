@@ -46,9 +46,7 @@
                       <span class="time">{{ task.start_time?.split(' ')[1] }}</span>
                     </span>
                   </div>
-                  <div class="task-status" :class="task.status">
-                    {{ getStatusText(task.status) }}
-                  </div>
+                  <StatusBadge :status="task.status" />
                 </div>
                 <div v-if="recentAnalysisTasks.length > 3" class="view-all">
                   <router-link to="/literature/analyze/list">查看全部</router-link>
@@ -81,8 +79,8 @@
                       <span class="time">{{ task.start_time?.split(' ')[1] }}</span>
                     </span>
                   </div>
-                  <div class="task-status" :class="task.status">
-                    {{ getStatusText(task.status) }}
+                  <div class="task-status-wrap">
+                    <StatusBadge :status="task.status" />
                     <span v-if="task.progress" class="task-progress">{{ formatProgress(task.progress) }}</span>
                   </div>
                 </div>
@@ -187,10 +185,10 @@ import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import PageHero from "@/components/ui/PageHero.vue"
 import LoadingSpinner from "@/components/ui/LoadingSpinner.vue"
 import EmptyState from "@/components/ui/EmptyState.vue"
+import StatusBadge from "@/components/ui/StatusBadge.vue"
 import SiteFooter from "@/components/navigation/SiteFooter.vue"
 import Literature from "@/api/Literature"
 import Crawling from "@/api/Crawler"
-import { getStatusText } from "@/utils/format"
 
 export default {
   name: "HomeView",
@@ -200,6 +198,7 @@ export default {
     PageHero,
     LoadingSpinner,
     EmptyState,
+    StatusBadge,
     SiteFooter,
   },
   data() {
@@ -286,8 +285,6 @@ export default {
       if (typeof progress === 'number') return `${(progress * 100).toFixed(1)}%`
       return progress
     },
-
-    getStatusText,
 
     getAnalysisTaskTitle(task) {
       if (task.literature && task.literature.title) {
@@ -599,12 +596,7 @@ export default {
   display: inline-block;
 }
 
-.task-status {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
+.task-status-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -613,30 +605,7 @@ export default {
 
 .task-progress {
   font-size: 10px;
-  color: inherit;
-  opacity: 0.8;
-}
-
-/* 任务状态颜色 */
-.task-status.pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.task-status.processing,
-.task-status.running {
-  background: #cce7ff;
-  color: #004085;
-}
-
-.task-status.completed {
-  background: #d4edda;
-  color: #155724;
-}
-
-.task-status.failed {
-  background: #f8d7da;
-  color: #721c24;
+  color: #666;
 }
 
 .view-all {

@@ -1,4 +1,5 @@
 import service from '@/http'
+import { parseFetchErrorResponse } from '@/utils/apiError'
 
 /**
  * api/Ai.js  —  RAG v2 接口封装
@@ -99,7 +100,8 @@ export default class AI {
         })
 
         if (!res.ok) {
-          onError?.(`HTTP ${res.status}: ${res.statusText}`)
+          const errMsg = await parseFetchErrorResponse(res)
+          onError?.(errMsg)
           return
         }
 

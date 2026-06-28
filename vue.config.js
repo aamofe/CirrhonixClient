@@ -24,7 +24,7 @@ module.exports = defineConfig({
     // port: 8091,
     proxy: {
       '/api': {
-        target: 'http://125.122.39.119:8081/',
+        target: process.env.VUE_APP_API_TARGET || 'http://125.122.39.119:8081/',
         changeOrigin: true,
         onProxyReq: function (proxyReq, req) {
           if (req.headers.authorization) {

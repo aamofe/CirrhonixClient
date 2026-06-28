@@ -67,7 +67,8 @@ import {
   EditPen,
   Delete,
 } from "@element-plus/icons-vue"
-import { ElMessageBox } from "element-plus"
+import notify from "@/utils/notify"
+import { formatDate } from "@/utils/format"
 export default {
   name: "CollectionCard",
   components: {
@@ -84,22 +85,9 @@ export default {
     },
   },
   methods: {
-    formatDate(dateString) {
-      if (!dateString) return ""
-
-      const date = new Date(dateString)
-      return date.toLocaleDateString("zh-CN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      })
-    },
+    formatDate,
     confirmDelete() {
-      ElMessageBox.confirm("确定要删除该收藏夹吗？", "警告", {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning",
-      })
+      notify.confirm("确定要删除该收藏夹吗？", "警告")
         .then(() => {
           this.$emit("delete", this.collection)
         })

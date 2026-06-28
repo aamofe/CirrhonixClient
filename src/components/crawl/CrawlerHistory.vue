@@ -67,8 +67,8 @@
                 {{ history.scheduled ? '定时任务' : '手动任务' }}
               </span>
             </td>
-            <td :class="history.status">
-              {{ formatStatus(history.status) }}
+            <td>
+              <StatusBadge :status="history.status" />
             </td>
             <td>
               <button
@@ -81,9 +81,7 @@
         </tbody>
       </table>
 
-      <div v-if="!filteredHistory.length" class="empty-history">
-        没有符合条件的爬取记录
-      </div>
+      <EmptyState v-if="!filteredHistory.length" message="没有符合条件的爬取记录" />
     </div>
 
     <Pagination v-if="totalPages > 1" :current-page="currentPage" :total-pages="totalPages" @page-change="changePage" />
@@ -106,6 +104,9 @@
 
 <script>
 import Crawler from "@/api/Crawler"
+import notify from "@/utils/notify"
+import StatusBadge from "@/components/ui/StatusBadge.vue"
+import EmptyState from "@/components/ui/EmptyState.vue"
 import CrawlResults from "./CrawlResults.vue"
 import Pagination from "@/components/navigation/Pagination.vue"
 export default {
@@ -113,6 +114,8 @@ export default {
   components: {
     CrawlResults,
     Pagination,
+    StatusBadge,
+    EmptyState,
   },
   props: {
     availableSources: {
@@ -211,33 +214,17 @@ export default {
           this.crawlerHistory = []
         }
       } catch (error) {
-        this.$message.error("获取爬取历史失败")
+        notify.error("获取爬取历史失败")
       }
     },
 
     changePage(page) {
       if (page < 1 || page > this.totalPages || page === this.currentPage) return
       this.currentPage = page
-      this.fetchCrawlerHistory() // Call API to get data for the new page
+      this.fetchCrawlerHistory()
       this.$emit("page-changed", page)
     },
 
-    formatStatus(status) {
-      switch (status) {
-        case "completed":
-          return "已完成"
-        case "running":
-          return "运行中"
-        case "failed":
-          return "失败"
-        case "queued":
-          return "已排队"
-        case "pending":
-          return "等待中"
-        default:
-          return status
-      }
-    },
     getDisplaySources(dataSources) {
       if (!dataSources || !Array.isArray(dataSources)) {
         return ""
@@ -270,11 +257,11 @@ export default {
           }
           this.showResultCard = true
         } else {
-          this.$message.warning("该任务暂无结果数据")
+          notify.warning("该任务暂无结果数据")
         }
       } catch (error) {
         console.error("获取爬取结果详情失败:", error)
-        this.$message.error("获取爬取结果详情失败")
+        notify.error("获取爬取结果详情失败")
       } finally {
         this.loadingTaskId = null
       }
@@ -340,54 +327,8 @@ export default {
   margin-bottom: 1.5rem;
 }
 
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #444;
-}
-
-.select-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-}
-
-.select-input:focus {
-  outline: none;
-  border-color: #a8e6cf;
-  box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.2);
-}
-
 .history-table {
   overflow-x: auto;
-}
-
-.start-time-cell {
-  line-height: 1.4;
-  text-align: center;
-}
-
-.start-time-cell .date {
-  font-weight: 500;
-  color: #333;
-}
-
-.start-time-cell .time {
-  font-size: 12px;
-  color: #666;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
 }
 
 .start-time-cell {
@@ -404,6 +345,11 @@ table {
 .start-time-cell .time {
   font-size: 12px;
   color: #666;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
 th,
@@ -453,32 +399,6 @@ th {
 .task-type.manual {
   background-color: #fff3e0;
   color: #f57c00;
-}
-
-/* 状态样式 */
-td.pending {
-  color: #ffc107;
-  font-weight: 500;
-}
-
-td.queued {
-  color: #6c757d;
-  font-weight: 500;
-}
-
-td.running {
-  color: #17a2b8;
-  font-weight: 500;
-}
-
-td.completed {
-  color: #28a745;
-  font-weight: 500;
-}
-
-td.failed {
-  color: #dc3545;
-  font-weight: 500;
 }
 
 .pagination {
@@ -619,14 +539,6 @@ td.failed {
   overflow-y: auto;
   padding: 1.5rem;
 }
-
-.empty-history {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-  font-style: italic;
-}
-
 
 /* 响应式设计 */
 @media (max-width: 768px) {

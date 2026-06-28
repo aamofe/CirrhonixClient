@@ -84,6 +84,7 @@
 
 <script>
 import { mapMutations } from "vuex"
+import notify from "@/utils/notify"
 import User from "@/api/User"
 import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import FormInput from "@/components/ui/BaseInput.vue"
@@ -111,7 +112,7 @@ export default {
 
     async login() {
       if (!this.username || !this.password) {
-        this.$message.error("用户名和密码不能为空")
+        notify.error("用户名和密码不能为空")
         return
       }
 
@@ -120,7 +121,7 @@ export default {
         const loginRes = await User.login(this.username, this.password)
 
         if (!loginRes?.data) {
-          this.$message.error(loginRes?.data?.message || "登录失败")
+          notify.error(loginRes?.data?.message || "登录失败")
           return
         }
 
@@ -131,9 +132,9 @@ export default {
         this.setUserId(userInfo.id)
 
         this.$router.push("/")
-        this.$message.success("欢迎回来！")
+        notify.success("欢迎回来！")
       } catch (err) {
-        this.$message.error(err?.response?.data?.message || "登录请求失败")
+        notify.apiError(err, "登录请求失败")
       } finally {
         this.isLoading = false
       }
@@ -141,24 +142,24 @@ export default {
 
     async register() {
       if (!this.username || !this.password || !this.confirmPassword || !this.email) {
-        this.$message.error("所有字段都是必填的")
+        notify.error("所有字段都是必填的")
         return
       }
 
       if (this.password !== this.confirmPassword) {
-        this.$message.error("密码不匹配")
+        notify.error("密码不匹配")
         return
       }
 
       if (!this.agreeTerms) {
-        this.$message.error("请同意服务条款和条件")
+        notify.error("请同意服务条款和条件")
         return
       }
 
       this.isLoading = true
       try {
         await User.register(this.username, this.email, this.password, this.confirmPassword)
-        this.$message.success("注册成功！请登录")
+        notify.success("注册成功！请登录")
         this.isRegisterMode = false
         this.username = ""
         this.email = ""
@@ -166,7 +167,7 @@ export default {
         this.confirmPassword = ""
         this.agreeTerms = false
       } catch (error) {
-        this.$message.error(error?.response?.data?.message || "注册失败")
+        notify.apiError(error, "注册失败")
       } finally {
         this.isLoading = false
       }

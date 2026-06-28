@@ -33,6 +33,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner.vue"
 import EmptyState from "@/components/ui/EmptyState.vue"
 import { Back } from "@element-plus/icons-vue"
 import Literature from "@/api/Literature"
+import notify from "@/utils/notify"
 
 export default {
   name: "CollectionDetail",
@@ -63,7 +64,7 @@ export default {
         this.collection = response.data.data
         this.literatures = this.collection.literatures || []
       } catch (error) {
-        this.$message.error("获取收藏夹详情失败")
+        notify.error("获取收藏夹详情失败")
       } finally {
         this.loading = false
       }
@@ -73,7 +74,7 @@ export default {
     },
     viewArticleDetail(articleId) {
       if (articleId === undefined || articleId === null || articleId === '') {
-        this.$message.error('无法查看文章详情：文章ID无效')
+        notify.error('无法查看文章详情：文章ID无效')
         return
       }
       this.$router.push({

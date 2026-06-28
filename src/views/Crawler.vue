@@ -43,6 +43,7 @@ import AutoCrawler from '@/components/crawl/AutoCrawler.vue'
 import CrawlerHistory from '@/components/crawl/CrawlerHistory.vue'
 import UploadPaper from '@/components/crawl/UploadPaper.vue'
 import Crawler from '@/api/Crawler'
+import notify from '@/utils/notify'
 
 import {
   Search as SearchIcon,
@@ -89,10 +90,10 @@ export default {
             ? response.data.data
             : [response.data.data]
         } else {
-          this.$message.error('获取数据源列表返回的数据格式有误')
+          notify.error('获取数据源列表返回的数据格式有误')
         }
       } catch (error) {
-        this.$message.error('获取数据源列表失败')
+        notify.error('获取数据源列表失败')
       } finally {
         this.isLoading = false
       }

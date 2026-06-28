@@ -96,9 +96,6 @@
       </PrimaryButton>
     </div>
 
-    <el-alert v-if="uploadResult.show" :title="uploadResult.message" :type="uploadResult.success ? 'success' : 'error'"
-      show-icon @close="closeUploadResult" />
-
     <div v-if="uploadedLiteratures.length > 0" class="uploaded-literature">
       <h4>已上传的文献</h4>
       <div class="literature-list">
@@ -113,7 +110,8 @@
 import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import LiteratureCard from "../literature/LiteratureCard.vue"
 import Literature from "@/api/Literature"
-import { ElMessage, ElInput, ElDatePicker, ElSelect, ElOption, ElAlert } from "element-plus"
+import { ElInput, ElDatePicker, ElSelect, ElOption } from "element-plus"
+import notify from "@/utils/notify"
 import { Document, Upload, Loading, Close } from "@element-plus/icons-vue"
 export default {
   name: "UploadPaper",
@@ -128,7 +126,6 @@ export default {
     ElDatePicker,
     ElSelect,
     ElOption,
-    ElAlert,
   },
   setup() {
   },
@@ -147,11 +144,6 @@ export default {
         url: "",
       },
       uploading: false,
-      uploadResult: {
-        show: false,
-        success: false,
-        message: "",
-      },
       uploadedLiteratures: [],
     }
   },
@@ -175,7 +167,7 @@ export default {
       if (file && file.type === "application/pdf") {
         this.singleUpload.file = file
       } else if (file) {
-        ElMessage.error("请上传PDF格式的文件")
+        notify.error("请上传PDF格式的文件")
         this.$refs.fileInput.value = ""
       }
     },
@@ -184,15 +176,12 @@ export default {
       if (file && file.type === "application/pdf") {
         this.singleUpload.file = file
       } else if (file) {
-        ElMessage.error("请上传PDF格式的文件")
+        notify.error("请上传PDF格式的文件")
       }
     },
     removeSingleFile() {
       this.singleUpload.file = null
       this.$refs.fileInput.value = ""
-    },
-    closeUploadResult() {
-      this.uploadResult.show = false
     },
     viewArticleDetail(id) {
       if (id) {
@@ -200,7 +189,7 @@ export default {
           this.$router.push({ name: "literature-detail", params: { id } })
         }, 100)
       } else {
-        ElMessage.warning('文献ID不存在，无法跳转')
+        notify.warning('文献ID不存在，无法跳转')
       }
     },
     saveTaskToMemory(taskId) {
@@ -213,11 +202,10 @@ export default {
     },
     async uploadSinglePaper() {
       if (!this.isFormValid) {
-        ElMessage.error("请填写所有必填项")
+        notify.error("请填写所有必填项")
         return
       }
       this.uploading = true
-      this.closeUploadResult()
 
       try {
         const formData = new FormData()
@@ -245,21 +233,14 @@ export default {
 
         const response = await Literature.uploadPaper(formData)
         if (response.status === 200 && response.data.data) {
-          this.showUploadResult(true, response.data.message || "文献上传成功")
+          notify.success(response.data.message || "文献上传成功")
           this.uploadedLiteratures.unshift(response.data.data)
           this.resetSingleUploadForm()
         } else {
           throw new Error(response.data?.message || "上传失败")
         }
       } catch (error) {
-        let errorMessage = "上传失败: 未知错误"
-        if (error.response?.data?.message) {
-          errorMessage = `上传失败: ${error.response.data.message}`
-        } else if (error.message) {
-          errorMessage = `上传失败: ${error.message}`
-        }
-        console.error("Upload error:", error)
-        this.showUploadResult(false, errorMessage)
+        notify.apiError(error, "上传失败")
       } finally {
         this.uploading = false
       }
@@ -280,12 +261,6 @@ export default {
       if (this.$refs.fileInput) {
         this.$refs.fileInput.value = ""
       }
-    },
-    showUploadResult(success, message) {
-      this.uploadResult = { show: true, success, message }
-      setTimeout(() => {
-        this.closeUploadResult()
-      }, 5000)
     },
   },
 }

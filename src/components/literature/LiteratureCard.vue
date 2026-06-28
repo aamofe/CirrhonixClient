@@ -47,6 +47,8 @@
 </template>
 
 <script>
+import { formatDate } from '@/utils/format'
+
 export default {
   name: "LiteratureCard",
   props: {
@@ -65,9 +67,7 @@ export default {
       return `${authors[0]} 等.`
     },
     formattedDate() {
-      if (!this.article.publication_date) return ""
-      const date = new Date(this.article.publication_date)
-      return date.toLocaleDateString("zh-CN")
+      return formatDate(this.article.publication_date)
     },
     limitedKeywords() {
       return this.article.keywords?.slice(0, 3) || []

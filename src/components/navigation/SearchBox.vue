@@ -1,37 +1,72 @@
 <!-- src/components/SearchBox.vue -->
 <template>
-  <div class="search-box">
-    <input type="text" v-model="searchQuery" :placeholder="placeholder" @keyup.enter="handleSearch" />
-    <button @click="handleSearch">搜索</button>
+  <div class="search-box" :class="{ compact }">
+    <el-input
+      v-model="searchQuery"
+      :placeholder="placeholder"
+      clearable
+      @keyup.enter="handleSearch"
+      @clear="handleClear"
+    >
+      <template #prefix>
+        <el-icon><Search /></el-icon>
+      </template>
+    </el-input>
+    <PrimaryButton
+      :fullWidth="false"
+      :loading="loading"
+      size="small"
+      class="search-btn"
+      @click="handleSearch"
+    >
+      搜索
+    </PrimaryButton>
   </div>
 </template>
 
 <script>
+import { Search } from '@element-plus/icons-vue'
+import PrimaryButton from '@/components/ui/PrimaryButton.vue'
+
 export default {
-  name: "SearchBox",
+  name: 'SearchBox',
+  components: { Search, PrimaryButton },
   props: {
     placeholder: {
       type: String,
-      default: "输入关键词、作者、疾病名称等...",
+      default: '输入关键词、作者、疾病名称等...',
     },
     initialQuery: {
       type: String,
-      default: "",
+      default: '',
+    },
+    loading: {
+      type: Boolean,
+      default: false,
+    },
+    compact: {
+      type: Boolean,
+      default: false,
     },
   },
+  emits: ['search', 'clear'],
   data() {
     return {
       searchQuery: this.initialQuery,
     }
   },
-  methods: {
-    handleSearch() {
-      this.$emit("search", this.searchQuery.trim())
-    },
-  },
   watch: {
     initialQuery(newVal) {
       this.searchQuery = newVal
+    },
+  },
+  methods: {
+    handleSearch() {
+      this.$emit('search', this.searchQuery.trim())
+    },
+    handleClear() {
+      this.searchQuery = ''
+      this.$emit('clear')
     },
   },
 }
@@ -42,35 +77,24 @@ export default {
   display: flex;
   max-width: 700px;
   margin: 0 auto;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  gap: 12px;
+  align-items: center;
 }
 
-.search-box input {
+.search-box.compact {
+  max-width: 600px;
+}
+
+.search-box :deep(.el-input) {
   flex: 1;
-  padding: 15px 20px;
-  border: none;
-  font-size: 16px;
-  color: #333;
 }
 
-.search-box input:focus {
-  outline: none;
+.search-box :deep(.el-input__wrapper) {
+  border-radius: var(--radius-md);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.search-box button {
-  background-color: #1a91c1;
-  color: white;
-  border: none;
-  padding: 0 25px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.search-box button:hover {
-  background-color: #157a9e;
+.search-btn {
+  flex-shrink: 0;
 }
 </style>

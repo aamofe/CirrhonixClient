@@ -150,7 +150,8 @@
             v-model="input"
             ref="ta"
             rows="2"
-            placeholder="输入问题，Enter 发送，Shift+Enter 换行"
+            maxlength="2000"
+            placeholder="输入问题，Enter 发送，Shift+Enter 换行（最多 2000 字）"
             :disabled="loading"
             @keydown="onKey"
           />
@@ -177,6 +178,10 @@
 
 <script>
 import AI from '@/api/Ai'
+import notify from '@/utils/notify'
+import { getApiErrorMessage } from '@/utils/apiError'
+
+const QUESTION_MAX_LENGTH = 2000
 
 const HIST_KEY = 'aia_msgs_v2'
 
@@ -319,6 +324,10 @@ export default {
     async send() {
       const q = this.input.trim()
       if (!q || this.loading) return
+      if (q.length > QUESTION_MAX_LENGTH) {
+        notify.error(`问题长度不能超过 ${QUESTION_MAX_LENGTH} 个字符`)
+        return
+      }
       this._pushUser(q)
       this.input   = ''
       this.loading = true
@@ -342,8 +351,9 @@ export default {
           { confidence: d.confidence, entities_found: d.entities_found,
             intent: d.intent, question_type: d.question_type },
         )
-      } catch {
-        this._pushAi('请求失败，请稍后重试。', [], null)
+      } catch (err) {
+        const msg = getApiErrorMessage(err, '请求失败，请稍后重试。')
+        this._pushAi(msg, [], null)
       } finally {
         this.loading = false
         this._scrollBottom()

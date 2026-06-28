@@ -1,50 +1,29 @@
 <template>
-  <div class="analysis-result-card" v-if="visible" @click.self="handleClose">
-    <div class="card-overlay" @click.self="handleClose">
-      <div class="card-content" @click.stop>
-        <div class="card-header">
-          <h3>分析任务详情</h3>
-          <button class="close-btn" @click="handleClose">
-            <el-icon>
-              <Close />
-            </el-icon>
-          </button>
+  <BaseModal v-if="visible" title="分析任务详情" max-width="1000px" @close="handleClose">
+    <el-card v-if="isLoading" v-loading="isLoading" class="loading-container">
+      <p class="loading-text">正在加载任务详情...</p>
+    </el-card>
+
+    <div v-else-if="taskData" class="task-info">
+      <div class="info-row" v-for="info in taskInfoList" :key="info.label">
+        <span class="label">{{ info.label }}:</span>
+        <span class="value" :class="info.class">{{ info.value }}</span>
+      </div>
+    </div>
+
+    <div class="analysis-results" v-if="taskData?.status === 'completed'">
+      <div class="result-section">
+        <h4>实体关系分析结果</h4>
+
+        <div class="stats-row" v-if="taskData.statistics">
+          <div class="stat-item" v-for="stat in statisticsList" :key="stat.label">
+            <span class="stat-number">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
         </div>
 
-        <div class="card-body">
-          <!-- 加载状态 -->
-          <el-card v-if="isLoading" v-loading="isLoading" class="loading-container">
-            <p class="loading-text">正在加载任务详情...</p>
-          </el-card>
-
-          <!-- 任务信息 -->
-          <div v-else-if="taskData" class="task-info">
-            <div class="info-row" v-for="info in taskInfoList" :key="info.label">
-              <span class="label">{{ info.label }}:</span>
-              <span class="value" :class="info.class">{{ info.value }}</span>
-            </div>
-          </div>
-
-          <!-- 分析结果 -->
-          <div class="analysis-results" v-if="taskData?.status === 'completed'">
-            <div class="result-section">
-              <h4>实体关系分析结果</h4>
-
-              <!-- 统计信息 -->
-              <div class="stats-row" v-if="taskData.statistics">
-                <div class="stat-item" v-for="stat in statisticsList" :key="stat.label">
-                  <span class="stat-number">{{ stat.value }}</span>
-                  <span class="stat-label">{{ stat.label }}</span>
-                </div>
-              </div>
-
-              <div v-else class="no-data-placeholder">
-                <el-icon class="no-data-icon">
-                  <Document />
-                </el-icon>
-                <p>暂无分析结果数据</p>
-              </div>
-            </div>
+        <EmptyState v-else message="暂无分析结果数据" />
+      </div>
 
             <!-- 实体列表 -->
             <div class="entity-list-section" v-if="taskData.entities?.length">
@@ -110,31 +89,30 @@
             </div>
           </div>
 
-          <!-- 任务未完成状态 -->
-          <div v-else-if="taskData && taskData.status !== 'completed'" class="status-info">
-            <div class="status-icon-wrapper" :class="getStatusClass(taskData.status)">
-              <el-icon class="status-icon">
-                <component :is="getStatusIcon(taskData.status)" />
-              </el-icon>
-            </div>
-            <p class="status-description">{{ getStatusDescription(taskData.status) }}</p>
-          </div>
-        </div>
-
-        <div class="card-footer">
-          <primary-button @click="handleClose" class="close-button">关闭</primary-button>
-        </div>
+    <div v-else-if="taskData && taskData.status !== 'completed'" class="status-info">
+      <div class="status-icon-wrapper" :class="`status-${getStatusClass(taskData.status)}`">
+        <el-icon class="status-icon">
+          <component :is="getStatusIcon(taskData.status)" />
+        </el-icon>
       </div>
+      <p class="status-description">{{ getStatusDescription(taskData.status) }}</p>
     </div>
-  </div>
+
+    <template #footer>
+      <PrimaryButton :fullWidth="false" @click="handleClose">关闭</PrimaryButton>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
 import { ref, computed, watch } from 'vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import PrimaryButton from '@/components/ui/PrimaryButton.vue'
 import Literature from '@/api/Literature'
-import { Close, Document, Loading, Clock, SuccessFilled, WarningFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { Loading, Clock, SuccessFilled, CircleCloseFilled, ArrowRight } from '@element-plus/icons-vue'
+import notify from '@/utils/notify'
+import { formatDateTime, getAnalysisStatusLabel, getStatusClass } from '@/utils/format'
 
 
 const STATUS_CONFIG = {
@@ -161,14 +139,14 @@ const ENTITY_TAG_TYPES = {
 export default {
   name: 'LiteratureAnalysis',
   components: {
+    BaseModal,
+    EmptyState,
     PrimaryButton,
-    Close,
-    Document,
     Loading,
+    Clock,
     SuccessFilled,
-    WarningFilled,
     CircleCloseFilled,
-    ArrowRight
+    ArrowRight,
   },
   props: {
     visible: Boolean,
@@ -186,7 +164,7 @@ export default {
 
       const info = [
         { label: '任务ID', value: taskData.value.id },
-        { label: '状态', value: getStatusText(taskData.value.status), class: getStatusClass(taskData.value.status) }
+        { label: '状态', value: getAnalysisStatusLabel(taskData.value.status), class: `status-${getStatusClass(taskData.value.status)}` }
       ]
 
       if (taskData.value.literature?.title) {
@@ -227,7 +205,7 @@ export default {
         }
       } catch (error) {
 
-        ElMessage.error('加载任务详情失败')
+        notify.error('加载任务详情失败')
       } finally {
         isLoading.value = false
       }
@@ -262,11 +240,8 @@ export default {
     }
 
     const getEntityTagType = (entityType) => ENTITY_TAG_TYPES[entityType] || ENTITY_TAG_TYPES.default
-    const getStatusText = (status) => STATUS_CONFIG[status]?.text || status
-    const getStatusClass = (status) => `status-${status}`
     const getStatusIcon = (status) => STATUS_CONFIG[status]?.icon || 'Loading'
     const getStatusDescription = (status) => STATUS_CONFIG[status]?.description || ''
-    const formatDateTime = (dateTime) => dateTime ? new Date(dateTime).toLocaleString('zh-CN') : ''
 
     return {
       taskData,
@@ -276,7 +251,6 @@ export default {
       handleClose,
       getEntityNameFromRelation,
       getEntityTagType,
-      getStatusText,
       getStatusClass,
       getStatusIcon,
       getStatusDescription,
@@ -287,80 +261,6 @@ export default {
 </script>
 
 <style scoped>
-.analysis-result-card {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  max-width: 1000px;
-  max-height: 90vh;
-  width: 90%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  background-color: #f3f4f6;
-}
-
-.card-body {
-  padding: 20px 24px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-/* 加载状态 */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -459,23 +359,6 @@ export default {
   font-size: 12px;
   color: #6b7280;
   margin-top: 4px;
-}
-
-/* 无数据提示 */
-.no-data-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  color: #9ca3af;
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-}
-
-.no-data-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
 }
 
 /* 实体标签 */

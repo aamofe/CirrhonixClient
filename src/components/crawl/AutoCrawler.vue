@@ -146,10 +146,9 @@
         <div class="form-group">
           <label for="schedule-frequency">爬取频率:</label>
           <select id="schedule-frequency" v-model="newSchedule.interval" class="form-input">
-            <option value="hourly">每小时</option>
-            <option value="daily">每天</option>
-            <option value="weekly">每周</option>
-            <option value="monthly">每月</option>
+            <option v-for="opt in intervalOptions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
           </select>
         </div>
 
@@ -182,7 +181,7 @@
 import PrimaryButton from "@/components/ui/PrimaryButton.vue"
 import CancelButton from "@/components/ui/CancelButton.vue"
 import ModalComponent from "@/components/ui/BaseModal.vue"
-import { ElMessage, ElMessageBox } from "element-plus"
+import notify from "@/utils/notify"
 import {
   Edit,
   Delete,
@@ -216,6 +215,10 @@ export default {
   data() {
     return {
       autoSchedules: [],
+      intervalOptions: [
+        { value: "daily", label: "每日" },
+        { value: "weekly", label: "每周" },
+      ],
       showNewScheduleModal: false,
       newSchedule: {
         id: null,
@@ -263,17 +266,17 @@ export default {
 
     async saveSchedule() {
       if (!this.newSchedule.name.trim()) {
-        ElMessage.error("请输入任务名称")
+        notify.error("请输入任务名称")
         return
       }
 
       if (!this.newSchedule.data_source_ids.length) {
-        ElMessage.error("请选择至少一个数据源")
+        notify.error("请选择至少一个数据源")
         return
       }
 
       if (!this.newSchedule.keywords.trim()) {
-        ElMessage.error("请输入关键词")
+        notify.error("请输入关键词")
         return
       }
 
@@ -292,15 +295,19 @@ export default {
       try {
         if (this.newSchedule.id) {
           await Crawler.updateSchedule(this.newSchedule.id, scheduleData)
-          ElMessage.success("任务更新成功")
+          notify.success("任务更新成功")
         } else {
-          await Crawler.createSchedule(scheduleData)
-          ElMessage.success("任务创建成功")
+          const createRes = await Crawler.createSchedule(scheduleData)
+          if (createRes.data?.interval_options?.length) {
+            this.intervalOptions = createRes.data.interval_options
+          }
+          notify.success("任务创建成功")
         }
         this.showNewScheduleModal = false
         this.fetchAutoSchedules()
       } catch (error) {
-        ElMessage.error(this.newSchedule.id ? "更新任务失败" : "创建任务失败")
+        const fallback = this.newSchedule.id ? "更新任务失败" : "创建任务失败"
+        notify.apiError(error, fallback)
         console.error("Error saving schedule:", error)
       }
     },
@@ -309,13 +316,23 @@ export default {
       try {
         const response = await Crawler.getScheduleList()
         this.autoSchedules = response.data.data || []
+        if (response.data.interval_options?.length) {
+          this.intervalOptions = response.data.interval_options
+        }
       } catch (error) {
-        ElMessage.error("获取自动爬取任务失败")
+        notify.error("获取自动爬取任务失败")
         console.error("Error fetching schedules:", error)
       }
     },
 
     editSchedule(schedule) {
+      const validValues = this.intervalOptions.map((o) => o.value)
+      let interval = schedule.interval
+      if (!validValues.includes(interval)) {
+        notify.warning("该任务的执行频率已不再支持，请重新选择「每日」或「每周」")
+        interval = "daily"
+      }
+
       this.newSchedule = {
         id: schedule.id,
         name: schedule.name || "",
@@ -323,7 +340,7 @@ export default {
         data_source_ids: schedule.data_sources && schedule.data_sources.length > 0
           ? this.getDataSourceIdsByNames(schedule.data_sources)
           : schedule.data_source_ids || [],
-        interval: schedule.interval,
+        interval,
         keywords: schedule.query_params?.keywords || "",
         max_results: schedule.query_params?.max_results || 100,
         is_active: schedule.is_active,
@@ -336,13 +353,13 @@ export default {
       try {
         const response = await Crawler.toggleSchedule(schedule.id, !schedule.is_active)
         if (response.status === 200) {
-          ElMessage.success(`任务已${action}成功`)
+          notify.success(`任务已${action}成功`)
           this.fetchAutoSchedules()
         } else {
-          ElMessage.error(`任务${action}失败`)
+          notify.error(`任务${action}失败`)
         }
       } catch (error) {
-        ElMessage.error(`更新任务状态失败`)
+        notify.error(`更新任务状态失败`)
         console.error("Error toggling schedule:", error)
       }
     },
@@ -353,46 +370,41 @@ export default {
         console.log(response.status)  // 查看状态码
         const message = response.data.message
         if (response.status === 202) {
-          ElMessage.success(`任务"${schedule.name}"已开始执行`)
+          notify.success(`任务"${schedule.name}"已开始执行`)
           this.fetchAutoSchedules() // Refresh the list to show the new status
         } else {
-          ElMessage.error(message)
+          notify.error(message)
         }
       } catch (error) {
         if (error.response) {
           const message = error.response.data.message || "触发任务失败"
-          ElMessage.error(`触发任务失败: ${message}`)
+          notify.error(`触发任务失败: ${message}`)
         } else {
-          ElMessage.error(`触发任务失败: ${error.message}`)
+          notify.error(`触发任务失败: ${error.message}`)
         }
       }
     },
     async deleteSchedule(schedule) {
-      ElMessageBox.confirm(
+      notify.confirm(
         `确定要删除任务"${schedule.name}"吗？`,
         "提示",
-        {
-          confirmButtonText: "确定",
-          cancelButtonText: "取消",
-          type: "warning",
-        }
       )
         .then(async () => {
           try {
             const response = await Crawler.deleteSchedule(schedule.id)
             if (response.data.success) {
-              ElMessage.success("任务删除成功")
+              notify.success("任务删除成功")
               this.fetchAutoSchedules()
             } else {
-              ElMessage.error("任务删除失败")
+              notify.error("任务删除失败")
             }
           } catch (error) {
-            ElMessage.error("删除任务失败")
+            notify.error("删除任务失败")
             console.error("Error deleting schedule:", error)
           }
         })
         .catch(() => {
-          // ElMessage.info("已取消删除")
+          // notify.info("已取消删除")
         })
     },
 
@@ -414,15 +426,14 @@ export default {
     },
 
     formatFrequency(frequency) {
+      const opt = this.intervalOptions.find((o) => o.value === frequency)
+      if (opt) return opt.label
+
       switch (frequency) {
         case "hourly":
-          return "每小时"
-        case "daily":
-          return "每天"
-        case "weekly":
-          return "每周"
+          return "每小时（已停用）"
         case "monthly":
-          return "每月"
+          return "每月（已停用）"
         default:
           return frequency
       }
@@ -719,34 +730,6 @@ export default {
   max-width: 500px;
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #444;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #a8e6cf;
-  box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.15);
-}
-
-/* 多选框样式 */
 .multi-select-container {
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -760,57 +743,7 @@ export default {
   box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.15);
 }
 
-.checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.checkbox-item {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 0.25rem 0;
-  transition: all 0.2s;
-}
-
-.checkbox-item:hover {
-  background-color: rgba(168, 230, 207, 0.05);
-  border-radius: 4px;
-  padding: 0.25rem 0.5rem;
-}
-
-.checkbox-input {
-  margin-right: 0.75rem;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.checkbox-label {
-  font-size: 14px;
-  color: #333;
-  user-select: none;
-}
-
-.form-input[required]:invalid {
-  border-color: #dc3545;
-}
-
-.form-input[required]:invalid:focus {
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
-}
-
-textarea.form-input {
-  resize: vertical;
-  font-family: inherit;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
+.schedule-form .form-actions {
   padding-top: 1rem;
   border-top: 1px solid #eee;
 }

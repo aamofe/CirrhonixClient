@@ -14,25 +14,13 @@
       </template>
 
       <div class="graph-search-container">
-        <el-input
-          v-model="searchKeyword"
+        <SearchBox
           placeholder="搜索疾病、细胞或病原体..."
-          clearable
-          @keyup.enter="handleSearch"
-          @clear="handleClearSearch"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
-        <el-button
-          type="primary"
-          @click="handleSearch"
           :loading="isSearching"
-          class="search-btn"
-        >
-          搜索
-        </el-button>
+          compact
+          @search="handleSearch"
+          @clear="handleClearSearch"
+        />
       </div>
     </PageHero>
 
@@ -89,16 +77,16 @@
 <script>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useStore } from 'vuex'
-import { Search, Document } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { Document } from '@element-plus/icons-vue'
+import notify from '@/utils/notify'
 import KnowledgeGraph from '@/api/knowledgeGraph'
-import bus from '@/utils/bus'
 import GraphSidebar from '@/components/knowledge/GraphSidebar.vue'
 import GraphVisualization from '@/components/knowledge/GraphVisualization.vue'
 import NodeInfo from '@/components/knowledge/NodeInfo.vue'
 import EdgeInfo from '@/components/knowledge/EdgeInfo.vue'
 import ReviewCard from '@/components/knowledge/ReviewCard.vue'
 import SiteFooter from '@/components/navigation/SiteFooter.vue'
+import SearchBox from '@/components/navigation/SearchBox.vue'
 import PageHero from '@/components/ui/PageHero.vue'
 
 export default {
@@ -110,15 +98,14 @@ export default {
     EdgeInfo,
     ReviewCard,
     SiteFooter,
+    SearchBox,
     PageHero,
-    Search,
     Document,
   },
   setup() {
     const store = useStore()
     const isAdmin = computed(() => store.getters.isAdmin)
 
-    const searchKeyword = ref('')
     const isSearching = ref(false)
     const isLoading = ref(false)
     const showReviewCard = ref(false)
@@ -173,15 +160,16 @@ export default {
         }
       } catch (error) {
         console.error('加载概览失败:', error)
-        ElMessage.error('加载图谱数据失败')
+        notify.error('加载图谱数据失败')
       } finally {
         isLoading.value = false
       }
     }
 
     // 搜索实体
-    const handleSearch = async () => {
-      if (!searchKeyword.value.trim()) {
+    const handleSearch = async (keyword) => {
+      const query = (keyword || '').trim()
+      if (!query) {
         return
       }
 
@@ -190,7 +178,7 @@ export default {
       selectedEdge.value = null
 
       try {
-        const response = await KnowledgeGraph.searchEntities(searchKeyword.value.trim())
+        const response = await KnowledgeGraph.searchEntities(query)
         
         if (response.data && response.data.data) {
           const data = response.data.data
@@ -229,7 +217,7 @@ export default {
         }
       } catch (error) {
         console.error('搜索失败:', error)
-        ElMessage.error('搜索失败')
+        notify.error('搜索失败')
       } finally {
         isSearching.value = false
       }
@@ -237,9 +225,7 @@ export default {
 
     // 清除搜索，恢复概览
     const handleClearSearch = () => {
-      if (!searchKeyword.value) {
-        loadOverview()
-      }
+      loadOverview()
     }
 
     // 点击节点
@@ -305,7 +291,7 @@ export default {
         }
       } catch (error) {
         console.error('展开节点失败:', error)
-        ElMessage.error('展开节点失败')
+        notify.error('展开节点失败')
       }
     }
 
@@ -321,7 +307,7 @@ export default {
         }
       } catch (error) {
         console.error('获取边详情失败:', error)
-        ElMessage.error('获取边详情失败')
+        notify.error('获取边详情失败')
       }
     }
 
@@ -423,7 +409,6 @@ export default {
 
     return {
       isAdmin,
-      searchKeyword,
       isSearching,
       isLoading,
       graphNodes,
@@ -485,16 +470,6 @@ export default {
 .graph-search-container {
   max-width: 600px;
   margin: 0 auto;
-  display: flex;
-  gap: 12px;
-}
-
-.graph-search-container :deep(.el-input) {
-  flex: 1;
-}
-
-.search-btn {
-  flex-shrink: 0;
 }
 
 .graph-content {

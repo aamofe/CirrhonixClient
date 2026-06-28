@@ -115,12 +115,10 @@
                   @click="showTaskDetail(task)">
                   <div class="task-info">
                     <div class="task-id">任务 #{{ task.id }}</div>
-                    <div class="task-status" :class="getStatusClass(task.status)">
-                      {{ getStatusText(task.status) }}
-                    </div>
+                    <StatusBadge :status="task.status" :label="getAnalysisStatusLabel(task.status)" />
                   </div>
                   <div class="task-time">
-                    {{ task.start_time ? formatDateTime(task.start_time) : '未开始' }}
+                    {{ task.start_time ? formatDateTimeShort(task.start_time) : '未开始' }}
                   </div>
                 </div>
               </div>
@@ -131,12 +129,10 @@
                   @click="showTaskDetail(task)">
                   <div class="task-info">
                     <div class="task-id">任务 #{{ task.id }}</div>
-                    <div class="task-status" :class="getStatusClass(task.status)">
-                      {{ getStatusText(task.status) }}
-                    </div>
+                    <StatusBadge :status="task.status" :label="getAnalysisStatusLabel(task.status)" />
                   </div>
                   <div class="task-time">
-                    {{ task.start_time ? formatDateTime(task.start_time) : '未开始' }}
+                    {{ task.start_time ? formatDateTimeShort(task.start_time) : '未开始' }}
                   </div>
                 </div>
               </div>
@@ -149,12 +145,10 @@
                       @click="showTaskDetail(task)">
                       <div class="task-info">
                         <div class="task-id">任务 #{{ task.id }}</div>
-                        <div class="task-status" :class="getStatusClass(task.status)">
-                          {{ getStatusText(task.status) }}
-                        </div>
+                        <StatusBadge :status="task.status" :label="getAnalysisStatusLabel(task.status)" />
                       </div>
                       <div class="task-time">
-                        {{ task.start_time ? formatDateTime(task.start_time) : '未开始' }}
+                        {{ task.start_time ? formatDateTimeShort(task.start_time) : '未开始' }}
                       </div>
                     </div>
                   </div>
@@ -242,6 +236,9 @@ import { Back } from "@element-plus/icons-vue"
 import AiAssistant from "@/components/ai/AiAssistant.vue"
 import CollectionSelector from "@/components/literature/CollectionSelector.vue"
 import LiteratureAnalysis from "@/components/literature/LiteratureAnalysis.vue"
+import StatusBadge from "@/components/ui/StatusBadge.vue"
+import notify from "@/utils/notify"
+import { formatDate, formatDateTimeShort, getAnalysisStatusLabel } from "@/utils/format"
 
 export default {
   name: "LiteratureDetail",
@@ -251,7 +248,8 @@ export default {
     Back,
     AiAssistant,
     CollectionSelector,
-    LiteratureAnalysis
+    LiteratureAnalysis,
+    StatusBadge,
   },
   data() {
     return {
@@ -312,12 +310,12 @@ export default {
       this.isAnalyzing = true
       try {
         const response = await Literature.analyzeLiterature(this.articleId)
-        this.$message.success('分析任务已启动')
+        notify.success('分析任务已启动')
 
         await this.loadAnalysisTasks()
       } catch (error) {
 
-        this.$message.error(error.response?.data?.message || '启动分析失败')
+        notify.apiError(error, '启动分析失败')
       } finally {
         this.isAnalyzing = false
       }
@@ -334,41 +332,19 @@ export default {
 
       } catch (error) {
 
-        this.$message.error('加载任务详情失败')
+        notify.error('加载任务详情失败')
       }
     },
 
     closeAnalysisCard() {
-
       this.showAnalysisCard = false
       this.taskId = 0
     },
 
-    getStatusText(status) {
-      const statusMap = {
-        'pending': '等待中',
-        'queued': '已排队',
-        'running': '分析中',
-        'completed': '已完成',
-        'failed': '失败'
-      }
-      return statusMap[status] || status
-    },
+    formatDate,
+    formatDateTimeShort,
+    getAnalysisStatusLabel,
 
-    getStatusClass(status) {
-      return `status-${status}`
-    },
-
-    formatDateTime(dateTimeStr) {
-      if (!dateTimeStr) return ''
-      const date = new Date(dateTimeStr)
-      return date.toLocaleString('zh-CN', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    },
     async loadArticleDetail() {
       this.isLoading = true
       try {
@@ -389,7 +365,7 @@ export default {
         // }
       } catch (error) {
 
-        this.$message.error(error.response.data.message)
+        notify.apiError(error, '加载文献详情失败')
       } finally {
         this.isLoading = false
       }
@@ -427,12 +403,6 @@ export default {
       console.log('新收藏夹已创建:', newCollection)
       this.loadUserCollections()
     },
-    formatDate(dateString) {
-      if (!dateString) return ""
-
-      const date = new Date(dateString)
-      return date.toLocaleDateString("zh-CN")
-    },
     showCollectionSelector() {
       this.CollectionSelectorVisible = true
     },
@@ -461,10 +431,10 @@ export default {
           literature_id: this.articleId,
           personal_notes: this.personalNotes,
         })
-        this.$message.success('笔记已保存')
+        notify.success('笔记已保存')
       } catch (error) {
 
-        this.$message.error('笔记保存失败')
+        notify.error('笔记保存失败')
       } finally {
         this.isSavingNote = false
       }
@@ -473,7 +443,7 @@ export default {
       if (this.article.pdf_url) {
         window.open(this.article.pdf_url, "_blank")
       } else {
-        this.$message.warning('PDF暂不可用')
+        notify.warning('PDF暂不可用')
       }
     },
 
@@ -782,33 +752,6 @@ export default {
   font-weight: 500;
   color: #111827;
   font-size: 14px;
-}
-
-.task-status {
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.status-pending {
-  background-color: #fef3c7;
-  color: #d97706;
-}
-
-.status-running {
-  background-color: #dbeafe;
-  color: #2563eb;
-}
-
-.status-completed {
-  background-color: #d1fae5;
-  color: #059669;
-}
-
-.status-failed {
-  background-color: #fee2e2;
-  color: #dc2626;
 }
 
 .task-time {

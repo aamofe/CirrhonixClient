@@ -17,6 +17,7 @@ import Pagination from "@/components/navigation/Pagination.vue"
 import LoadingSpinner from "@/components/ui/LoadingSpinner.vue"
 import EmptyState from "@/components/ui/EmptyState.vue"
 import Literature from "@/api/Literature"
+import notify from "@/utils/notify"
 
 export default {
   name: "ReadingHistoryComponent",
@@ -52,7 +53,7 @@ export default {
         this.allReadingHistory = response.data.data
       } catch (error) {
         console.error('获取阅读历史失败:', error)
-        this.$message.error("获取阅读历史失败")
+        notify.error("获取阅读历史失败")
       } finally {
         this.loading = false
       }

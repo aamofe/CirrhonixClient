@@ -18,7 +18,7 @@
 
       <div class="user-area" @click="goToProfile">
         <div class="avatar-container">
-          <img :src="avatar" alt="用户头像" class="avatar-image" />
+          <img :src="displayAvatar" alt="用户头像" class="avatar-image" @error="onAvatarError" />
         </div>
         <span class="username">{{ username || "登录" }}</span>
       </div>
@@ -27,9 +27,10 @@
 </template>
 
 <script>
-import { mapMutations } from 'vuex'
+import { mapMutations, mapState } from 'vuex'
 import User from "@/api/User"
-import bus from '@/utils/bus'
+import notify from '@/utils/notify'
+import { DEFAULT_AVATAR } from '@/constants/media'
 
 export default {
   name: "HeaderComponent",
@@ -44,7 +45,23 @@ export default {
         //{ name: "小游戏", path: "/game" }
       ],
       avatar: null,
+      avatarLoadFailed: false,
     }
+  },
+  computed: {
+    ...mapState(['userAvatar']),
+    displayAvatar() {
+      if (this.avatarLoadFailed || !this.avatar) return DEFAULT_AVATAR
+      return this.avatar
+    },
+  },
+  watch: {
+    userAvatar(newVal) {
+      if (newVal) {
+        this.avatar = newVal
+        this.avatarLoadFailed = false
+      }
+    },
   },
   methods: {
     ...mapMutations(["setIsAdmin", "setUserId", "setUserAvatar"]),
@@ -73,6 +90,7 @@ export default {
         // 更新本地数据
         this.username = data.username
         this.avatar = data.avatar_url
+        this.avatarLoadFailed = false
         
         // 更新 Vuex store - 注意：后端字段是 is_superuser（没有下划线）
         this.setIsAdmin(data.is_superuser || false)
@@ -86,14 +104,15 @@ export default {
       } catch (error) {
         if (error.response && error.response.status === 401) {
           this.username = ""
-          // 清空 store
-          this.setIsAdmin(false)
-          this.setUserId("")
-          this.setUserAvatar("")
+          this.avatar = null
+          this.avatarLoadFailed = false
         } else {
-          this.$message.error("获取用户信息失败")
+          notify.error("获取用户信息失败")
         }
       }
+    },
+    onAvatarError() {
+      this.avatarLoadFailed = true
     },
   },
   mounted() {
@@ -101,14 +120,7 @@ export default {
     if (token) {
       this.getProfile()
     }
-    bus.on('avatar-updated', (newAvatar) => {
-      this.avatar = newAvatar
-      this.setUserAvatar(newAvatar)
-    })
   },
-  beforeUnmount() {
-    bus.off('avatar-updated')
-  }
 }
 </script>
 

@@ -1,72 +1,70 @@
-<!-- src/components/layout/CollectionSelector.vue -->
+<!-- src/components/literature/CollectionSelector.vue -->
 <template>
-  <el-dialog :title="title" v-model="dialogVisible" width="400px" @close="handleClose">
+  <BaseModal v-if="modelValue" :title="title" max-width="440px" @close="handleClose">
     <div class="collections-dialog">
-      <div v-if="collections.length === 0" class="no-collections">
-        您还没有创建收藏夹
-      </div>
+      <EmptyState v-if="collections.length === 0" message="您还没有创建收藏夹" />
+
       <div v-else class="collections-list-dialog">
-        <div v-for="(collection, index) in collectionsData" :key="index" class="collection-item-dialog"
-          @click="toggleCollectionSelection(collection.id)">
-          <el-checkbox v-model="collection.selected" @click.stop class="collection-checkbox">
-          </el-checkbox>
+        <div
+          v-for="(collection, index) in collectionsData"
+          :key="index"
+          class="collection-item-dialog"
+          @click="toggleCollectionSelection(collection.id)"
+        >
+          <el-checkbox v-model="collection.selected" @click.stop class="collection-checkbox" />
           <span class="collection-name">{{ collection.name }}</span>
         </div>
       </div>
 
       <div class="create-collection-section">
         <div class="input-button-group">
-          <el-input v-model="newCollectionName" placeholder="创建新收藏夹..." @keyup.enter="createNewCollection"
-            class="create-input"></el-input>
-          <el-button type="primary" @click="createNewCollection" :disabled="!newCollectionName.trim()">创建</el-button>
+          <el-input
+            v-model="newCollectionName"
+            placeholder="创建新收藏夹..."
+            @keyup.enter="createNewCollection"
+            class="create-input"
+          />
+          <PrimaryButton :fullWidth="false" @click="createNewCollection" :disabled="!newCollectionName.trim()">
+            创建
+          </PrimaryButton>
         </div>
       </div>
-
-      <div class="dialog-footer">
-        <el-button @click="handleCancel">取消</el-button>
-        <el-button type="primary" @click="handleSave">确定</el-button>
-      </div>
     </div>
-  </el-dialog>
+
+    <template #footer>
+      <CancelButton @click="handleCancel">取消</CancelButton>
+      <PrimaryButton :fullWidth="false" @click="handleSave">确定</PrimaryButton>
+    </template>
+  </BaseModal>
 </template>
 
 <script>
-import Literature from "@/api/Literature"
+import BaseModal from '@/components/ui/BaseModal.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import PrimaryButton from '@/components/ui/PrimaryButton.vue'
+import CancelButton from '@/components/ui/CancelButton.vue'
+import Literature from '@/api/Literature'
+import notify from '@/utils/notify'
 
 export default {
-  name: "CollectionSelector",
-  props: {
-    title: {
-      type: String,
-      default: "选择收藏夹"
-    },
-    modelValue: {
-      type: Boolean,
-      default: false
-    },
-    literatureId: {
-      type: String,
-      required: true
-    },
-    collections: {
-      type: Array,
-      default: () => []
-    }
+  name: 'CollectionSelector',
+  components: {
+    BaseModal,
+    EmptyState,
+    PrimaryButton,
+    CancelButton,
   },
+  props: {
+    title: { type: String, default: '选择收藏夹' },
+    modelValue: { type: Boolean, default: false },
+    literatureId: { type: String, required: true },
+    collections: { type: Array, default: () => [] },
+  },
+  emits: ['update:modelValue', 'collections-updated', 'collection-created', 'cancel'],
   data() {
     return {
       collectionsData: [],
-      newCollectionName: "",
-    }
-  },
-  computed: {
-    dialogVisible: {
-      get() {
-        return this.modelValue
-      },
-      set(value) {
-        this.$emit('update:modelValue', value)
-      }
+      newCollectionName: '',
     }
   },
   watch: {
@@ -75,89 +73,70 @@ export default {
         this.collectionsData = JSON.parse(JSON.stringify(newCollections))
       },
       immediate: true,
-      deep: true
-    }
+      deep: true,
+    },
   },
   methods: {
     handleClose() {
-      this.$emit("update:modelValue", false)
+      this.$emit('update:modelValue', false)
     },
     handleCancel() {
-      this.$emit("update:modelValue", false)
-      this.$emit("cancel")
+      this.$emit('update:modelValue', false)
+      this.$emit('cancel')
     },
     async handleSave() {
       try {
-        // 获取选中的收藏夹ID
         const selectedIds = this.collectionsData
-          .filter(collection => collection.selected)
-          .map(collection => collection.id)
+          .filter((collection) => collection.selected)
+          .map((collection) => collection.id)
 
-        // 更新文献的收藏夹关联
         await Literature.updateLiteratureCollections(this.literatureId, {
-          collection_ids: selectedIds
+          collection_ids: selectedIds,
         })
 
-        // 通知父组件更新收藏夹数据
-        this.$emit("collections-updated", this.collectionsData)
-
-        // 关闭对话框
-        this.$emit("update:modelValue", false)
-
-        this.$message.success('已收藏')
+        this.$emit('collections-updated', this.collectionsData)
+        this.$emit('update:modelValue', false)
+        notify.success('已收藏')
       } catch (error) {
         console.error('更新收藏夹失败:', error)
-        this.$message.error('更新收藏夹失败')
+        notify.error('更新收藏夹失败')
       }
     },
     toggleCollectionSelection(collectionId) {
-      const collection = this.collectionsData.find(c => c.id === collectionId)
+      const collection = this.collectionsData.find((c) => c.id === collectionId)
       if (collection) {
         collection.selected = !collection.selected
       }
     },
     async createNewCollection() {
       const name = this.newCollectionName.trim()
-
       if (!name) return
 
       try {
-        // 只创建新收藏夹，不添加文献
-        const response = await Literature.createCollection({
-          name,
-          description: '',
-        })
-
+        const response = await Literature.createCollection({ name, description: '' })
         const newCollection = response.data.data
 
-        // 将新收藏夹添加到本地数据中，默认未选中
-        const updatedCollection = {
+        this.collectionsData.push({
           ...newCollection,
-          selected: false, // 默认不选中，让用户自己决定是否添加
-          has_literature: false // 新创建的收藏夹还没有当前文献
-        }
+          selected: false,
+          has_literature: false,
+        })
 
-        this.collectionsData.push(updatedCollection)
-
-        // 清空输入框
-        this.newCollectionName = ""
-
-        // 通知父组件有新的收藏夹创建
-        this.$emit("collection-created", updatedCollection)
-
-        this.$message.success('收藏夹创建成功')
+        this.newCollectionName = ''
+        this.$emit('collection-created', newCollection)
+        notify.success('收藏夹创建成功')
       } catch (error) {
         console.error('创建收藏夹失败:', error)
-        this.$message.error('创建收藏夹失败')
+        notify.error('创建收藏夹失败')
       }
-    }
-  }
+    },
+  },
 }
 </script>
 
 <style scoped>
 .collections-dialog {
-  padding: 10px 0;
+  padding: 0;
 }
 
 .collections-list-dialog {
@@ -183,30 +162,17 @@ export default {
   text-align: left;
 }
 
-.no-collections {
-  text-align: center;
-  color: #999;
-  padding: 20px 0;
-}
-
 .create-collection-section {
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
 .input-button-group {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 .create-input {
   flex: 1;
-  margin-right: 10px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
 }
 </style>
